@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Registro de Usuario</title>
+
+    <!-- Fuentes / estilos SB Admin 2 -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800,900" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+
+    <style>
+        .card { border: 0; }
+        .form-label { font-weight: 600; }
+        .container-narrow { max-width: 880px; }
+    </style>
+</head>
+<body class="bg-gradient-primary">
+
+<div class="container container-narrow">
+    <div class="card shadow-lg my-5">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h4 text-gray-900 mb-4 text-center">Crear Usuario</h1>
+
+            <!-- FORMULARIO: 2 FILAS -->
+            <form class="needs-validation" novalidate>
+                <!-- FILA 1: Nombre, Usuario, Rol, Ubicación -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="nombre" class="form-label">Nombre completo</label>
+                        <input id="nombre" name="nombre" type="text" class="form-control" placeholder="Ej: Juan Pérez" required>
+                        <div class="invalid-feedback">Ingresa el nombre.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="username" class="form-label">Usuario</label>
+                        <input id="username" name="username" type="text" class="form-control" placeholder="Ej: jperez" required>
+                        <div class="invalid-feedback">Ingresa el usuario.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="rol" class="form-label">Rol</label>
+                        <select id="rol" name="rol" class="form-control" required>
+                            <option value="" selected disabled>Selecciona rol…</option>
+                            <option value="ADMIN">Administrador</option>
+                            <option value="BODEGA">Bodega</option>
+                            <option value="BAR">Bar</option>
+                            <option value="ENCARGADO">Encargado</option>
+                        </select>
+                        <div class="invalid-feedback">Selecciona un rol.</div>
+                    </div>
+
+                    <div class="col-md-6" id="grupo-ubicacion" style="display:none">
+                        <label for="ubicacion" class="form-label">Ubicación (solo BAR)</label>
+                        <input id="ubicacion" name="ubicacion" type="text" class="form-control" placeholder="Ej: Bar Principal">
+                        <div class="invalid-feedback">Ingresa la ubicación para usuarios BAR.</div>
+                    </div>
+                </div>
+
+                <!-- FILA 2: Password, Confirmar, Activo, Botón -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input id="password" name="password" type="password" class="form-control" minlength="8" required>
+                        <div class="invalid-feedback">Mínimo 8 caracteres.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="password2" class="form-label">Repetir contraseña</label>
+                        <input id="password2" name="password2" type="password" class="form-control" minlength="8" required>
+                        <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="activo" name="activo" checked>
+                            <label class="form-check-label" for="activo">Activo</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end justify-content-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus me-1"></i> Registrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr class="my-4">
+            <div class="text-center">
+                <a class="small" href="login.html">¿Ya tienes cuenta? Inicia sesión</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script src="vendor/jquery/jquery.min.js"></script>
+<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+<script src="js/sb-admin-2.min.js"></script>
+
+<script>
+    // Mostrar/ocultar campo Ubicación según rol
+    const rol = document.getElementById('rol');
+    const grupoUbicacion = document.getElementById('grupo-ubicacion');
+    const ubicacion = document.getElementById('ubicacion');
+
+    function toggleUbicacion() {
+        if (rol.value === 'BAR') {
+            grupoUbicacion.style.display = '';
+            ubicacion.setAttribute('required', 'required');
+        } else {
+            grupoUbicacion.style.display = 'none';
+            ubicacion.removeAttribute('required');
+            ubicacion.value = '';
+        }
+    }
+    rol.addEventListener('change', toggleUbicacion);
+
+    // Validación simple + confirmación de contraseña
+    (function () {
+        const form = document.querySelector('form.needs-validation');
+        form.addEventListener('submit', function (e) {
+            const pass = document.getElementById('password').value;
+            const pass2 = document.getElementById('password2').value;
+            if (pass !== pass2) {
+                e.preventDefault(); e.stopPropagation();
+                document.getElementById('password2').setCustomValidity('No coincide');
+            } else {
+                document.getElementById('password2').setCustomValidity('');
+            }
+
+            if (!form.checkValidity()) {
+                e.preventDefault(); e.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    })();
+</script>
+</body>
+</html>

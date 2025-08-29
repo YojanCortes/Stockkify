@@ -8,7 +8,13 @@ public class UrlController {
 
     @GetMapping("/")
     public String home() {
-        // Redirige al index.html que está en src/main/resources/static/
-        return "redirect:/index.html";
+        // Renderiza la plantilla index.html ubicada en src/main/resources/templates/
+        return "index";
+    }
+
+    @GetMapping("/register")
+    public String showRegister() {
+        // Renderiza la plantilla register.html ubicada en src/main/resources/templates/
+        return "register";
     }
 }
