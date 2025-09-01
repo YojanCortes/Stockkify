@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inventario · Buscar</title>
+
+    <!-- SB Admin 2 -->
+    <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" />
+    <link href="/css/sb-admin-2.min.css" rel="stylesheet" />
+
+    <style>
+        /* Tamaño fijo del cuadro de imagen */
+        :root { --thumb-size: 80px; }
+        .thumb-box{
+            width:var(--thumb-size);
+            height:var(--thumb-size);
+            border:1px solid #e2e8f0;
+            border-radius:10px;
+            background:#f8f9fc;
+            position:relative;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            overflow:hidden;              /* recorta lo que sobresalga */
+        }
+        .thumb-box img{
+            max-width:100%;
+            max-height:100%;
+            width:auto;
+            height:auto;
+            object-fit:cover;
+            display:block;
+        }
+        .thumb-box .no-img{
+            position:absolute;
+            inset:0;
+            display:none;                 /* se muestra si no hay imagen */
+            align-items:center;
+            justify-content:center;
+            color:#6c757d;
+            font-size:.75rem;
+            font-weight:600;
+            text-transform:uppercase;
+            letter-spacing:.5px;
+            text-align:center;
+            padding:6px;
+        }
+        .thumb-box.is-empty img{ display:none; }
+        .thumb-box.is-empty .no-img{ display:flex; }
+
+        .cell-img{ display:flex; align-items:center; gap:.75rem; }
+        .table td, .table th { vertical-align: middle; }
+        .btn-sm { padding: .25rem .5rem; }
+    </style>
+</head>
+<body id="page-top">
+<div id="wrapper">
+
+    <!-- Sidebar -->
+    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
+            <div class="sidebar-brand-icon rotate-n-15"><i class="fas fa-boxes"></i></div>
+            <div class="sidebar-brand-text mx-3">Inventario</div>
+        </a>
+        <hr class="sidebar-divider my-0" />
+        <li class="nav-item active"><a class="nav-link" href="/buscar"><i class="fas fa-search"></i><span>Buscar</span></a></li>
+    </ul>
+    <!-- /Sidebar -->
+
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <h1 class="h5 mb-0 text-gray-800">Inventario · Buscar</h1>
+                <form class="ml-auto" method="get" action="/buscar">
+                    <div class="input-group">
+                        <input id="q" name="q" type="text" class="form-control bg-light border-0 small"
+                               placeholder="Nombre o código de barras..." th:value="${q}">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit"><i class="fas fa-search fa-sm"></i></button>
+                        </div>
+                    </div>
+                </form>
+            </nav>
+            <!-- /Topbar -->
+
+            <div class="container-fluid" th:with="total=${productos != null ? #lists.size(productos) : 0}">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-box-open mr-2"></i>Inventario</h6>
+                        <div class="small text-muted"><span th:text="${total}">0</span> resultado(s)</div>
+                    </div>
+
+                    <div class="card-body">
+                        <div th:if="${total == 0}" class="alert alert-info mb-0">No hay productos para mostrar.</div>
+
+                        <div th:if="${total > 0}" class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="thead-light">
+                                <tr>
+                                    <th>Imagen</th>
+                                    <th style="min-width:140px">Código de barras</th>
+                                    <th>Nombre</th>
+                                    <th style="min-width:80px">Unidad</th>
+                                    <th class="text-center" style="min-width:90px">Perecible</th>
+                                    <th class="text-center" style="min-width:90px">Retornable</th>
+                                    <th class="text-right"  style="min-width:90px">Cantidad</th>
+                                    <th style="min-width:120px" class="text-center">Acciones</th>
+                                </tr>
+                                </thead>
+
+                                <tbody>
+                                <tr th:each="prod : ${productos}">
+                                    <!-- Imagen con fallback "Sin imagen" -->
+                                    <td>
+                                        <div class="cell-img">
+                                            <div class="thumb-box">
+                                                <img th:src="@{'/productos/' + ${prod.codigoBarras} + '/imagen'}"
+                                                     alt=""
+                                                     onerror="this.closest('.thumb-box').classList.add('is-empty')">
+                                                <div class="no-img">Sin imagen</div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td th:text="${prod.codigoBarras}">00000000</td>
+                                    <td th:text="${prod.nombre}">Nombre</td>
+                                    <td th:text="${prod.unidadBase}">ML</td>
+
+                                    <td class="text-center">
+                                        <span th:if="${prod.perecible == true}" class="badge badge-warning">Sí</span>
+                                        <span th:if="${prod.perecible != true}" class="badge badge-secondary">No</span>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <span th:if="${prod.retornable == true}" class="badge badge-info">Sí</span>
+                                        <span th:if="${prod.retornable != true}" class="badge badge-secondary">No</span>
+                                    </td>
+
+                                    <!-- Cantidad: cambia a prod.cantidad si tu entidad/tabla ya la tiene -->
+                                    <td class="text-right" th:text="${prod.stockMinimo != null ? prod.stockMinimo : '—'}">—</td>
+
+                                    <!-- Acciones -->
+                                    <td class="text-center">
+                                        <a class="btn btn-sm btn-primary"
+                                           th:href="@{'/productos/' + ${prod.codigoBarras}}">
+                                            <i class="fas fa-eye mr-1"></i> Ver detalles
+                                        </a>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="sticky-footer bg-white">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>© Tu Empresa · 2025</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<!-- JS -->
+<script src="/vendor/jquery/jquery.min.js"></script>
+<script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/vendor/jquery-easing/jquery.easing.min.js"></script>
+<script src="/js/sb-admin-2.min.js"></script>
+</body>
+</html>
