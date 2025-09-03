@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,6 +8,10 @@
     <!-- (opcional) SB Admin 2 / FontAwesome si ya los sirves -->
     <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" />
     <link href="/css/sb-admin-2.min.css" rel="stylesheet" />
+
+    <!-- CSRF (Spring Security) -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
     <style>
         :root{
@@ -148,10 +152,11 @@
         <!-- IZQUIERDA: Lista de productos -->
         <section class="card">
             <div class="card-body">
-                <div class="searchbar">
-                    <input type="text" placeholder="Buscar o escanear código de barras…" />
-                    <button class="icon-btn" title="Filtros"><i class="fas fa-sliders-h"></i></button>
-                </div>
+                <form class="searchbar" th:action="@{/salidas/nueva}" method="get">
+                    <input type="text" name="q" placeholder="Buscar o escanear código de barras…" th:value="${q}" />
+                    <button class="icon-btn" title="Buscar" type="submit"><i class="fas fa-search"></i></button>
+                    <a class="icon-btn" th:href="@{/salidas/nueva}" title="Limpiar"><i class="fas fa-times"></i></a>
+                </form>
             </div>
 
             <div class="card-header">
@@ -160,49 +165,55 @@
             </div>
 
             <div>
-                <!-- Ejemplos. En tu integración real, estos vendrán del backend -->
-                <div class="product-row" data-code="7800000000012" data-name="Gorra" data-stock="43">
+                <!-- Loop de productos: usa tu Page<Producto> mapeado (p.id=codigo_barras, p.nombre, p.categoria, p.cantidad) -->
+                <div class="product-row"
+                     th:each="p : ${productos}"
+                     th:attr="data-code=${p.id},data-name=${p.nombre},data-stock=${p.stockActual}">
                     <div class="thumb">
-                        <img src="/img/demo/cap.png" alt="" onerror="this.style.display='none';this.parentElement.querySelector('.no-img').style.display='flex'">
+                        <img th:src="@{|/productos/${p.id}/imagen|}" alt=""
+                             onerror="this.style.display='none';this.parentElement.querySelector('.no-img').style.display='flex'">
                         <div class="no-img">Sin imagen</div>
                     </div>
                     <div>
-                        <div class="p-name">Gorra</div>
-                        <div class="p-tags"><span class="tag">Accesorios</span></div>
-                        <div class="subtext">Código: 7800000000012 · Disp.: 43</div>
+                        <div class="p-name" th:text="${p.nombre}">Nombre</div>
+                        <div class="p-tags">
+                            <span class="tag" th:if="${p.categoria != null}" th:text="${p.categoria}">Categoría</span>
+                            <span class="tag" th:if="${p.marca != null}" th:text="${p.marca}">Marca</span>
+                        </div>
+                        <div class="subtext">
+                            Código: <span th:text="${p.id}">000</span> · Disp.: <span th:text="${p.stockActual}">0</span>
+                        </div>
                     </div>
                     <div class="add-circle" data-open-qty title="Agregar a salida"><i class="fas fa-plus"></i></div>
                 </div>
 
-                <div class="product-row" data-code="7800000000029" data-name="Polerón" data-stock="18">
-                    <div class="thumb">
-                        <img src="/img/demo/hoodie.png" alt="" onerror="this.style.display='none';this.parentElement.querySelector('.no-img').style.display='flex'">
-                        <div class="no-img">Sin imagen</div>
-                    </div>
-                    <div>
-                        <div class="p-name">Polerón</div>
-                        <div class="p-tags"><span class="tag">Polerones</span></div>
-                        <div class="subtext">Código: 7800000000029 · Disp.: 18</div>
-                    </div>
-                    <div class="add-circle" data-open-qty title="Agregar a salida"><i class="fas fa-plus"></i></div>
-                </div>
-
-                <div class="product-row" data-code="7800000000036" data-name="Polerón con Logo" data-stock="12">
-                    <div class="thumb">
-                        <img src="/img/demo/hoodie-logo.png" alt="" onerror="this.style.display='none';this.parentElement.querySelector('.no-img').style.display='flex'">
-                        <div class="no-img">Sin imagen</div>
-                    </div>
-                    <div>
-                        <div class="p-name">Polerón con Logo</div>
-                        <div class="p-tags"><span class="tag">Polerones</span></div>
-                        <div class="subtext">Código: 7800000000036 · Disp.: 12</div>
-                    </div>
-                    <div class="add-circle" data-open-qty title="Agregar a salida"><i class="fas fa-plus"></i></div>
-                </div>
-
+                <!-- Pie de lista -->
                 <div style="display:flex; justify-content:space-between; padding:12px 14px; color:#6c7a8c; font-size:.9rem;">
-                    <div>Mostrando 3 de 3</div>
+                    <div>
+                        Mostrando
+                        <span th:text="${#lists.size(productos)}">0</span>
+                        <span th:if="${totalElements != null}">de <span th:text="${totalElements}">0</span></span>
+                    </div>
                     <div>Usa el lector para agregar más rápido</div>
+                </div>
+
+                <!-- Paginación (opcional, si traes Page) -->
+                <div th:if="${totalPages != null and totalPages > 1}" style="padding:0 14px 12px;">
+                    <nav>
+                        <ul class="pagination mb-0">
+                            <li class="page-item" th:classappend="${page == 0} ? 'disabled' : ''">
+                                <a class="page-link" th:href="@{/salidas/nueva(q=${q}, page=${page - 1})}">Anterior</a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, (totalPages - 1))}"
+                                th:classappend="${i == page} ? 'active' : ''">
+                                <a class="page-link" th:text="${i + 1}"
+                                   th:href="@{/salidas/nueva(q=${q}, page=${i})}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${(page + 1) >= totalPages} ? 'disabled' : ''">
+                                <a class="page-link" th:href="@{/salidas/nueva(q=${q}, page=${page + 1})}">Siguiente</a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </section>
@@ -212,7 +223,7 @@
             <div class="card-body">
                 <div class="cart-head">
                     <strong>Salida actual</strong>
-                    <span class="chip">Usuario: Invitado</span>
+                    <span class="chip">Usuario: <span th:text="${usuarioActual != null ? usuarioActual : 'Invitado'}">Invitado</span></span>
                 </div>
             </div>
 
@@ -233,11 +244,12 @@
                 </div>
             </div>
 
+
             <!-- Campos globales -->
             <div class="globals">
                 <input type="text" id="motivo" placeholder="Motivo (ej. Venta, Merma, Consumo interno)" />
                 <input type="text" id="referencia" placeholder="Referencia (N° doc, nota…)" />
-                <input type="text" id="usuario" placeholder="Usuario (opcional)" />
+                <input type="text" id="usuario" placeholder="Usuario (opcional)" th:value="${usuarioActual}" />
             </div>
 
             <!-- Acciones -->
@@ -265,6 +277,10 @@
 
 <!-- JS: demo front para manejar la lista sin precios -->
 <script>
+    // CSRF for fetch
+    const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || '';
+    const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+
     const pop = document.getElementById('qtyPop');
     let currentProduct = null;
     const cart = new Map(); // key: code, value: {name, qty}
@@ -296,12 +312,12 @@
             row.innerHTML = `
           <div class="qty-box">
             <div class="qty-btn" data-dec>-</div>
-            <input class="qty-input" value="${v.qty}" />
+            <input class="qty-input" value="\${v.qty}" />
             <div class="qty-btn" data-inc>+</div>
           </div>
           <div>
-            <div style="font-weight:600">${v.name}</div>
-            <div class="subtext">Código: ${code}</div>
+            <div style="font-weight:600">\${v.name}</div>
+            <div class="subtext">Código: \${code}</div>
           </div>
           <div class="trash" title="Quitar"><i class="fas fa-times"></i></div>
         `;
@@ -316,17 +332,20 @@
     }
 
     // Abrir popover desde lista de productos
-    document.querySelectorAll('[data-open-qty]').forEach(btn=>{
-        btn.addEventListener('click', (e)=>{
-            const row = e.currentTarget.closest('.product-row');
-            currentProduct = {
-                code: row.getAttribute('data-code'),
-                name: row.getAttribute('data-name')
-            };
-            document.getElementById('qtyInput').value = 1;
-            pop.classList.add('show');
+    function wireOpenQtyButtons(scope){
+        (scope || document).querySelectorAll('[data-open-qty]').forEach(btn=>{
+            btn.addEventListener('click', (e)=>{
+                const row = e.currentTarget.closest('.product-row');
+                currentProduct = {
+                    code: row.getAttribute('data-code'),
+                    name: row.getAttribute('data-name')
+                };
+                document.getElementById('qtyInput').value = 1;
+                pop.classList.add('show');
+            });
         });
-    });
+    }
+    wireOpenQtyButtons();
 
     // Cerrar pop si clic fuera
     document.addEventListener('click',(e)=>{
@@ -354,17 +373,44 @@
         cart.clear(); renderCart();
     });
 
-    // Registrar (solo demo visual)
-    document.getElementById('btnRegistrar').addEventListener('click', ()=>{
+    // Registrar (envío batch al backend)
+    document.getElementById('btnRegistrar').addEventListener('click', async ()=>{
         const motivo = document.getElementById('motivo').value.trim();
-        const ref = document.getElementById('referencia').value.trim();
-        const usr = document.getElementById('usuario').value.trim();
+        const referencia = document.getElementById('referencia').value.trim();
+        const usuario = document.getElementById('usuario').value.trim();
+
         if(cart.size === 0){
             alert('No hay productos en la salida.');
             return;
         }
-        // Aquí, en tu integración real, harías POST por cada item o un endpoint batch.
-        alert(`Registrar salida\nItems: ${cart.size}\nMotivo: ${motivo || '(sin)'}\nReferencia: ${ref || '(sin)'}\nUsuario: ${usr || '(sin)'}\n\n(Integrar con backend /salidas)`);
+
+        // Construir payload
+        const items = Array.from(cart.entries()).map(([code, v]) => ({
+            codigo: code,
+            cantidad: v.qty
+        }));
+
+        try{
+            const res = await fetch('/salidas/registrar-lote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [CSRF_HEADER]: CSRF_TOKEN
+                },
+                body: JSON.stringify({ items, motivo, referencia, usuario })
+            });
+            if(!res.ok){
+                const txt = await res.text();
+                throw new Error(txt || 'Error al registrar salida.');
+            }
+            const data = await res.json(); // {ok:true, registrados: n, detalles:[...]}
+            alert(`Salida registrada.\nLíneas procesadas: ${data.registrados}`);
+            cart.clear(); renderCart();
+            // Opcional: recargar página para refrescar stocks
+            // location.reload();
+        }catch(err){
+            alert('Error: ' + (err.message || err));
+        }
     });
 
     // Inicial

@@ -6,6 +6,8 @@ import com.inventario1.Inventario.models.TipoMovimiento;
 import com.inventario1.Inventario.repos.MovimientoInventarioRepository;
 import com.inventario1.Inventario.repos.ProductoRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,21 @@ public class InventarioService {
     public InventarioService(ProductoRepository productoRepo, MovimientoInventarioRepository movRepo) {
         this.productoRepo = productoRepo;
         this.movRepo = movRepo;
+    }
+
+    /** Listado paginado de productos (sin filtro). */
+    @Transactional(readOnly = true)
+    public Page<Producto> listarProductos(Pageable pageable) {
+        return productoRepo.findAll(pageable);
+    }
+
+    /** Búsqueda paginada por nombre o código de barras (usa repo.search). */
+    @Transactional(readOnly = true)
+    public Page<Producto> buscarProductos(String q, Pageable pageable) {
+        if (q == null || q.isBlank()) {
+            return listarProductos(pageable);
+        }
+        return productoRepo.search(q.trim(), pageable);
     }
 
     /** Lee un producto por su código de barras (PK). */
@@ -38,7 +55,7 @@ public class InventarioService {
         // 1) Verifica existencia
         Producto p = leerProducto(codigoBarras);
 
-        // 2) Descuento atómico: solo descuenta si hay stock suficiente
+        // 2) Descuento atómico
         int filas = productoRepo.descontarStock(codigoBarras, cantidad);
         if (filas == 0) {
             Integer actual = productoRepo.findById(codigoBarras).map(Producto::getCantidad).orElse(0);
@@ -50,7 +67,7 @@ public class InventarioService {
                 .map(Producto::getCantidad)
                 .orElseThrow(() -> new IllegalStateException("No se pudo leer stock tras salida"));
 
-        // 4) Registra movimiento con relación ManyToOne al producto
+        // 4) Registra movimiento
         MovimientoInventario m = new MovimientoInventario();
         m.setProducto(p);
         m.setTipo(TipoMovimiento.SALIDA);
