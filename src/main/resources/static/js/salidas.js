@@ -7,7 +7,11 @@
         document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') ||
         'X-CSRF-TOKEN';
 
-    // --- Estado ---
+    // --- Config opcional para API (desactivada por defecto) ---
+    const USE_API = false;             // cámbialo a true si quieres validar contra backend
+    const API_BASE = '/api/productos'; // ej: GET /api/productos/{codigo}
+
+    // --- Estado / refs modal ---
     const pop = document.getElementById('qtyPop');            // modal
     const backdrop = document.getElementById('qtyBackdrop');  // overlay
     const btnClose = document.getElementById('qtyCloseBtn');  // botón X
@@ -18,11 +22,12 @@
     const cart = new Map(); // key: code, value: {name, qty}
 
     // --- Utilidades ---
-    function qs(sel, scope = document) {
-        return scope.querySelector(sel);
-    }
-    function qsa(sel, scope = document) {
-        return Array.from(scope.querySelectorAll(sel));
+    function qs(sel, scope = document) { return scope.querySelector(sel); }
+    function qsa(sel, scope = document) { return Array.from(scope.querySelectorAll(sel)); }
+    // Polyfill CSS.escape simple para selectores por data-code
+    function cssEscape(str = '') {
+        if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(str);
+        return String(str).replace(/["\\#.;?%^&[\]{}()<>\s]/g, '\\$&');
     }
 
     // --- Modal helpers ---
@@ -34,13 +39,8 @@
         backdrop?.classList.add('show');
         document.body.classList.add('modal-open');
 
-        // foco tras el render
-        setTimeout(() => {
-            qtyInputEl?.focus();
-            qtyInputEl?.select();
-        }, 0);
+        setTimeout(() => { qtyInputEl?.focus(); qtyInputEl?.select(); }, 0);
     }
-
     function closeQtyModal() {
         pop?.classList.remove('show');
         backdrop?.classList.remove('show');
@@ -126,7 +126,7 @@
         updateSummary();
     }
 
-    // --- Lista de productos: abrir modal de cantidad ---
+    // --- Lista de productos: abrir modal de cantidad (desde el “+” de la lista) ---
     function wireOpenQtyButtons(scope) {
         qsa('[data-open-qty]', scope).forEach((btn) => {
             btn.addEventListener('click', (e) => {
@@ -147,9 +147,7 @@
 
     // --- Cerrar con tecla ESC ---
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && pop?.classList.contains('show')) {
-            closeQtyModal();
-        }
+        if (e.key === 'Escape' && pop?.classList.contains('show')) closeQtyModal();
     });
 
     // --- Confirmar (agregar) y cerrar automáticamente ---
@@ -171,6 +169,84 @@
             e.preventDefault();
             qs('#addToCartBtn')?.click();
         }
+    });
+
+    // =========================
+    //  Formulario "agregar por código"
+    // =========================
+    const addByCodeForm = document.getElementById('addByCodeForm');
+    const codeInput = document.getElementById('codeInput');
+    const formMsg = document.getElementById('formMsg');
+    let msgTimer = null;
+
+    function showFormMsg(text, kind = 'error') {
+        if (!formMsg) return;
+        formMsg.textContent = text;
+        formMsg.classList.remove('ok', 'error');
+        formMsg.classList.add(kind);
+        formMsg.style.opacity = '1';
+        if (msgTimer) clearTimeout(msgTimer);
+        msgTimer = setTimeout(() => {
+            formMsg.style.opacity = '0';
+            setTimeout(() => { formMsg.textContent = ''; }, 200);
+        }, 2000);
+    }
+
+    // Busca en el DOM por data-code y, opcionalmente, valida por API si USE_API=true
+    async function addProductByCode(codeRaw) {
+        const code = String(codeRaw || '').trim();
+        if (!code) return;
+
+        // 1) Lookup en DOM (lista actual)
+        const row = document.querySelector(`.product-row[data-code="${cssEscape(code)}"]`);
+        if (row) {
+            const name = row.getAttribute('data-name') || 'Producto';
+            if (cart.has(code)) {
+                cart.get(code).qty += 1;
+            } else {
+                cart.set(code, { name, qty: 1 });
+            }
+            renderCart();
+            showFormMsg('Producto agregado', 'ok');
+            return;
+        }
+
+        // 2) (Opcional) Validar contra API si está activo
+        if (USE_API) {
+            try {
+                const res = await fetch(`${API_BASE}/${encodeURIComponent(code)}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.ok) {
+                    const p = await res.json(); // { id, nombre, ... }
+                    const codeStr = String(p.id ?? code);
+                    const nameStr = String(p.nombre ?? 'Producto');
+                    if (cart.has(codeStr)) {
+                        cart.get(codeStr).qty += 1;
+                    } else {
+                        cart.set(codeStr, { name: nameStr, qty: 1 });
+                    }
+                    renderCart();
+                    showFormMsg('Producto agregado', 'ok');
+                    return;
+                }
+            } catch (e) {
+                // silencioso; cae al mensaje de no existe
+            }
+        }
+
+        // 3) No existe (ni DOM, ni API)
+        showFormMsg('No existe el producto', 'error');
+    }
+
+    // Submit del formulario: evita navegación, agrega y limpia siempre
+    addByCodeForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = codeInput?.value.trim();
+        if (codeInput) codeInput.value = ''; // limpiar SIEMPRE
+        await addProductByCode(code);
+        codeInput?.focus();
     });
 
     // --- Vaciar carrito ---
@@ -214,8 +290,7 @@
             alert(`Salida registrada.\nLíneas procesadas: ${data.registrados}`);
             cart.clear();
             renderCart();
-            // Opcional: recargar para refrescar stocks
-            // location.reload();
+            // location.reload(); // si quieres refrescar stocks visualmente
         } catch (err) {
             alert('Error: ' + (err.message || err));
         }
@@ -223,13 +298,7 @@
 
     // --- Inicialización ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Enlaza botones de la lista inicial (servida por el backend)
-        wireOpenQtyButtons(document);
-
-        // Si agregas productos dinámicamente por AJAX, vuelve a llamar:
-        // wireOpenQtyButtons(scopeDeProductosRecargados);
-
-        // Render inicial de resumen/estado
-        renderCart();
+        wireOpenQtyButtons(document); // botones de la lista
+        renderCart();                 // estado inicial
     });
 })();

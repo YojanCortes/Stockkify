@@ -41,12 +41,13 @@
     <main class="pos-main">
         <!-- IZQUIERDA: Lista de productos -->
         <section class="card">
+            <!-- FORM: Agregar por código -->
             <div class="card-body">
-                <form class="searchbar" th:action="@{/salidas/nueva}" method="get">
-                    <input type="text" name="q" placeholder="Buscar o escanear código de barras…" th:value="${q}" />
-                    <button class="icon-btn" title="Buscar" type="submit"><i class="fas fa-search"></i></button>
-                    <a class="icon-btn" th:href="@{/salidas/nueva}" title="Limpiar"><i class="fas fa-times"></i></a>
+                <form id="addByCodeForm" class="add-form" autocomplete="off">
+                    <input type="text" id="codeInput" name="code" placeholder="Escanea o ingresa código de barras…" />
+                    <button class="icon-btn" title="Agregar" type="submit"><i class="fas fa-plus"></i></button>
                 </form>
+                <div id="formMsg" class="form-msg" aria-live="polite"></div>
             </div>
 
             <div class="card-header">
