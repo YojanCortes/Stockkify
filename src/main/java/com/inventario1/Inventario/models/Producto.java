@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -17,7 +19,6 @@ import java.time.LocalDateTime;
 @Data
 public class Producto {
 
-    // ID = CÓDIGO DE BARRAS (no se autogenera)
     @Id
     @Column(name = "codigo_barras", length = 32, nullable = false)
     private String codigoBarras;
@@ -47,6 +48,10 @@ public class Producto {
     @Column(nullable = false)
     private Boolean retornable = false;
 
+    // Stock en unidades de 'unidad_base'
+    @Column(nullable = false)
+    private Integer cantidad = 0;
+
     @Column(name = "stock_minimo")
     private Integer stockMinimo;
 
@@ -60,4 +65,8 @@ public class Producto {
     @UpdateTimestamp
     @Column(name = "actualizado_en")
     private LocalDateTime actualizadoEn;
+
+    // === Mapping inverso a movimientos (kardex) ===
+    @OneToMany(mappedBy = "producto", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<MovimientoInventario> movimientos = new ArrayList<>();
 }

@@ -18,5 +18,6 @@ public class UrlController {
         return "register";
     }
 
-    // OJO: /buscar eliminado aquí. Lo maneja com.inventario1.Inventario.web.BuscarController
+    // OJO: /salidas lo maneja SalidaController
+    // OJO: /buscar lo maneja BuscarController
 }

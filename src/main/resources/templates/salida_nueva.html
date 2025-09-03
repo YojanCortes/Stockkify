@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>POS · Tienda Demo</title>
+
+    <!-- SB Admin 2 (opcional) -->
+    <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" />
+    <link href="/css/sb-admin-2.min.css" rel="stylesheet" />
+
+    <style>
+        :root{
+            --navy:#143b59;
+            --navy-2:#0e2f49;
+            --slate:#233649;
+            --muted:#6b7a8c;
+            --green:#198754;
+            --red:#dc3545;
+            --blue:#0d6efd;
+            --bg:#f5f7fb;
+            --card:#ffffff;
+            --border:#e6e9ee;
+            --thumb:74px;
+        }
+        html,body{height:100%}
+        body{background:var(--bg);}
+
+        /* Topbar */
+        .pos-topbar{
+            background:var(--slate);
+            color:#fff;
+            height:56px;
+            display:flex; align-items:center; padding:0 16px;
+            box-shadow:0 1px 0 rgba(0,0,0,.08);
+        }
+        .pos-title{font-weight:600; letter-spacing:.3px}
+
+        /* Sidebar */
+        .pos-shell{display:grid; grid-template-columns:56px 1fr; height:calc(100% - 56px);}
+        .pos-sidebar{
+            background:var(--navy);
+            color:#b7c4d2;
+            display:flex; flex-direction:column; align-items:center; padding:8px 0;
+        }
+        .pos-side-btn{
+            width:40px; height:40px; border-radius:8px;
+            display:flex; align-items:center; justify-content:center;
+            margin:6px 0; cursor:pointer;
+        }
+        .pos-side-btn:hover{background:rgba(255,255,255,.08); color:#fff}
+
+        /* Layout principal */
+        .pos-main{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px; padding:14px; overflow:auto;}
+
+        /* Tarjetas */
+        .card{background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.03);}
+        .card-header{padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between}
+        .card-body{padding:14px}
+
+        /* Buscador */
+        .searchbar{display:flex; align-items:center; gap:10px;}
+        .searchbar input{
+            width:100%; height:40px; border:1px solid var(--border);
+            border-radius:8px; padding:0 12px; outline:none;
+            background:#fff;
+        }
+        .icon-btn{
+            width:40px; height:40px; border:1px solid var(--border);
+            border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center;
+            cursor:pointer;
+        }
+
+        /* Lista de productos */
+        .product-row{display:grid; grid-template-columns: 86px 1fr 110px; gap:14px; padding:12px 14px; align-items:center; border-top:1px solid var(--border);}
+        .product-row:hover{background:#fafbfe}
+        .thumb{
+            width:var(--thumb); height:var(--thumb); border:1px solid var(--border); border-radius:12px; background:#f3f6fb;
+            display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;
+        }
+        .thumb img{max-width:100%; max-height:100%; object-fit:cover; display:block}
+        .thumb .no-img{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#7c8a9b; font-weight:600; font-size:.8rem; text-transform:uppercase}
+        .p-name{font-weight:600; margin-bottom:2px}
+        .p-tags{display:flex; gap:6px; flex-wrap:wrap}
+        .tag{background:#e9eef6; color:#43566b; padding:2px 8px; border-radius:999px; font-size:.72rem; font-weight:600}
+        .p-price{font-weight:600; color:#2c3b4b}
+        .add-circle{
+            width:36px; height:36px; border-radius:50%; background:#0aa15b; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
+            margin-left:8px;
+        }
+
+        /* Carrito */
+        .cart-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+        .chip{background:#e6eef8; color:#32557a; border-radius:999px; padding:4px 10px; font-weight:600}
+        .cart-list{max-height:46vh; overflow:auto; border-top:1px solid var(--border);}
+        .cart-row{display:grid; grid-template-columns: 60px 1fr 90px 40px; gap:10px; padding:10px 14px; align-items:center; border-bottom:1px solid var(--border);}
+        .qty-box{display:flex; align-items:center; gap:6px}
+        .qty-btn{width:26px; height:26px; border-radius:6px; border:1px solid var(--border); background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer}
+        .qty-input{width:36px; text-align:center; border:1px solid var(--border); border-radius:6px; height:26px; font-weight:600}
+        .price, .total{text-align:right; font-weight:600}
+        .trash{color:#fff; background:var(--red); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer}
+
+        /* Popover de variantes */
+        .variant-pop{
+            position:absolute; right:16px; top:120px; width:320px; background:#fff; border:1px solid var(--border); border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.15); overflow:hidden; display:none;
+        }
+        .variant-pop.show{display:block}
+        .variant-section{padding:10px 12px; border-top:1px solid var(--border)}
+        .segmented{display:flex; gap:6px}
+        .segmented .seg{flex:1; border:1px solid var(--border); border-radius:8px; padding:8px; text-align:center; font-weight:600; color:#405366; cursor:pointer; user-select:none}
+        .seg.active{background:#1c7ed6; color:#fff; border-color:#1c7ed6}
+        .btn-primary{background:#1c7ed6; border:0; color:#fff; border-radius:8px; height:40px; font-weight:700; width:100%}
+        .btn-primary:active{transform:translateY(1px)}
+
+        /* Totales y acciones */
+        .lines{padding:10px 14px; border-top:1px solid var(--border); color:#3a4b5c}
+        .line{display:flex; justify-content:space-between; padding:4px 0}
+        .actions{display:flex; gap:10px; flex-wrap:wrap; padding:12px 14px; border-top:1px solid var(--border)}
+        .btn-outline{border:1px solid var(--border); background:#fff; border-radius:8px; padding:10px 12px; font-weight:600}
+        .btn-danger{background:var(--red); color:#fff; border:0; border-radius:8px; padding:12px 14px; font-weight:700}
+        .btn-success{background:#13795b; color:#fff; border:0; border-radius:8px; padding:12px 14px; font-weight:700}
+
+        .cart-tabs{display:flex; gap:10px; padding:10px 14px; border-top:1px solid var(--border); background:#f8fafc}
+        .tab{background:#eaf0f7; color:#2b4b69; border-radius:999px; padding:6px 12px; font-weight:700}
+        .tab.primary{background:#0d6efd; color:#fff}
+        .tab .arrow{margin-left:8px}
+
+        /* Responsivo */
+        @media (max-width:1100px){
+            .pos-main{grid-template-columns:1fr}
+            .variant-pop{position:fixed; left:50%; top:20%; transform:translateX(-50%); right:auto}
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="pos-topbar">
+    <div class="pos-title">POS - Tienda Demo</div>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+        <i class="far fa-bell"></i>
+        <div style="width:32px;height:32px;border-radius:50%;background:#2c4d6b;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">B</div>
+    </div>
+</div>
+
+<div class="pos-shell">
+    <!-- SIDEBAR -->
+    <aside class="pos-sidebar">
+        <div class="pos-side-btn" title="Productos"><i class="fas fa-th-large"></i></div>
+        <div class="pos-side-btn" title="Boletas"><i class="fas fa-receipt"></i></div>
+        <div class="pos-side-btn" title="Clientes"><i class="fas fa-users"></i></div>
+        <div class="pos-side-btn" title="Ajustes"><i class="fas fa-cog"></i></div>
+        <div style="margin-top:auto" class="pos-side-btn" title="Salir"><i class="fas fa-power-off"></i></div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="pos-main">
+        <!-- IZQUIERDA: Productos -->
+        <section class="card">
+            <div class="card-body">
+                <div class="searchbar">
+                    <input type="text" placeholder="Buscar productos" />
+                    <button class="icon-btn" id="filtersBtn" title="Filtros"><i class="fas fa-sliders-h"></i></button>
+                </div>
+            </div>
+
+            <!-- Encabezado de columnas -->
+            <div class="card-header">
+                <div style="opacity:.7;font-weight:700">PRODUCTO</div>
+                <div style="opacity:.7;font-weight:700">PRECIO</div>
+            </div>
+
+            <!-- Lista -->
+            <div>
+                <!-- Producto 1 -->
+                <div class="product-row">
+                    <div class="thumb">
+                        <img src="/img/demo/cap.png" alt="" onerror="this.style.display='none';this.parentElement.querySelector('.no-img').style.display='flex'">
+                        <div class="no-img">Sin imagen</div>
+                    </div>
+                    <div>
+                        <div class="p-name">Gorra</div>
+                        <div class="p-tags">
+                            <span class="tag">Accesorios</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+                        <div class="p-price">$16.00</div>
+                        <div class="add-circle" data-open-variants><i class="fas fa-plus"></i></div>
+                    </div>
+                </div>
+
+                <!-- Producto 2 -->
+                <div class="product-row">
+                    <div class="thumb">
+                        <img src="/img/demo/hoodie.png" alt="" onerror="this.style.display='none';this.parentElement.querySelector('.no-img').style.display='flex'">
+                        <div class="no-img">Sin imagen</div>
+                    </div>
+                    <div>
+                        <div class="p-name">Polerón</div>
+                        <div class="p-tags">
+                            <span class="tag">Polerones</span>
+                        </div>
+                        <div style="font-size:.82rem; color:#6c7a8c; margin-top:4px">Color: Azul, Verde, Rojo<br>Logo: Sí, No</div>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+                        <div class="p-price">$42.00</div>
+                        <div class="add-circle" data-open-variants><i class="fas fa-chevron-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- Producto 3 -->
+                <div class="product-row">
+                    <div class="thumb">
+                        <img src="/img/demo/hoodie-logo.png" alt="" onerror="this.style.display='none';this.parentElement.querySelector('.no-img').style.display='flex'">
+                        <div class="no-img">Sin imagen</div>
+                    </div>
+                    <div>
+                        <div class="p-name">Polerón con Logo</div>
+                        <div class="p-tags">
+                            <span class="tag">Polerones</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+                        <div class="p-price">$45.00</div>
+                        <div class="add-circle"><i class="fas fa-plus"></i></div>
+                    </div>
+                </div>
+
+                <!-- Pie de lista -->
+                <div style="display:flex; justify-content:space-between; padding:12px 14px; color:#6c7a8c; font-size:.9rem;">
+                    <div>Mostrando 16 de 18</div>
+                    <div>Impuesto según: dirección base de la tienda</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DERECHA: Carrito -->
+        <section class="card" style="position:relative">
+            <div class="card-body">
+                <div class="cart-head">
+                    <strong>Cliente:</strong>
+                    <span class="chip">Invitado <i class="fas fa-times" style="margin-left:6px; opacity:.6"></i></span>
+                    <div style="margin-left:auto; display:flex; gap:8px">
+                        <div class="icon-btn" title="Nuevo cliente"><i class="fas fa-user-plus"></i></div>
+                        <div class="icon-btn" title="Ajustes"><i class="fas fa-cog"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cart-list">
+                <!-- Item -->
+                <div class="cart-row">
+                    <div class="qty-box">
+                        <div class="qty-btn">-</div>
+                        <input class="qty-input" value="1" />
+                        <div class="qty-btn">+</div>
+                    </div>
+                    <div>
+                        <div style="font-weight:600">Beanie con Logo</div>
+                    </div>
+                    <div class="price">$18.00</div>
+                    <div class="trash" title="Quitar"><i class="fas fa-times"></i></div>
+                </div>
+
+                <div class="cart-row">
+                    <div class="qty-box">
+                        <div class="qty-btn">-</div>
+                        <input class="qty-input" value="5" />
+                        <div class="qty-btn">+</div>
+                    </div>
+                    <div>
+                        <div style="font-weight:600">Gorra</div>
+                    </div>
+                    <div class="price">$16.00</div>
+                    <div class="trash" title="Quitar"><i class="fas fa-times"></i></div>
+                </div>
+
+                <div class="cart-row">
+                    <div class="qty-box">
+                        <div class="qty-btn">-</div>
+                        <input class="qty-input" value="1" />
+                        <div class="qty-btn">+</div>
+                    </div>
+                    <div>
+                        <div style="font-weight:600">Polera Cuello V</div>
+                        <div style="color:#6b7a8c; font-size:.85rem">Color: Verde<br>Talla: M</div>
+                    </div>
+                    <div class="price">$20.00</div>
+                    <div class="trash" title="Quitar"><i class="fas fa-times"></i></div>
+                </div>
+            </div>
+
+            <!-- Popover de variantes (demo) -->
+            <div class="variant-pop" id="variantPop">
+                <div class="variant-section">
+                    <div style="margin-bottom:6px; font-weight:700; color:#334658">Color</div>
+                    <div class="segmented" data-group="color">
+                        <div class="seg">Azul</div>
+                        <div class="seg active">Verde</div>
+                        <div class="seg">Rojo</div>
+                    </div>
+                </div>
+                <div class="variant-section">
+                    <div style="margin-bottom:6px; font-weight:700; color:#334658">Logo</div>
+                    <div class="segmented" data-group="logo">
+                        <div class="seg active">Sí</div>
+                        <div class="seg">No</div>
+                    </div>
+                </div>
+                <div class="variant-section">
+                    <button class="btn-primary" id="addVariantBtn">Agregar al carrito: $45.00</button>
+                </div>
+            </div>
+
+            <!-- Líneas y acciones -->
+            <div class="lines">
+                <div class="line"><span>Agregar comisión</span><span><i class="fas fa-plus"></i></span></div>
+                <div class="line"><span>Agregar envío</span><span><i class="fas fa-plus"></i></span></div>
+                <div class="line"><span>Subtotal:</span><strong>$118.00</strong></div>
+                <div class="line"><span>EE.UU.</span><span>$11.80</span></div>
+                <div class="line"><span>EE.UU. AL</span><span>$2.60</span></div>
+                <div class="line"><span>Impuesto total:</span><strong>$14.40</strong></div>
+            </div>
+
+            <div class="actions">
+                <button class="btn-outline">Nota del pedido</button>
+                <button class="btn-outline">Metadatos del pedido</button>
+                <button class="btn-outline">Guardar en el servidor</button>
+                <div style="margin-left:auto; display:flex; gap:10px; flex-wrap:wrap">
+                    <button class="btn-danger">Anular</button>
+                    <button class="btn-success">Cobrar $132.40</button>
+                </div>
+            </div>
+
+            <div class="cart-tabs">
+                <div class="tab primary">Carrito $132.40</div>
+                <div class="tab">Carrito $50.49</div>
+                <div class="tab">Carrito $20.20</div>
+                <div class="tab"><span class="arrow"><i class="fas fa-angle-right"></i></span></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- JS mínimo para demo de popover -->
+<script>
+    const pop = document.getElementById('variantPop');
+    document.querySelectorAll('[data-open-variants]').forEach(btn=>{
+        btn.addEventListener('click',()=>{ pop.classList.add('show'); });
+    });
+    document.addEventListener('click',(e)=>{
+        if(pop.classList.contains('show')){
+            const inside = pop.contains(e.target) || e.target.closest('[data-open-variants]');
+            if(!inside) pop.classList.remove('show');
+        }
+    });
+    document.querySelectorAll('.segmented .seg').forEach(seg=>{
+        seg.addEventListener('click',()=>{
+            const group = seg.parentElement;
+            group.querySelectorAll('.seg').forEach(s=>s.classList.remove('active'));
+            seg.classList.add('active');
+        });
+    });
+</script>
+</body>
+</html>

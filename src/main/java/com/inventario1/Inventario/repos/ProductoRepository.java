@@ -17,4 +17,14 @@ public interface ProductoRepository extends JpaRepository<Producto, String> {
            ORDER BY p.codigoBarras ASC
            """)
     List<Producto> search(@Param("q") String q);
+
+    // 🔒 Descontar stock de forma atómica: sólo descuenta si hay stock suficiente
+    @Modifying
+    @Query("""
+           UPDATE Producto p
+              SET p.cantidad = p.cantidad - :qty
+            WHERE p.codigoBarras = :codigo
+              AND p.cantidad >= :qty
+           """)
+    int descontarStock(@Param("codigo") String codigo, @Param("qty") int qty);
 }
