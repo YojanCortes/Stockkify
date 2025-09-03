@@ -1,0 +1,277 @@
+:root{
+  --slate:#233649;
+  --navy:#143b59;
+  --muted:#6b7a8c;
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --border:#e6e9ee;
+  --green:#198754;
+  --red:#dc3545;
+  --blue:#0d6efd;
+  --thumb:74px;
+}
+
+/* Base */
+html,body{height:100%}
+body{
+  background:var(--bg);
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial
+}
+
+/* Topbar */
+.pos-topbar{
+  background:var(--slate);
+  color:#fff;
+  height:56px;
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  box-shadow:0 1px 0 rgba(0,0,0,.08);
+}
+.pos-title{font-weight:600; letter-spacing:.3px}
+
+/* Shell */
+.pos-shell{
+  display:grid;
+  grid-template-columns:56px 1fr;
+  height:calc(100% - 56px);
+}
+.pos-sidebar{
+  background:var(--navy);
+  color:#b7c4d2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:8px 0;
+}
+.pos-side-btn{
+  width:40px; height:40px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  margin:6px 0; cursor:pointer;
+}
+.pos-side-btn:hover{background:rgba(255,255,255,.08); color:#fff}
+
+.pos-main{
+  display:grid;
+  grid-template-columns:1.2fr .8fr;
+  gap:14px;
+  padding:14px;
+  overflow:auto;
+}
+
+/* Cards */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.03);
+}
+.card-header{
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between
+}
+.card-body{padding:14px}
+
+/* Buscador */
+.searchbar{display:flex; align-items:center; gap:10px;}
+.searchbar input{
+  width:100%; height:40px; border:1px solid var(--border);
+  border-radius:8px; padding:0 12px; outline:none; background:#fff;
+}
+.icon-btn{
+  width:40px; height:40px; border:1px solid var(--border);
+  border-radius:8px; background:#fff;
+  display:flex; align-items:center; justify-content:center; cursor:pointer
+}
+
+/* Lista de productos */
+.product-row{
+  display:grid; grid-template-columns:86px 1fr 70px;
+  gap:14px; padding:12px 14px; align-items:center;
+  border-top:1px solid var(--border);
+}
+.product-row:hover{background:#fafbfe}
+.thumb{
+  width:var(--thumb); height:var(--thumb);
+  border:1px solid var(--border); border-radius:12px; background:#f3f6fb;
+  display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;
+}
+.thumb img{max-width:100%; max-height:100%; object-fit:cover; display:block}
+.thumb .no-img{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:#7c8a9b; font-weight:600; font-size:.8rem; text-transform:uppercase
+}
+.p-name{font-weight:600; margin-bottom:2px}
+.p-tags{display:flex; gap:6px; flex-wrap:wrap}
+.tag{
+  background:#e9eef6; color:#43566b; padding:2px 8px;
+  border-radius:999px; font-size:.72rem; font-weight:600
+}
+.add-circle{
+  width:36px; height:36px; border-radius:50%;
+  background:#0aa15b; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  margin-left:auto;
+}
+
+/* Salida actual (carrito sin precios) */
+.cart-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.chip{
+  background:#e6eef8; color:#32557a; border-radius:999px; padding:4px 10px; font-weight:600
+}
+.cart-list{max-height:46vh; overflow:auto; border-top:1px solid var(--border);}
+.cart-row{
+  display:grid; grid-template-columns:60px 1fr 40px;
+  gap:10px; padding:10px 14px; align-items:center;
+  border-bottom:1px solid var(--border);
+}
+.qty-box{display:flex; align-items:center; gap:6px}
+.qty-btn{
+  width:26px; height:26px; border-radius:6px;
+  border:1px solid var(--border); background:#fff;
+  display:flex; align-items:center; justify-content:center; cursor:pointer
+}
+.qty-input{
+  width:36px; text-align:center; border:1px solid var(--border);
+  border-radius:6px; height:26px; font-weight:600
+}
+.trash{
+  color:#fff; background:var(--red); width:30px; height:30px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer
+}
+.subtext{color:var(--muted); font-size:.85rem}
+
+/* Popover cantidad */
+.variant-pop{
+  position:absolute; right:16px; top:120px; width:320px;
+  background:#fff; border:1px solid var(--border); border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.15); overflow:hidden; display:none;
+}
+.variant-pop.show{display:block}
+.variant-section{padding:10px 12px; border-top:1px solid var(--border)}
+.label{margin-bottom:6px; font-weight:700; color:#334658}
+.row{display:flex; gap:8px; align-items:center}
+.row input[type="number"],
+.row input[type="text"]{
+  height:40px; border:1px solid var(--border); border-radius:8px; padding:0 10px; width:100%
+}
+.btn-primary{
+  background:#1c7ed6; border:0; color:#fff; border-radius:8px;
+  height:40px; font-weight:700; width:100%
+}
+.btn-primary:active{transform:translateY(1px)}
+
+/* Resumen / acciones */
+.summary{
+  padding:12px 14px; border-top:1px solid var(--border);
+  display:grid; grid-template-columns:1fr 1fr; gap:10px
+}
+.summary .box{
+  background:#f7f9fc; border:1px solid var(--border);
+  border-radius:10px; padding:10px 12px
+}
+.summary .k{color:var(--muted); font-size:.85rem}
+.summary .v{font-weight:800; font-size:1.1rem}
+.actions{
+  display:flex; gap:10px; flex-wrap:wrap;
+  padding:12px 14px; border-top:1px solid var(--border)
+}
+.btn-outline{
+  border:1px solid var(--border); background:#fff;
+  border-radius:8px; padding:10px 12px; font-weight:600
+}
+.btn-danger{
+  background:var(--red); color:#fff; border:0;
+  border-radius:8px; padding:12px 14px; font-weight:700
+}
+.btn-success{
+  background:#13795b; color:#fff; border:0;
+  border-radius:8px; padding:12px 14px; font-weight:700
+}
+
+/* Campos globales */
+.globals{
+  padding:10px 14px; border-top:1px solid var(--border);
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px
+}
+.globals input{
+  height:40px; border:1px solid var(--border);
+  border-radius:8px; padding:0 10px; width:100%
+}
+
+/* Responsive */
+@media (max-width:1100px){
+  .pos-main{grid-template-columns:1fr}
+  .variant-pop{position:fixed; left:50%; top:20%; transform:translateX(-50%); right:auto}
+  .globals{grid-template-columns:1fr}
+  .summary{grid-template-columns:1fr}
+}
+
+/* --- Modal cantidad (overlay) --- */
+body.modal-open { overflow: hidden; }
+
+.modal-backdrop{
+    position:fixed; inset:0;
+    background:rgba(20, 30, 40, .45);
+    backdrop-filter:saturate(120%) blur(1.5px);
+    display:none;
+    z-index: 999;
+}
+.modal-backdrop.show{ display:block; }
+
+.variant-pop{
+    position:fixed; left:50%; top:50%;
+    transform:translate(-50%, -50%);
+    width:360px; max-width:90vw;
+    background:#fff; border:1px solid var(--border);
+    border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+    overflow:hidden; display:none; z-index:1000;
+}
+.variant-pop.show{ display:block; }
+
+.variant-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px; border-bottom:1px solid var(--border);
+}
+.variant-title{ font-weight:800; color:#2a3c4d; }
+
+.btn-close{
+    width:34px; height:34px; border-radius:8px;
+    border:1px solid var(--border); background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-weight:800;
+}
+
+.variant-section{ padding:14px; }
+.label{ margin-bottom:8px; font-weight:700; color:#334658 }
+
+/* Número grande y centrado */
+#qtyInput{
+    height:64px;
+    border:2px solid var(--border);
+    border-radius:10px;
+    width:100%;
+    text-align:center;
+    font-weight:800;
+    font-size:2rem;
+    letter-spacing:.5px;
+}
+
+/* Botones de acción del modal */
+.variant-actions{
+    display:flex; gap:10px; padding:0 14px 14px 14px;
+}
+.btn-primary{
+    background:#1c7ed6; border:0; color:#fff; border-radius:10px;
+    height:44px; font-weight:800; width:100%;
+}
+.btn-secondary{
+    background:#e9eef6; color:#2f4052; border:0; border-radius:10px;
+    height:44px; font-weight:800; width:100%;
+}
+
+/* En pantallas grandes ya es centrado; en móviles mantenemos el mismo comportamiento */
+@media (max-width:1100px){
+    .variant-pop{ left:50%; top:50%; transform:translate(-50%,-50%); }
+}

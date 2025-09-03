@@ -5,126 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Inventario · Salida de productos</title>
 
-    <!-- (opcional) SB Admin 2 / FontAwesome si ya los sirves -->
+    <!-- SB Admin 2 / FontAwesome (si los usas en tu proyecto) -->
     <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" />
     <link href="/css/sb-admin-2.min.css" rel="stylesheet" />
 
+    <!-- Tu CSS separado -->
+    <link rel="stylesheet" th:href="@{/css/sacarproducto.css}" />
+
     <!-- CSRF (Spring Security) -->
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-
-    <style>
-        :root{
-            --slate:#233649;
-            --navy:#143b59;
-            --muted:#6b7a8c;
-            --bg:#f5f7fb;
-            --card:#ffffff;
-            --border:#e6e9ee;
-            --green:#198754;
-            --red:#dc3545;
-            --blue:#0d6efd;
-            --thumb:74px;
-        }
-        html,body{height:100%}
-        body{background:var(--bg); margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
-
-        /* Topbar */
-        .pos-topbar{
-            background:var(--slate); color:#fff; height:56px;
-            display:flex; align-items:center; padding:0 16px;
-            box-shadow:0 1px 0 rgba(0,0,0,.08);
-        }
-        .pos-title{font-weight:600; letter-spacing:.3px}
-
-        /* Shell */
-        .pos-shell{display:grid; grid-template-columns:56px 1fr; height:calc(100% - 56px);}
-        .pos-sidebar{
-            background:var(--navy); color:#b7c4d2;
-            display:flex; flex-direction:column; align-items:center; padding:8px 0;
-        }
-        .pos-side-btn{
-            width:40px; height:40px; border-radius:8px;
-            display:flex; align-items:center; justify-content:center;
-            margin:6px 0; cursor:pointer;
-        }
-        .pos-side-btn:hover{background:rgba(255,255,255,.08); color:#fff}
-
-        .pos-main{display:grid; grid-template-columns:1.2fr .8fr; gap:14px; padding:14px; overflow:auto;}
-
-        /* Cards */
-        .card{background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.03);}
-        .card-header{padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between}
-        .card-body{padding:14px}
-
-        /* Buscador */
-        .searchbar{display:flex; align-items:center; gap:10px;}
-        .searchbar input{
-            width:100%; height:40px; border:1px solid var(--border);
-            border-radius:8px; padding:0 12px; outline:none; background:#fff;
-        }
-        .icon-btn{width:40px; height:40px; border:1px solid var(--border); border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer}
-
-        /* Lista de productos */
-        .product-row{display:grid; grid-template-columns:86px 1fr 70px; gap:14px; padding:12px 14px; align-items:center; border-top:1px solid var(--border);}
-        .product-row:hover{background:#fafbfe}
-        .thumb{
-            width:var(--thumb); height:var(--thumb); border:1px solid var(--border); border-radius:12px; background:#f3f6fb;
-            display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;
-        }
-        .thumb img{max-width:100%; max-height:100%; object-fit:cover; display:block}
-        .thumb .no-img{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#7c8a9b; font-weight:600; font-size:.8rem; text-transform:uppercase}
-        .p-name{font-weight:600; margin-bottom:2px}
-        .p-tags{display:flex; gap:6px; flex-wrap:wrap}
-        .tag{background:#e9eef6; color:#43566b; padding:2px 8px; border-radius:999px; font-size:.72rem; font-weight:600}
-        .add-circle{
-            width:36px; height:36px; border-radius:50%; background:#0aa15b; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
-            margin-left:auto;
-        }
-
-        /* Salida actual (carrito sin precios) */
-        .cart-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
-        .chip{background:#e6eef8; color:#32557a; border-radius:999px; padding:4px 10px; font-weight:600}
-        .cart-list{max-height:46vh; overflow:auto; border-top:1px solid var(--border);}
-        .cart-row{display:grid; grid-template-columns:60px 1fr 40px; gap:10px; padding:10px 14px; align-items:center; border-bottom:1px solid var(--border);}
-        .qty-box{display:flex; align-items:center; gap:6px}
-        .qty-btn{width:26px; height:26px; border-radius:6px; border:1px solid var(--border); background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer}
-        .qty-input{width:36px; text-align:center; border:1px solid var(--border); border-radius:6px; height:26px; font-weight:600}
-        .trash{color:#fff; background:var(--red); width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer}
-        .subtext{color:#6b7a8c; font-size:.85rem}
-
-        /* Popover cantidad */
-        .variant-pop{
-            position:absolute; right:16px; top:120px; width:320px; background:#fff; border:1px solid var(--border); border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.15); overflow:hidden; display:none;
-        }
-        .variant-pop.show{display:block}
-        .variant-section{padding:10px 12px; border-top:1px solid var(--border)}
-        .label{margin-bottom:6px; font-weight:700; color:#334658}
-        .row{display:flex; gap:8px; align-items:center}
-        .row input[type="number"], .row input[type="text"]{height:40px; border:1px solid var(--border); border-radius:8px; padding:0 10px; width:100%}
-        .btn-primary{background:#1c7ed6; border:0; color:#fff; border-radius:8px; height:40px; font-weight:700; width:100%}
-        .btn-primary:active{transform:translateY(1px)}
-
-        /* Resumen / acciones */
-        .summary{padding:12px 14px; border-top:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr; gap:10px}
-        .summary .box{background:#f7f9fc; border:1px solid var(--border); border-radius:10px; padding:10px 12px}
-        .summary .k{color:#6b7a8c; font-size:.85rem} .summary .v{font-weight:800; font-size:1.1rem}
-        .actions{display:flex; gap:10px; flex-wrap:wrap; padding:12px 14px; border-top:1px solid var(--border)}
-        .btn-outline{border:1px solid var(--border); background:#fff; border-radius:8px; padding:10px 12px; font-weight:600}
-        .btn-danger{background:var(--red); color:#fff; border:0; border-radius:8px; padding:12px 14px; font-weight:700}
-        .btn-success{background:#13795b; color:#fff; border:0; border-radius:8px; padding:12px 14px; font-weight:700}
-
-        /* Campos globales */
-        .globals{padding:10px 14px; border-top:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
-        .globals input{height:40px; border:1px solid var(--border); border-radius:8px; padding:0 10px; width:100%}
-
-        @media (max-width:1100px){
-            .pos-main{grid-template-columns:1fr}
-            .variant-pop{position:fixed; left:50%; top:20%; transform:translateX(-50%); right:auto}
-            .globals{grid-template-columns:1fr}
-            .summary{grid-template-columns:1fr}
-        }
-    </style>
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
 </head>
 <body>
 
@@ -165,7 +55,7 @@
             </div>
 
             <div>
-                <!-- Loop de productos: usa tu Page<Producto> mapeado (p.id=codigo_barras, p.nombre, p.categoria, p.cantidad) -->
+                <!-- Loop de productos -->
                 <div class="product-row"
                      th:each="p : ${productos}"
                      th:attr="data-code=${p.id},data-name=${p.nombre},data-stock=${p.stockActual}">
@@ -197,7 +87,7 @@
                     <div>Usa el lector para agregar más rápido</div>
                 </div>
 
-                <!-- Paginación (opcional, si traes Page) -->
+                <!-- Paginación -->
                 <div th:if="${totalPages != null and totalPages > 1}" style="padding:0 14px 12px;">
                     <nav>
                         <ul class="pagination mb-0">
@@ -228,7 +118,6 @@
             </div>
 
             <div class="cart-list" id="cartList">
-                <!-- Items agregados aparecerán aquí -->
                 <div class="subtext" id="emptyHint" style="padding:14px;">Aún no hay productos en la salida.</div>
             </div>
 
@@ -244,7 +133,6 @@
                 </div>
             </div>
 
-
             <!-- Campos globales -->
             <div class="globals">
                 <input type="text" id="motivo" placeholder="Motivo (ej. Venta, Merma, Consumo interno)" />
@@ -259,162 +147,35 @@
                 <button class="btn-success" id="btnRegistrar"><i class="fas fa-check mr-1"></i> Registrar salida</button>
             </div>
 
-            <!-- Popover: cantidad + comentario corto -->
-            <div class="variant-pop" id="qtyPop">
+            <!-- Popover: cantidad -->
+            <!-- Popover/Modal: cantidad -->
+            <div class="variant-pop" id="qtyPop" role="dialog" aria-modal="true" aria-labelledby="qtyTitle">
+                <div class="variant-header">
+                    <div class="variant-title" id="qtyTitle">Agregar a salida</div>
+                    <button type="button" class="btn-close" id="qtyCloseBtn" aria-label="Cerrar">×</button>
+                </div>
+
                 <div class="variant-section">
                     <div class="label">Cantidad</div>
                     <div class="row">
                         <input type="number" id="qtyInput" min="1" step="1" value="1" />
                     </div>
                 </div>
-                <div class="variant-section">
-                    <button class="btn-primary" id="addToCartBtn">Agregar a salida</button>
+
+                <div class="variant-actions">
+                    <button class="btn-secondary" type="button" id="cancelQtyBtn">Cancelar</button>
+                    <button class="btn-primary" type="button" id="addToCartBtn">Confirmar</button>
                 </div>
             </div>
+
+            <!-- Backdrop -->
+            <div class="modal-backdrop" id="qtyBackdrop"></div>
+
         </section>
     </main>
 </div>
 
-<!-- JS: demo front para manejar la lista sin precios -->
-<script>
-    // CSRF for fetch
-    const CSRF_TOKEN = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || '';
-    const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
-
-    const pop = document.getElementById('qtyPop');
-    let currentProduct = null;
-    const cart = new Map(); // key: code, value: {name, qty}
-
-    function updateSummary(){
-        const kinds = cart.size;
-        let units = 0;
-        cart.forEach(v => units += v.qty);
-        document.getElementById('kinds').textContent = kinds;
-        document.getElementById('units').textContent = units;
-        document.getElementById('emptyHint').style.display = kinds === 0 ? 'block' : 'none';
-    }
-
-    function renderCart(){
-        const list = document.getElementById('cartList');
-        list.innerHTML = '';
-        if(cart.size === 0){
-            const hint = document.createElement('div');
-            hint.className = 'subtext';
-            hint.style.padding = '14px';
-            hint.textContent = 'Aún no hay productos en la salida.';
-            list.appendChild(hint);
-            updateSummary();
-            return;
-        }
-        cart.forEach((v, code) => {
-            const row = document.createElement('div');
-            row.className = 'cart-row';
-            row.innerHTML = `
-          <div class="qty-box">
-            <div class="qty-btn" data-dec>-</div>
-            <input class="qty-input" value="\${v.qty}" />
-            <div class="qty-btn" data-inc>+</div>
-          </div>
-          <div>
-            <div style="font-weight:600">\${v.name}</div>
-            <div class="subtext">Código: \${code}</div>
-          </div>
-          <div class="trash" title="Quitar"><i class="fas fa-times"></i></div>
-        `;
-            // Handlers
-            row.querySelector('[data-dec]').addEventListener('click', ()=>{ if(v.qty>1){ v.qty--; row.querySelector('.qty-input').value=v.qty; updateSummary(); }});
-            row.querySelector('[data-inc]').addEventListener('click', ()=>{ v.qty++; row.querySelector('.qty-input').value=v.qty; updateSummary(); });
-            row.querySelector('.qty-input').addEventListener('change', (e)=>{ const n = Math.max(1, parseInt(e.target.value||'1',10)); v.qty=n; e.target.value=n; updateSummary(); });
-            row.querySelector('.trash').addEventListener('click', ()=>{ cart.delete(code); renderCart(); });
-            list.appendChild(row);
-        });
-        updateSummary();
-    }
-
-    // Abrir popover desde lista de productos
-    function wireOpenQtyButtons(scope){
-        (scope || document).querySelectorAll('[data-open-qty]').forEach(btn=>{
-            btn.addEventListener('click', (e)=>{
-                const row = e.currentTarget.closest('.product-row');
-                currentProduct = {
-                    code: row.getAttribute('data-code'),
-                    name: row.getAttribute('data-name')
-                };
-                document.getElementById('qtyInput').value = 1;
-                pop.classList.add('show');
-            });
-        });
-    }
-    wireOpenQtyButtons();
-
-    // Cerrar pop si clic fuera
-    document.addEventListener('click',(e)=>{
-        if(pop.classList.contains('show')){
-            const inside = pop.contains(e.target) || e.target.closest('[data-open-qty]');
-            if(!inside) pop.classList.remove('show');
-        }
-    });
-
-    // Agregar al "carrito" (salida)
-    document.getElementById('addToCartBtn').addEventListener('click', ()=>{
-        if(!currentProduct) return;
-        const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value||'1',10));
-        if(cart.has(currentProduct.code)){
-            cart.get(currentProduct.code).qty += qty;
-        } else {
-            cart.set(currentProduct.code, {name: currentProduct.name, qty});
-        }
-        pop.classList.remove('show');
-        renderCart();
-    });
-
-    // Vaciar
-    document.getElementById('btnVaciar').addEventListener('click', ()=>{
-        cart.clear(); renderCart();
-    });
-
-    // Registrar (envío batch al backend)
-    document.getElementById('btnRegistrar').addEventListener('click', async ()=>{
-        const motivo = document.getElementById('motivo').value.trim();
-        const referencia = document.getElementById('referencia').value.trim();
-        const usuario = document.getElementById('usuario').value.trim();
-
-        if(cart.size === 0){
-            alert('No hay productos en la salida.');
-            return;
-        }
-
-        // Construir payload
-        const items = Array.from(cart.entries()).map(([code, v]) => ({
-            codigo: code,
-            cantidad: v.qty
-        }));
-
-        try{
-            const res = await fetch('/salidas/registrar-lote', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    [CSRF_HEADER]: CSRF_TOKEN
-                },
-                body: JSON.stringify({ items, motivo, referencia, usuario })
-            });
-            if(!res.ok){
-                const txt = await res.text();
-                throw new Error(txt || 'Error al registrar salida.');
-            }
-            const data = await res.json(); // {ok:true, registrados: n, detalles:[...]}
-            alert(`Salida registrada.\nLíneas procesadas: ${data.registrados}`);
-            cart.clear(); renderCart();
-            // Opcional: recargar página para refrescar stocks
-            // location.reload();
-        }catch(err){
-            alert('Error: ' + (err.message || err));
-        }
-    });
-
-    // Inicial
-    renderCart();
-</script>
+<!-- Tu JS separado -->
+<script th:src="@{/js/salidas.js}"></script>
 </body>
 </html>
