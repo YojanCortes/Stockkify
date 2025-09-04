@@ -14,7 +14,7 @@ public class UrlController {
 
     @GetMapping("/register")
     public String showRegister() {
-        return "register"; // templates/register.html
+        return "empleadosform"; // templates/empleadosform.html
     }
 
     // ⛔️ NO definir aquí @GetMapping("/empleados")

@@ -7,8 +7,11 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Usuario {
 
     @Id
@@ -25,6 +28,7 @@ public class Usuario {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Builder.Default
     @Column(name = "requiere_cambio_password", nullable = false)
     private Boolean requiereCambioPassword = false;
 
@@ -32,10 +36,14 @@ public class Usuario {
     @Column(nullable = false, length = 120)
     private String nombre; // puedes guardar "Nombre Apellido"
 
+    @Column(length = 120)   // 👈 nuevo campo
+    private String profesion;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Rol rol;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean activo = true;
 
@@ -48,9 +56,6 @@ public class Usuario {
 
     @Column(name = "ultimo_acceso")
     private LocalDateTime ultimoAcceso;
-
-    @Column(length = 120)         // null permitido
-    private String profesion;
 
     @Column(name = "reset_token", length = 120)
     private String resetToken;
@@ -68,7 +73,6 @@ public class Usuario {
     private LocalDateTime actualizadoEn;
 
     // --- Helpers opcionales ---
-
     public String getNombreCorto() {
         if (nombre == null) return "";
         String[] parts = nombre.trim().split("\\s+");
