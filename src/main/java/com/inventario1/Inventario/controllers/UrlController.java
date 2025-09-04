@@ -1,3 +1,4 @@
+// src/main/java/com/inventario1/Inventario/controllers/UrlController.java
 package com.inventario1.Inventario.controllers;
 
 import org.springframework.stereotype.Controller;
@@ -8,16 +9,16 @@ public class UrlController {
 
     @GetMapping("/")
     public String home() {
-        // Renderiza la plantilla index.html en src/main/resources/templates/
-        return "index";
+        return "index"; // templates/index.html
     }
 
     @GetMapping("/register")
     public String showRegister() {
-        // Renderiza la plantilla register.html en src/main/resources/templates/
-        return "register";
+        return "register"; // templates/register.html
     }
 
-    // OJO: /salidas lo maneja SalidaController
-    // OJO: /buscar lo maneja BuscarController
+    // ⛔️ NO definir aquí @GetMapping("/empleados")
+    // Si quieres desde aquí ir a empleados, usa:
+    // @GetMapping("/empleadosredir")
+    // public String goEmpleados() { return "redirect:/empleados"; }
 }

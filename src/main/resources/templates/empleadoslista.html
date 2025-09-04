@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Empleados — Lista</title>
+
+    <!-- Estilos (rutas con Thymeleaf) -->
+    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" rel="stylesheet">
+    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet" />
+
+    <style>
+        /* Animación suave al pasar el mouse (crecer) */
+        .card.card-zoom { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .card.card-zoom:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0.75rem 1.5rem rgba(58,59,69,.25); }
+
+        /* Contenedor de imagen/avatar */
+        .avatar-box { height: 180px; }
+
+        /* Placeholder “Sin imagen” */
+        .avatar-placeholder {
+            width: 110px; height: 110px; border-radius: 50%;
+            background: #f8f9fc; border: 2px dashed #d1d3e2; color: #858796;
+            font-weight: 600; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Botón detalles más notorio en hover */
+        .btn-outline-primary:hover { color: #fff !important; }
+
+        /* Badges de roles */
+        .badge-role { font-size: .75rem; letter-spacing: .3px; }
+
+        /* Profesión encima de la imagen */
+        .profesion-title {
+            font-weight: 700;               /* negrita */
+            color: #4e73df;                 /* acorde a sb-admin-2 */
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            font-size: .85rem;
+            padding: .75rem 1rem 0.25rem;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+<div id="wrapper">
+
+    <!-- Sidebar desde menugeneral.html -->
+    <div th:replace="~{menugeneral :: sidebar}"></div>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                    <i class="fa fa-bars"></i>
+                </button>
+
+                <!-- Buscador -->
+                <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search"
+                      th:action="@{/empleados}" method="get">
+                    <div class="input-group">
+                        <input name="q" class="form-control bg-light border-0 small"
+                               th:value="${q}" type="text" placeholder="Buscar empleado..."
+                               aria-label="Buscar" aria-describedby="btnBuscar">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" id="btnBuscar" type="submit">
+                                <i class="fas fa-search fa-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <ul class="navbar-nav ml-auto">
+                    <!-- Espacio para menú de usuario, notificaciones, etc. -->
+                </ul>
+            </nav>
+            <!-- /Topbar -->
+
+            <!-- Contenido -->
+            <div class="container-fluid">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h1 class="h3 mb-0 text-gray-800">Empleados</h1>
+                    <a class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" th:href="@{/empleados/nuevo}">
+                        <i class="fas fa-user-plus fa-sm text-white-50"></i> Nuevo empleado
+                    </a>
+                </div>
+
+                <p class="text-muted mb-3">
+                    Mostrando personal de <strong>bodega</strong>, <strong>barra</strong> y <strong>supervisión</strong>.
+                </p>
+
+                <!-- Grid de tarjetas -->
+                <div class="row">
+                    <!-- Tarjeta por empleado (la lista ya viene filtrada desde el backend) -->
+                    <div class="col-xl-3 col-lg-4 col-md-6 mb-4" th:each="empleado : ${empleados}">
+                        <div class="card border-0 shadow h-100 card-zoom">
+
+                            <!-- PROFESIÓN: arriba de la imagen, en negrita -->
+                            <p class="profesion-title mb-0 text-center"
+                               th:text="${empleado.profesion != null && !#strings.isEmpty(empleado.profesion) ? empleado.profesion : 'Sin profesión'}">
+                                Sin profesión
+                            </p>
+
+                            <!-- Imagen/Avatar: placeholder -->
+                            <div class="card-img-top d-flex align-items-center justify-content-center avatar-box bg-light">
+                                <div class="avatar-placeholder">
+                                    <span>Sin&nbsp;imagen</span>
+                                </div>
+                            </div>
+
+                            <div class="card-body text-center">
+                                <!-- Nombre -->
+                                <h5 class="card-title mb-2">
+                                    <span th:text="${empleado.nombre}">Nombre</span>
+                                </h5>
+
+                                <!-- Botón Ver detalles: DEBAJO del nombre -->
+                                <a class="btn btn-outline-primary btn-sm mb-2"
+                                   th:href="@{'/empleados/' + ${empleado.id}}">
+                                    <i class="fas fa-eye mr-1"></i> Ver detalles
+                                </a>
+
+                                <!-- Badge según rol (enum) -->
+                                <div class="mt-2">
+                                    <span class="badge badge-info badge-role"
+                                          th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).BODEGUERO}">
+                                        BODEGUERO
+                                    </span>
+                                    <span class="badge badge-primary badge-role"
+                                          th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).BARRA}">
+                                        BARRA
+                                    </span>
+                                    <span class="badge badge-warning badge-role text-dark"
+                                          th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).SUPERVISOR}">
+                                        SUPERVISOR
+                                    </span>
+                                </div>
+
+                                <!-- Extra: muestra username en pequeño -->
+                                <div class="text-muted mt-2 small" th:text="${empleado.username}">username</div>
+                            </div>
+
+                            <!-- Footer vacío (opcional) -->
+                            <div class="card-footer bg-white border-0 text-center"></div>
+                        </div>
+                    </div>
+
+                    <!-- Si no hay resultados -->
+                    <div class="col-12" th:if="${#lists.isEmpty(empleados)}">
+                        <div class="alert alert-light border shadow-sm">
+                            No se encontraron empleados.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paginación segura (sin números negativos y sin ternarios en URL) -->
+                <div class="d-flex align-items-center justify-content-between" th:if="${totalPages != null}">
+                    <div class="text-muted small">
+                        Página <span th:text="${page + 1}">1</span> de <span th:text="${totalPages}">1</span>
+                    </div>
+
+                    <nav aria-label="Paginación">
+                        <ul class="pagination mb-0">
+                            <!-- Anterior habilitado -->
+                            <li class="page-item" th:if="${page > 0}">
+                                <a class="page-link"
+                                   th:href="@{/empleados(page=${page - 1}, size=${size}, q=${q})}"
+                                   aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <!-- Anterior deshabilitado -->
+                            <li class="page-item disabled" th:if="${page == 0}">
+                                <a class="page-link" href="#" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+
+                            <!-- Actual -->
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" th:text="${page + 1}">1</a>
+                            </li>
+
+                            <!-- Siguiente habilitado -->
+                            <li class="page-item" th:if="${page + 1 < totalPages}">
+                                <a class="page-link"
+                                   th:href="@{/empleados(page=${page + 1}, size=${size}, q=${q})}"
+                                   aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <!-- Siguiente deshabilitado -->
+                            <li class="page-item disabled" th:if="${page + 1 >= totalPages}">
+                                <a class="page-link" href="#" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+
+            </div>
+            <!-- /Contenido -->
+        </div>
+
+        <!-- Footer -->
+        <footer class="sticky-footer bg-white">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>&copy; Inventario 2025</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- Scripts -->
+<script th:src="@{/vendor/jquery/jquery.min.js}"></script>
+<script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
+<script th:src="@{/js/sb-admin-2.min.js}"></script>
+</body>
+</html>
