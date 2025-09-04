@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository;
 import java.util.Collection;
 import java.util.List;
 
+
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findByRolInAndActivoTrueOrderByNombreAsc(Collection<Rol> roles);
+    List<Usuario> findByActivoTrueOrderByNombreAsc(); // <- deja este para la prueba del paso 1
 }

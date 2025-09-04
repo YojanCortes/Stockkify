@@ -49,6 +49,9 @@ public class Usuario {
     @Column(name = "ultimo_acceso")
     private LocalDateTime ultimoAcceso;
 
+    @Column(length = 120)         // null permitido
+    private String profesion;
+
     @Column(name = "reset_token", length = 120)
     private String resetToken;
 
