@@ -11,6 +11,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,8 +27,11 @@ public class SalidaController {
         this.inventarioService = inventarioService;
     }
 
+    /** Lista en sesión de códigos de barras seleccionados. */
     @ModelAttribute("seleccionIds")
-    public List<String> seleccionIds() { return new ArrayList<>(); }
+    public List<String> seleccionIds() {
+        return new ArrayList<>();
+    }
 
     @GetMapping({"", "/"})
     public String root() { return "redirect:/salidas/nueva"; }
@@ -39,11 +44,14 @@ public class SalidaController {
                         Model model,
                         @ModelAttribute("seleccionIds") List<String> seleccionIds) {
 
-        // Producto puntual por código (flujo original)
+        // Normaliza size
+        if (size <= 0) size = 12;
+
+        // Si viene un código puntual (flujo original): busca por codigoBarras
         if (codigo != null && !codigo.isBlank()) {
             String cod = codigo.trim();
             try {
-                Producto p = inventarioService.leerProducto(cod);
+                Producto p = inventarioService.leerProducto(cod); // busca por código de barras
                 model.addAttribute("producto", p);
                 model.addAttribute("codigo", p.getCodigoBarras());
             } catch (Exception e) {
@@ -54,16 +62,25 @@ public class SalidaController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
         Page<Producto> pagina = (q != null && !q.isBlank())
-                ? inventarioService.buscarProductos(q.trim(), pageable)   // <-- usa service.search(...)
+                ? inventarioService.buscarProductos(q.trim(), pageable)   // usa búsqueda por nombre o código
                 : inventarioService.listarProductos(pageable);
 
-        List<ProductoView> productosView = pagina.getContent().stream().map(this::toView).collect(Collectors.toList());
+        List<ProductoView> productosView = pagina.getContent()
+                .stream()
+                .map(this::toView)
+                .collect(Collectors.toList());
 
+        // Reconstruir selección (los ids en sesión son códigos de barras)
         List<ProductoView> seleccionados = seleccionIds.isEmpty()
                 ? Collections.emptyList()
-                : seleccionIds.stream().map(id -> {
-            try { return inventarioService.leerProducto(id); } catch (Exception e) { return null; }
-        }).filter(Objects::nonNull).map(this::toView).collect(Collectors.toList());
+                : seleccionIds.stream()
+                .map(idCodigoBarras -> {
+                    try { return inventarioService.leerProducto(idCodigoBarras); }
+                    catch (Exception e) { return null; }
+                })
+                .filter(Objects::nonNull)
+                .map(this::toView)
+                .collect(Collectors.toList());
 
         model.addAttribute("q", q);
         model.addAttribute("productos", productosView);
@@ -76,30 +93,39 @@ public class SalidaController {
         return "salida_nueva";
     }
 
+    /** Agrega un producto (por código de barras) a la selección en sesión. */
     @PostMapping("/seleccionar")
-    public String seleccionar(@RequestParam("id") String id,
+    public String seleccionar(@RequestParam("id") String idCodigoBarras,
                               @ModelAttribute("seleccionIds") List<String> seleccionIds,
                               @RequestParam(value = "q", required = false) String q) {
-        if (!seleccionIds.contains(id) && seleccionIds.size() < 3) {
-            seleccionIds.add(id);
+        if (idCodigoBarras != null && !idCodigoBarras.isBlank()
+                && !seleccionIds.contains(idCodigoBarras)
+                && seleccionIds.size() < 3) {
+            seleccionIds.add(idCodigoBarras.trim());
         }
-        return "redirect:/salidas/nueva" + (q != null && !q.isBlank() ? "?q=" + q : "");
+        return "redirect:/salidas/nueva" + buildQ(q);
     }
 
+    /** Quita un producto (por código de barras) de la selección en sesión. */
     @PostMapping("/quitar")
-    public String quitar(@RequestParam("id") String id,
+    public String quitar(@RequestParam("id") String idCodigoBarras,
                          @ModelAttribute("seleccionIds") List<String> seleccionIds,
                          @RequestParam(value = "q", required = false) String q) {
-        seleccionIds.remove(id);
-        return "redirect:/salidas/nueva" + (q != null && !q.isBlank() ? "?q=" + q : "");
+        seleccionIds.remove(idCodigoBarras);
+        return "redirect:/salidas/nueva" + buildQ(q);
     }
 
     @PostMapping("/continuar")
     public String continuar(@ModelAttribute("seleccionIds") List<String> seleccionIds, Model model) {
         if (seleccionIds.isEmpty()) return "redirect:/salidas/nueva";
-        List<ProductoView> seleccionados = seleccionIds.stream().map(id -> {
-            try { return inventarioService.leerProducto(id); } catch (Exception e) { return null; }
-        }).filter(Objects::nonNull).map(this::toView).collect(Collectors.toList());
+        List<ProductoView> seleccionados = seleccionIds.stream()
+                .map(idCodigoBarras -> {
+                    try { return inventarioService.leerProducto(idCodigoBarras); }
+                    catch (Exception e) { return null; }
+                })
+                .filter(Objects::nonNull)
+                .map(this::toView)
+                .collect(Collectors.toList());
         model.addAttribute("seleccionados", seleccionados);
         return "salida_confirmar";
     }
@@ -107,25 +133,32 @@ public class SalidaController {
     // ------------ helpers (ViewModel) ------------
     private ProductoView toView(Producto p) {
         return ProductoView.builder()
-                .id(nz(p.getCodigoBarras()))
+                .id(nz(p.getCodigoBarras()))          // id lógico en la vista = código de barras
                 .nombre(nz(p.getNombre()))
                 .sku(nz(p.getCodigoBarras()))
                 .marca(p.getMarca())
                 .categoria(p.getCategoria())
-                .stockActual(p.getCantidad() == null ? 0 : p.getCantidad())
+                .stockActual(p.getStockActual() == null ? 0 : p.getStockActual())
                 .stockMinimo(p.getStockMinimo())
                 .build();
     }
+
+    private String buildQ(String q) {
+        if (q == null || q.isBlank()) return "";
+        String enc = URLEncoder.encode(q, StandardCharsets.UTF_8);
+        return "?q=" + enc;
+    }
+
     private String nz(String s){ return s == null ? "" : s; }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     private static class ProductoView {
-        private String id;          // codigo_barras
+        private String id;           // codigo_barras (id lógico para la vista)
         private String nombre;
-        private String sku;         // codigo_barras
+        private String sku;          // codigo_barras
         private String marca;
         private String categoria;
-        private Integer stockActual; // cantidad
+        private Integer stockActual; // stock_actual
         private Integer stockMinimo; // stock_minimo
     }
 }

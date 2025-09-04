@@ -2,14 +2,18 @@ package com.inventario1.Inventario.web;
 
 import com.inventario1.Inventario.files.FileStorageService;
 import com.inventario1.Inventario.repos.ProductoRepository;
-import org.springframework.core.io.*;
-import org.springframework.http.*;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.*;
+import java.nio.file.Path;
 
 @Controller
 public class ProductoImagenController {
@@ -48,26 +52,31 @@ public class ProductoImagenController {
     // Formulario para subir imagen
     @GetMapping("/admin/productos/{codigo}/imagen")
     public String formImagen(@PathVariable String codigo, Model model) {
+        boolean existe = repo.existsByCodigoBarras(codigo); // <-- usar barcode
         model.addAttribute("codigo", codigo);
-        model.addAttribute("existe", repo.existsById(codigo));
+        model.addAttribute("existe", existe);
         return "producto_imagen";
     }
 
     // Subir imagen (jpg/png/webp)
     @PostMapping(value = "/admin/productos/{codigo}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String subirImagen(@PathVariable String codigo, @RequestParam("file") MultipartFile file, Model model) {
+    public String subirImagen(@PathVariable String codigo,
+                              @RequestParam("file") MultipartFile file,
+                              Model model) {
         try {
-            if (!repo.existsById(codigo)) {
+            boolean existe = repo.existsByCodigoBarras(codigo); // <-- usar barcode
+            if (!existe) {
                 model.addAttribute("error", "El producto " + codigo + " no existe");
             } else {
                 storage.saveForCodigo(codigo, file);
                 model.addAttribute("ok", "Imagen actualizada para " + codigo);
             }
+            model.addAttribute("existe", existe);
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
+            model.addAttribute("existe", repo.existsByCodigoBarras(codigo));
         }
         model.addAttribute("codigo", codigo);
-        model.addAttribute("existe", repo.existsById(codigo));
         return "producto_imagen";
     }
 }

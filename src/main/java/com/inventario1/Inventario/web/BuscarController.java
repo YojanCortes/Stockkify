@@ -22,13 +22,15 @@ public class BuscarController {
         List<Producto> productos;
 
         if (q == null || q.isBlank()) {
+            // si no hay búsqueda, devuelve los primeros 200
             productos = productoRepository.findTop200ByOrderByCodigoBarrasAsc();
         } else {
             String query = q.trim();
-            if (query.matches("\\d{8,14}")) { // parece código de barras → prueba exacto
-                Optional<Producto> p = productoRepository.findById(query);
+            if (query.matches("\\d{8,14}")) { // parece código de barras → busca exacto
+                Optional<Producto> p = productoRepository.findByCodigoBarras(query);
                 productos = p.map(List::of).orElseGet(() -> productoRepository.search(query));
             } else {
+                // búsqueda parcial por nombre o código
                 productos = productoRepository.search(query);
             }
         }

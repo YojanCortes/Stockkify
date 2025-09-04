@@ -1,54 +1,46 @@
 package com.inventario1.Inventario.models;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-
+import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(
-        name = "movimientos_inventario",
-        indexes = {
-                @Index(name = "idx_mov_prod_fecha", columnList = "producto_codigo, creado_en")
-        }
-)
-@Data
+@Table(name = "movimientos_inventario")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class MovimientoInventario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Relación con Producto (FK a productos.codigo_barras)
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "producto_codigo",               // columna existente en la tabla
-            referencedColumnName = "codigo_barras", // PK de Producto
-            nullable = false
-    )
-    private Producto producto;
+    private LocalDateTime fecha;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    private TipoMovimiento tipo; // ENTRADA / SALIDA / AJUSTE
-
     @Column(nullable = false)
-    private Integer cantidad; // positiva
+    private TipoMovimiento tipo;
 
-    @Column(length = 120)
-    private String motivo;
+    private String comentario;
 
-    @Column(length = 120)
-    private String referencia;
-
-    @Column(length = 80)
-    private String usuario;
-
-    @Column(name = "stock_resultante", nullable = false)
-    private Integer stockResultante;
-
-    @CreationTimestamp
     @Column(name = "creado_en", updatable = false)
     private LocalDateTime creadoEn;
+
+    @Column(name = "actualizado_en")
+    private LocalDateTime actualizadoEn;
+
+    @OneToMany(mappedBy = "movimiento", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MovimientoLinea> lineas;
+
+    @PrePersist
+    public void prePersist() {
+        var now = LocalDateTime.now();
+        if (fecha == null) fecha = now;
+        creadoEn = now;
+        actualizadoEn = now;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        actualizadoEn = LocalDateTime.now();
+    }
 }

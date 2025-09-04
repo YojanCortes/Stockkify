@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Inventario · Salida de productos</title>
 
-    <!-- SB Admin 2 / FontAwesome (si los usas en tu proyecto) -->
-    <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" />
-    <link href="/css/sb-admin-2.min.css" rel="stylesheet" />
-
-    <!-- Tu CSS separado -->
-    <link rel="stylesheet" th:href="@{/css/sacarproducto.css}" />
+    <!-- Estilos -->
+    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet" />
+    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet" />
+    <link th:href="@{/css/sacarproducto.css}" rel="stylesheet" />
 
     <!-- CSRF (Spring Security) -->
     <meta name="_csrf" th:content="${_csrf.token}" />
@@ -41,11 +39,13 @@
     <main class="pos-main">
         <!-- IZQUIERDA: Lista de productos -->
         <section class="card">
-            <!-- FORM: Agregar por código -->
             <div class="card-body">
+                <!-- Formulario para agregar por código -->
                 <form id="addByCodeForm" class="add-form" autocomplete="off">
                     <input type="text" id="codeInput" name="code" placeholder="Escanea o ingresa código de barras…" />
-                    <button class="icon-btn" title="Agregar" type="submit"><i class="fas fa-plus"></i></button>
+                    <button class="icon-btn" title="Agregar" type="submit">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </form>
                 <div id="formMsg" class="form-msg" aria-live="polite"></div>
             </div>
@@ -72,7 +72,8 @@
                             <span class="tag" th:if="${p.marca != null}" th:text="${p.marca}">Marca</span>
                         </div>
                         <div class="subtext">
-                            Código: <span th:text="${p.id}">000</span> · Disp.: <span th:text="${p.stockActual}">0</span>
+                            Código: <span th:text="${p.id}">000</span> ·
+                            Disp.: <span th:text="${p.stockActual}">0</span>
                         </div>
                     </div>
                     <div class="add-circle" data-open-qty title="Agregar a salida"><i class="fas fa-plus"></i></div>
@@ -83,7 +84,9 @@
                     <div>
                         Mostrando
                         <span th:text="${#lists.size(productos)}">0</span>
-                        <span th:if="${totalElements != null}">de <span th:text="${totalElements}">0</span></span>
+                        <span th:if="${totalElements != null}">
+              de <span th:text="${totalElements}">0</span>
+            </span>
                     </div>
                     <div>Usa el lector para agregar más rápido</div>
                 </div>
@@ -97,8 +100,7 @@
                             </li>
                             <li class="page-item" th:each="i : ${#numbers.sequence(0, (totalPages - 1))}"
                                 th:classappend="${i == page} ? 'active' : ''">
-                                <a class="page-link" th:text="${i + 1}"
-                                   th:href="@{/salidas/nueva(q=${q}, page=${i})}">1</a>
+                                <a class="page-link" th:text="${i + 1}" th:href="@{/salidas/nueva(q=${q}, page=${i})}">1</a>
                             </li>
                             <li class="page-item" th:classappend="${(page + 1) >= totalPages} ? 'disabled' : ''">
                                 <a class="page-link" th:href="@{/salidas/nueva(q=${q}, page=${page + 1})}">Siguiente</a>
@@ -114,12 +116,16 @@
             <div class="card-body">
                 <div class="cart-head">
                     <strong>Salida actual</strong>
-                    <span class="chip">Usuario: <span th:text="${usuarioActual != null ? usuarioActual : 'Invitado'}">Invitado</span></span>
+                    <span class="chip">Usuario:
+            <span th:text="${usuarioActual != null ? usuarioActual : 'Invitado'}">Invitado</span>
+          </span>
                 </div>
             </div>
 
             <div class="cart-list" id="cartList">
-                <div class="subtext" id="emptyHint" style="padding:14px;">Aún no hay productos en la salida.</div>
+                <div class="subtext" id="emptyHint" style="padding:14px;">
+                    Aún no hay productos en la salida.
+                </div>
             </div>
 
             <!-- Resumen -->
@@ -136,47 +142,44 @@
 
             <!-- Campos globales -->
             <div class="globals">
-                <input type="text" id="motivo" placeholder="Motivo (ej. Venta, Merma, Consumo interno)" />
+                <input type="text" id="motivo" placeholder="Motivo (ej. Venta, Merma…)" />
                 <input type="text" id="referencia" placeholder="Referencia (N° doc, nota…)" />
                 <input type="text" id="usuario" placeholder="Usuario (opcional)" th:value="${usuarioActual}" />
             </div>
 
             <!-- Acciones -->
             <div class="actions">
-                <button class="btn-outline" id="btnVaciar"><i class="fas fa-trash-alt mr-1"></i> Vaciar</button>
-                <div style="margin-left:auto"></div>
-                <button class="btn-success" id="btnRegistrar"><i class="fas fa-check mr-1"></i> Registrar salida</button>
+                <button type="button" class="btn-outline" id="btnVaciar" title="Vaciar carrito de salida">
+                    <i class="fas fa-trash-alt mr-1"></i> Vaciar
+                </button>
+                <div class="flex-spacer" style="flex:1"></div>
+                <button type="button" class="btn-success" id="btnRegistrar" title="Registrar salida en el sistema">
+                    <i class="fas fa-check mr-1"></i> Registrar salida
+                </button>
             </div>
 
-            <!-- Popover: cantidad -->
-            <!-- Popover/Modal: cantidad -->
-            <div class="variant-pop" id="qtyPop" role="dialog" aria-modal="true" aria-labelledby="qtyTitle">
-                <div class="variant-header">
-                    <div class="variant-title" id="qtyTitle">Agregar a salida</div>
-                    <button type="button" class="btn-close" id="qtyCloseBtn" aria-label="Cerrar">×</button>
-                </div>
-
+            <!-- Modal cantidad -->
+            <div class="variant-pop" id="qtyPop">
                 <div class="variant-section">
                     <div class="label">Cantidad</div>
                     <div class="row">
                         <input type="number" id="qtyInput" min="1" step="1" value="1" />
                     </div>
                 </div>
-
-                <div class="variant-actions">
-                    <button class="btn-secondary" type="button" id="cancelQtyBtn">Cancelar</button>
-                    <button class="btn-primary" type="button" id="addToCartBtn">Confirmar</button>
+                <div class="variant-section">
+                    <button class="btn-primary" id="addToCartBtn">Agregar a salida</button>
                 </div>
             </div>
 
             <!-- Backdrop -->
             <div class="modal-backdrop" id="qtyBackdrop"></div>
-
         </section>
     </main>
 </div>
 
-<!-- Tu JS separado -->
+<!-- Scripts -->
+<script th:src="@{/vendor/fontawesome-free/js/all.min.js}"></script>
 <script th:src="@{/js/salidas.js}"></script>
 </body>
 </html>
+<

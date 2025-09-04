@@ -14,8 +14,8 @@
     // --- Estado / refs modal ---
     const pop = document.getElementById('qtyPop');            // modal
     const backdrop = document.getElementById('qtyBackdrop');  // overlay
-    const btnClose = document.getElementById('qtyCloseBtn');  // botón X
-    const btnCancel = document.getElementById('cancelQtyBtn');// botón Cancelar
+    const btnClose = document.getElementById('qtyCloseBtn');  // botón X (si existe en tu HTML)
+    const btnCancel = document.getElementById('cancelQtyBtn');// botón Cancelar (si existe)
     const qtyInputEl = document.getElementById('qtyInput');   // input cantidad
 
     let currentProduct = null;
@@ -219,8 +219,8 @@
                     headers: { 'Accept': 'application/json' }
                 });
                 if (res.ok) {
-                    const p = await res.json(); // { id, nombre, ... }
-                    const codeStr = String(p.id ?? code);
+                    const p = await res.json(); // { codigoBarras, nombre, ... }
+                    const codeStr = String(p.codigoBarras ?? code);
                     const nameStr = String(p.nombre ?? 'Producto');
                     if (cart.has(codeStr)) {
                         cart.get(codeStr).qty += 1;
