@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Registrar empleado</title>
+    <title>Registro empleados</title>
 
     <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" rel="stylesheet">
@@ -21,7 +21,7 @@
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
 
-            <!-- Topbar simple (inline, no fragmento) -->
+            <!-- Topbar -->
             <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
                 <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
                     <i class="fa fa-bars"></i>
@@ -33,16 +33,18 @@
             <!-- Contenido -->
             <div class="container-fluid">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h1 class="h3 mb-0 text-gray-800" th:text="${id != null ? 'Editar empleado' : 'Registrar empleado'}">Registrar empleado</h1>
+                    <!-- Título fijo solicitado -->
+                    <h1 class="h3 mb-0 text-gray-800">Registro empleados</h1>
                     <a class="btn btn-sm btn-secondary shadow-sm" th:href="@{/empleados}">
                         <i class="fas fa-list fa-sm text-white-50"></i> Volver a la lista
                     </a>
                 </div>
 
                 <div class="row">
-                    <div class="col-lg-8">
+                    <div class="col-lg-12">
                         <div class="card shadow mb-4">
-                            <div class="card-header py-3">
+                            <div class="card-header py-3 d-flex align-items-center">
+                                <i class="fas fa-user-plus mr-2 text-primary"></i>
                                 <h6 class="m-0 font-weight-bold text-primary">Datos del empleado</h6>
                             </div>
                             <div class="card-body">
@@ -52,71 +54,110 @@
                                       method="post"
                                       th:object="${form}">
 
-                                <!-- CSRF -->
+                                    <!-- CSRF -->
                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-                                    <!-- Username -->
-                                    <div class="form-group">
-                                        <label for="username">Usuario</label>
-                                        <input id="username" type="text" class="form-control" placeholder="usuario"
-                                               th:field="*{username}">
-                                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('username')}"
-                                             th:errors="*{username}">Error</div>
+                                    <!-- ====== Fila 1 ====== -->
+                                    <div class="form-row">
+                                        <!-- Usuario -->
+                                        <div class="form-group col-md-6">
+                                            <label for="username">Usuario</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                                </div>
+                                                <input id="username" type="text" class="form-control" placeholder="usuario"
+                                                       th:field="*{username}">
+                                            </div>
+                                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('username')}"
+                                                 th:errors="*{username}">Error</div>
+                                        </div>
+
+                                        <!-- Nombre -->
+                                        <div class="form-group col-md-6">
+                                            <label for="nombre">Nombre completo</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                                </div>
+                                                <input id="nombre" type="text" class="form-control" placeholder="Nombre y Apellido"
+                                                       th:field="*{nombre}">
+                                            </div>
+                                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('nombre')}"
+                                                 th:errors="*{nombre}">Error</div>
+                                        </div>
                                     </div>
 
-                                    <!-- Nombre -->
-                                    <div class="form-group">
-                                        <label for="nombre">Nombre completo</label>
-                                        <input id="nombre" type="text" class="form-control" placeholder="Nombre y Apellido"
-                                               th:field="*{nombre}">
-                                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('nombre')}"
-                                             th:errors="*{nombre}">Error</div>
+                                    <!-- ====== Fila 2 ====== -->
+                                    <div class="form-row">
+                                        <!-- Email -->
+                                        <div class="form-group col-md-6">
+                                            <label for="email">Email</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                                </div>
+                                                <input id="email" type="email" class="form-control" placeholder="correo@empresa.com"
+                                                       th:field="*{email}">
+                                            </div>
+                                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('email')}"
+                                                 th:errors="*{email}">Error</div>
+                                        </div>
+
+                                        <!-- Password -->
+                                        <div class="form-group col-md-6">
+                                            <label for="password" th:text="${id != null} ? 'Nueva contraseña (opcional)' : 'Contraseña'">Contraseña</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                                </div>
+                                                <input id="password" type="password" class="form-control" placeholder="••••••••"
+                                                       th:field="*{password}">
+                                            </div>
+                                            <small class="form-text text-muted" th:if="${id != null}">
+                                                Déjalo vacío para no cambiarla.
+                                            </small>
+                                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('password')}"
+                                                 th:errors="*{password}">Error</div>
+                                        </div>
                                     </div>
 
-                                    <!-- Email -->
-                                    <div class="form-group">
-                                        <label for="email">Email</label>
-                                        <input id="email" type="email" class="form-control" placeholder="correo@empresa.com"
-                                               th:field="*{email}">
-                                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('email')}"
-                                             th:errors="*{email}">Error</div>
-                                    </div>
+                                    <!-- ====== Fila 3 ====== -->
+                                    <div class="form-row">
+                                        <!-- Profesión -->
+                                        <div class="form-group col-md-6">
+                                            <label for="profesion">Profesión</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-briefcase"></i></span>
+                                                </div>
+                                                <input id="profesion" type="text" class="form-control" placeholder="Ej. Bodeguero, Barra, Supervisor"
+                                                       th:field="*{profesion}">
+                                            </div>
+                                            <small class="form-text text-muted">
+                                                Si lo dejas vacío, se autocompleta según el rol.
+                                            </small>
+                                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('profesion')}"
+                                                 th:errors="*{profesion}">Error</div>
+                                        </div>
 
-                                    <!-- Password (opcional en edición) -->
-                                    <div class="form-group">
-                                        <label for="password" th:text="${id != null} ? 'Nueva contraseña (opcional)' : 'Contraseña'">Contraseña</label>
-                                        <input id="password" type="password" class="form-control" placeholder="••••••••"
-                                               th:field="*{password}">
-                                        <small class="form-text text-muted" th:if="${id != null}">
-                                            Déjalo vacío para no cambiarla.
-                                        </small>
-                                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('password')}"
-                                             th:errors="*{password}">Error</div>
-                                    </div>
-
-                                    <!-- Profesión -->
-                                    <div class="form-group">
-                                        <label for="profesion">Profesión</label>
-                                        <input id="profesion" type="text" class="form-control" placeholder="Ej. Bodeguero, Barra, Supervisor"
-                                               th:field="*{profesion}">
-                                        <small class="form-text text-muted">
-                                            Si lo dejas vacío, se autocompleta según el rol.
-                                        </small>
-                                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('profesion')}"
-                                             th:errors="*{profesion}">Error</div>
-                                    </div>
-
-                                    <!-- Rol -->
-                                    <div class="form-group">
-                                        <label for="rol">Rol</label>
-                                        <select id="rol" class="form-control" th:field="*{rol}">
-                                            <option value="" disabled th:selected="${form.rol == null}">Selecciona un rol…</option>
-                                            <option th:each="r : ${roles}"
-                                                    th:value="${r}"
-                                                    th:text="${r}">ROL</option>
-                                        </select>
-                                        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('rol')}"
-                                             th:errors="*{rol}">Error</div>
+                                        <!-- Rol -->
+                                        <div class="form-group col-md-6">
+                                            <label for="rol">Rol</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-user-shield"></i></span>
+                                                </div>
+                                                <select id="rol" class="form-control" th:field="*{rol}">
+                                                    <option value="" disabled th:selected="${form.rol == null}">Selecciona un rol…</option>
+                                                    <option th:each="r : ${roles}"
+                                                            th:value="${r}"
+                                                            th:text="${r}">ROL</option>
+                                                </select>
+                                            </div>
+                                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('rol')}"
+                                                 th:errors="*{rol}">Error</div>
+                                        </div>
                                     </div>
 
                                     <!-- Checks -->
@@ -137,12 +178,12 @@
 
                                     <!-- Botones -->
                                     <div class="mt-4 d-flex">
-                                        <button type="submit" class="btn btn-primary mr-2">
+                                        <button type="submit" class="btn btn-success mr-2">
                                             <i class="fas fa-save mr-1"></i>
                                             <span th:text="${id != null} ? 'Guardar cambios' : 'Crear empleado'">Crear empleado</span>
                                         </button>
-                                        <a class="btn btn-light border" th:href="@{/empleados}">
-                                            Cancelar
+                                        <a class="btn btn-danger" th:href="@{/empleados}">
+                                            <i class="fas fa-times mr-1"></i> Cancelar
                                         </a>
                                     </div>
                                 </form>
@@ -150,23 +191,8 @@
                         </div>
                     </div>
 
-                    <!-- Tarjeta de ayuda -->
-                    <div class="col-lg-4">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3">
-                                <h6 class="m-0 font-weight-bold text-primary">Ayuda</h6>
-                            </div>
-                            <div class="card-body">
-                                <ul class="mb-0">
-                                    <li><strong>Usuario</strong> y <strong>Nombre</strong> son obligatorios.</li>
-                                    <li>Deja <strong>Profesión</strong> vacío y se autocompleta según el <strong>Rol</strong>.</li>
-                                    <li>En edición, deja <strong>Contraseña</strong> vacía para mantener la actual.</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Se retiró la tarjeta de “obligatorio” como pediste -->
                 </div>
-
             </div><!-- /.container-fluid -->
         </div>
 
