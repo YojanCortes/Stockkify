@@ -1,24 +1,22 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <title>Inventario — Dashboard</title>
+    <title>Inventario — Panel</title>
 
-    <!-- Font Awesome -->
+    <!-- Estáticos (como indicaste) -->
     <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet" />
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
-    <!-- SB Admin 2 CSS -->
     <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet" />
 </head>
 
 <body id="page-top">
+<!-- Page Wrapper -->
 <div id="wrapper">
 
-    <!-- Sidebar -->
+    <!-- Sidebar desde tu menugeneral.html -->
     <div th:replace="~{menugeneral :: sidebar}"></div>
 
     <!-- Content Wrapper -->
@@ -34,9 +32,9 @@
                 <!-- Buscador -->
                 <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                     <div class="input-group">
-                        <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar..." />
+                        <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar..." aria-label="Buscar" aria-describedby="btn-buscar">
                         <div class="input-group-append">
-                            <button class="btn btn-primary" type="button">
+                            <button class="btn btn-primary" type="button" id="btn-buscar">
                                 <i class="fas fa-search fa-sm"></i>
                             </button>
                         </div>
@@ -44,98 +42,146 @@
                 </form>
 
                 <ul class="navbar-nav ml-auto">
-                    <!-- Aquí van alertas, mensajes, usuario -->
+                    <!-- Aquí puedes agregar alertas/usuario -->
                 </ul>
             </nav>
             <!-- /Topbar -->
 
-            <!-- Contenido principal -->
+            <!-- Begin Page Content -->
             <div class="container-fluid">
-
                 <h1 class="h3 mb-4 text-gray-800">Dashboard</h1>
 
-                <!-- Tarjetas -->
+                <!-- ====== FILA DE CARDS KPI ====== -->
                 <div class="row">
+                    <!-- Productos -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-primary shadow h-100 py-2">
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Productos</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${kpis?.productos} ?: 0">0</div>
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                            Productos</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">1,245</div>
                                     </div>
-                                    <div class="col-auto"><i class="fas fa-box fa-2x text-gray-300"></i></div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-box-open fa-2x text-gray-300"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Stock total -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-success shadow h-100 py-2">
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Stock Total</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${kpis?.stockTotal} ?: 0">0</div>
+                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                            Stock total</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">8,940</div>
                                     </div>
-                                    <div class="col-auto"><i class="fas fa-warehouse fa-2x text-gray-300"></i></div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-cubes fa-2x text-gray-300"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Bajo mínimo -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-warning shadow h-100 py-2">
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Bajo mínimo</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${kpis?.bajoMinimo} ?: 0">0</div>
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                            Bajo mínimo</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">27</div>
                                     </div>
-                                    <div class="col-auto"><i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i></div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Vencidos -->
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-danger shadow h-100 py-2">
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Vencidos</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${kpis?.vencidos} ?: 0">0</div>
+                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                            Vencidos</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">5</div>
                                     </div>
-                                    <div class="col-auto"><i class="fas fa-calendar-times fa-2x text-gray-300"></i></div>
+                                    <div class="col-auto">
+                                        <i class="fas fa-skull-crossbones fa-2x text-gray-300"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Gráficos -->
+                <!-- ====== GRÁFICAS ====== -->
                 <div class="row">
-                    <div class="col-xl-6 col-lg-6">
+                    <!-- Área -->
+                    <div class="col-xl-6">
                         <div class="card shadow mb-4">
-                            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Entradas vs Salidas</h6></div>
-                            <div class="card-body"><canvas id="areaChartInv"></canvas></div>
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">Movimientos últimos 30 días</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-area">
+                                    <canvas id="myAreaChart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-xl-6 col-lg-6">
+
+                    <!-- Barra -->
+                    <div class="col-xl-6">
                         <div class="card shadow mb-4">
-                            <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Top Productos</h6></div>
-                            <div class="card-body"><canvas id="barChartTop"></canvas></div>
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">Stock por categoría</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-bar">
+                                    <canvas id="myBarChart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tabla -->
+                <!-- ====== PIE (opcional, para evitar errores si cargas demo de pie) ====== -->
+                <div class="row">
+                    <div class="col-xl-6">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">Top categorías</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-pie pt-4 pb-2">
+                                    <canvas id="myPieChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== TABLA MOVIMIENTOS RECIENTES ====== -->
                 <div class="card shadow mb-4">
-                    <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Movimientos recientes</h6></div>
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Movimientos recientes</h6>
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead class="thead-light">
+                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Tipo</th>
@@ -145,15 +191,26 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <div th:text="${kpis != null} ? ${kpis.productos} : 0">0</div>
-                                    <td th:text="${#dates.format(mov.fecha,'dd/MM/yyyy HH:mm')}">01/09/2025 10:00</td>
-                                    <td th:text="${mov.tipo}">Entrada</td>
-                                    <td th:text="${mov.producto}">Producto</td>
-                                    <td th:text="${mov.cantidad}">10</td>
-                                    <td th:text="${mov.usuario}">admin</td>
+                                <tr>
+                                    <td>2025-09-01 10:23</td>
+                                    <td>SALIDA</td>
+                                    <td>Cerveza Lager 355ml</td>
+                                    <td>12</td>
+                                    <td>jlopez</td>
                                 </tr>
-                                <tr th:if="${#lists.isEmpty(movimientos)}">
-                                    <td colspan="5" class="text-center text-muted">Sin movimientos recientes</td>
+                                <tr>
+                                    <td>2025-09-01 09:11</td>
+                                    <td>ENTRADA</td>
+                                    <td>Whisky 750ml</td>
+                                    <td>6</td>
+                                    <td>mramirez</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-08-31 18:45</td>
+                                    <td>AJUSTE</td>
+                                    <td>Refresco Cola 2L</td>
+                                    <td>-2</td>
+                                    <td>encargado1</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -162,60 +219,93 @@
                 </div>
 
             </div>
-            <!-- /Contenido -->
+            <!-- /.container-fluid -->
         </div>
 
         <!-- Footer -->
         <footer class="sticky-footer bg-white">
             <div class="container my-auto">
-                <div class="text-center my-auto"><span>&copy; Inventario 2025</span></div>
+                <div class="copyright text-center my-auto">
+                    <span>&copy; Inventario 2025</span>
+                </div>
             </div>
         </footer>
     </div>
+    <!-- End of Content Wrapper -->
 </div>
+<!-- End of Page Wrapper -->
 
-<a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
 
-<!-- Scripts -->
+<!-- JS -->
 <script th:src="@{/vendor/jquery/jquery.min.js}"></script>
 <script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
+
+<!-- Chart.js -->
 <script th:src="@{/vendor/chart.js/Chart.min.js}"></script>
 
-<!-- Charts -->
-<script th:inline="javascript">
-    // Área
-    (function(){
-        var ctx = document.getElementById("areaChartInv");
-        if(!ctx) return;
-        var labels   = /*[[${chart != null ? chart.labels : {'Ene','Feb','Mar','Abr','May','Jun'}}]]*/ [];
-        var entradas = /*[[${chart != null ? chart.entradas : {50,70,80,60,90,100}}]]*/ [];
-        var salidas  = /*[[${chart != null ? chart.salidas  : {40,60,70,55,85,95}}]]*/ [];
+<!-- Demos seguros (no dependen del backend) -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.Chart) return;
 
-        new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: [
-                    { label:"Entradas", data: entradas, borderColor:"rgba(78,115,223,1)", fill:false },
-                    { label:"Salidas", data: salidas, borderColor:"rgba(28,200,138,1)", fill:false }
-                ]},
-            options:{ maintainAspectRatio:false }
-        });
-    })();
+        // Área
+        const areaEl = document.getElementById('myAreaChart');
+        if (areaEl) {
+            new Chart(areaEl, {
+                type: 'line',
+                data: {
+                    labels: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
+                    datasets: [{
+                        label: 'Movimientos',
+                        data: [5, 9, 7, 12, 10, 4, 6],
+                        fill: true
+                    }]
+                },
+                options: { maintainAspectRatio: false }
+            });
+        }
 
-    // Barra
-    (function(){
-        var ctx = document.getElementById("barChartTop");
-        if(!ctx) return;
-        var labels = /*[[${top != null ? top.labels : {'Prod A','Prod B','Prod C'}}]]*/ [];
-        var dataV  = /*[[${top != null ? top.values : {100,90,80}}]]*/ [];
+        // Barra
+        const barEl = document.getElementById('myBarChart');
+        if (barEl) {
+            new Chart(barEl, {
+                type: 'bar',
+                data: {
+                    labels: ['Cervezas', 'Snacks', 'Licores', 'Refrescos', 'Otros'],
+                    datasets: [{
+                        label: 'Stock',
+                        data: [120, 80, 60, 90, 30]
+                    }]
+                },
+                options: { maintainAspectRatio: false }
+            });
+        }
 
-        new Chart(ctx,{
-            type:'bar',
-            data:{ labels: labels, datasets:[{ data:dataV, backgroundColor:"rgba(78,115,223,1)" }] },
-            options:{ maintainAspectRatio:false, legend:{display:false} }
-        });
-    })();
+        // Pie (para que no falle si cargas los demo scripts de pie)
+        const pieEl = document.getElementById('myPieChart');
+        if (pieEl) {
+            new Chart(pieEl, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cervezas', 'Licores', 'Refrescos'],
+                    datasets: [{
+                        data: [55, 25, 20]
+                    }]
+                },
+                options: { maintainAspectRatio: false }
+            });
+        }
+    });
 </script>
+
+<!-- (Opcional) Si no quieres usar los demos por defecto, comenta estas dos líneas:
+<script th:src="@{/js/demo/chart-area-demo.js}"></script>
+<script th:src="@{/js/demo/chart-pie-demo.js}"></script>
+-->
 </body>
 </html>
