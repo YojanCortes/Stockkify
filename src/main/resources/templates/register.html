@@ -1,140 +1,212 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Registro de Usuario</title>
 
-    <!-- Fuentes / estilos SB Admin 2 -->
-    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800,900" rel="stylesheet">
-    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <title>SB Admin 2 - Dashboard</title>
 
-    <style>
-        .card { border: 0; }
-        .form-label { font-weight: 600; }
-        .container-narrow { max-width: 880px; }
-    </style>
+    <!-- Font Awesome -->
+    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet" type="text/css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <!-- SB Admin 2 CSS -->
+    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet">
 </head>
-<body class="bg-gradient-primary">
 
-<div class="container container-narrow">
-    <div class="card shadow-lg my-5">
-        <div class="card-body p-4 p-md-5">
-            <h1 class="h4 text-gray-900 mb-4 text-center">Crear Usuario</h1>
+<body id="page-top">
 
-            <!-- FORMULARIO: 2 FILAS -->
-            <form class="needs-validation" novalidate>
-                <!-- FILA 1: Nombre, Usuario, Rol, Ubicación -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label for="nombre" class="form-label">Nombre completo</label>
-                        <input id="nombre" name="nombre" type="text" class="form-control" placeholder="Ej: Juan Pérez" required>
-                        <div class="invalid-feedback">Ingresa el nombre.</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="username" class="form-label">Usuario</label>
-                        <input id="username" name="username" type="text" class="form-control" placeholder="Ej: jperez" required>
-                        <div class="invalid-feedback">Ingresa el usuario.</div>
-                    </div>
+<!-- Page Wrapper -->
+<div id="wrapper">
 
-                    <div class="col-md-6">
-                        <label for="rol" class="form-label">Rol</label>
-                        <select id="rol" name="rol" class="form-control" required>
-                            <option value="" selected disabled>Selecciona rol…</option>
-                            <option value="ADMIN">Administrador</option>
-                            <option value="BODEGA">Bodega</option>
-                            <option value="BAR">Bar</option>
-                            <option value="ENCARGADO">Encargado</option>
-                        </select>
-                        <div class="invalid-feedback">Selecciona un rol.</div>
-                    </div>
+    <!-- Sidebar -->
+    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
-                    <div class="col-md-6" id="grupo-ubicacion" style="display:none">
-                        <label for="ubicacion" class="form-label">Ubicación (solo BAR)</label>
-                        <input id="ubicacion" name="ubicacion" type="text" class="form-control" placeholder="Ej: Bar Principal">
-                        <div class="invalid-feedback">Ingresa la ubicación para usuarios BAR.</div>
-                    </div>
+        <!-- Sidebar - Brand -->
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" th:href="@{/}">
+            <div class="sidebar-brand-icon rotate-n-15">
+                <i class="fas fa-laugh-wink"></i>
+            </div>
+            <div class="sidebar-brand-text mx-3">SB Admin <sup>2</sup></div>
+        </a>
+
+        <hr class="sidebar-divider my-0">
+
+        <!-- Nav Item - Dashboard -->
+        <li class="nav-item active">
+            <a class="nav-link" th:href="@{/}">
+                <i class="fas fa-fw fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+
+        <hr class="sidebar-divider">
+
+        <div class="sidebar-heading">Interface</div>
+
+        <!-- Components -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+                <i class="fas fa-fw fa-cog"></i>
+                <span>Components</span>
+            </a>
+            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <h6 class="collapse-header">Custom Components:</h6>
+                    <a class="collapse-item" th:href="@{/buttons}">Buttons</a>
+                    <a class="collapse-item" th:href="@{/cards}">Cards</a>
                 </div>
+            </div>
+        </li>
 
-                <!-- FILA 2: Password, Confirmar, Activo, Botón -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <input id="password" name="password" type="password" class="form-control" minlength="8" required>
-                        <div class="invalid-feedback">Mínimo 8 caracteres.</div>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="password2" class="form-label">Repetir contraseña</label>
-                        <input id="password2" name="password2" type="password" class="form-control" minlength="8" required>
-                        <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="activo" name="activo" checked>
-                            <label class="form-check-label" for="activo">Activo</label>
+        <!-- Utilities -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities" aria-expanded="true" aria-controls="collapseUtilities">
+                <i class="fas fa-fw fa-wrench"></i>
+                <span>Utilities</span>
+            </a>
+            <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <h6 class="collapse-header">Custom Utilities:</h6>
+                    <a class="collapse-item" th:href="@{/utilities-color}">Colors</a>
+                    <a class="collapse-item" th:href="@{/utilities-border}">Borders</a>
+                    <a class="collapse-item" th:href="@{/utilities-animation}">Animations</a>
+                    <a class="collapse-item" th:href="@{/utilities-other}">Other</a>
+                </div>
+            </div>
+        </li>
+
+        <hr class="sidebar-divider">
+
+        <div class="sidebar-heading">Addons</div>
+
+        <!-- Pages -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
+                <i class="fas fa-fw fa-folder"></i>
+                <span>Pages</span>
+            </a>
+            <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <h6 class="collapse-header">Login Screens:</h6>
+                    <a class="collapse-item" th:href="@{/login}">Login</a>
+                    <a class="collapse-item" th:href="@{/register}">Register</a>
+                    <a class="collapse-item" th:href="@{/forgot-password}">Forgot Password</a>
+                    <div class="collapse-divider"></div>
+                    <h6 class="collapse-header">Other Pages:</h6>
+                    <a class="collapse-item" th:href="@{/404}">404 Page</a>
+                    <a class="collapse-item" th:href="@{/blank}">Blank Page</a>
+                </div>
+            </div>
+        </li>
+
+        <!-- Charts -->
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/charts}">
+                <i class="fas fa-fw fa-chart-area"></i>
+                <span>Charts</span>
+            </a>
+        </li>
+
+        <!-- Tables -->
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/tables}">
+                <i class="fas fa-fw fa-table"></i>
+                <span>Tables</span>
+            </a>
+        </li>
+
+        <hr class="sidebar-divider d-none d-md-block">
+
+        <div class="text-center d-none d-md-inline">
+            <button class="rounded-circle border-0" id="sidebarToggle"></button>
+        </div>
+
+        <div class="sidebar-card d-none d-lg-flex">
+            <img class="sidebar-card-illustration mb-2" th:src="@{/img/undraw_rocket.svg}" alt="...">
+            <p class="text-center mb-2"><strong>SB Admin Pro</strong> is packed with premium features, components, and more!</p>
+            <a class="btn btn-success btn-sm" href="https://startbootstrap.com/theme/sb-admin-pro" target="_blank" rel="noopener">Upgrade to Pro!</a>
+        </div>
+    </ul>
+    <!-- End of Sidebar -->
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                    <i class="fa fa-bars"></i>
+                </button>
+
+                <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                    <div class="input-group">
+                        <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..." aria-label="Search" aria-describedby="basic-addon2">
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button">
+                                <i class="fas fa-search fa-sm"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end justify-content-end">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-user-plus me-1"></i> Registrar
-                        </button>
+                </form>
+
+                <ul class="navbar-nav ml-auto">
+                    <!-- Alerts / Messages / User dropdowns: iguales a tu HTML original -->
+                </ul>
+            </nav>
+            <!-- End of Topbar -->
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid">
+                <!-- TODO: aquí va tu contenido (cards, charts, etc.) tal como en tu HTML original -->
+                <h1 class="h3 mb-4 text-gray-800">Dashboard</h1>
+
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Earnings Overview</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area">
+                            <canvas id="myAreaChart"></canvas>
+                        </div>
                     </div>
                 </div>
-            </form>
-
-            <hr class="my-4">
-            <div class="text-center">
-                <a class="small" href="login.html">¿Ya tienes cuenta? Inicia sesión</a>
             </div>
+            <!-- /.container-fluid -->
         </div>
+
+        <!-- Footer -->
+        <footer class="sticky-footer bg-white">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>&copy; Your Website 2025</span>
+                </div>
+            </div>
+        </footer>
     </div>
+    <!-- End of Content Wrapper -->
 </div>
+<!-- End of Page Wrapper -->
 
-<!-- JS -->
-<script src="vendor/jquery/jquery.min.js"></script>
-<script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-<script src="js/sb-admin-2.min.js"></script>
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
 
-<script>
-    // Mostrar/ocultar campo Ubicación según rol
-    const rol = document.getElementById('rol');
-    const grupoUbicacion = document.getElementById('grupo-ubicacion');
-    const ubicacion = document.getElementById('ubicacion');
-
-    function toggleUbicacion() {
-        if (rol.value === 'BAR') {
-            grupoUbicacion.style.display = '';
-            ubicacion.setAttribute('required', 'required');
-        } else {
-            grupoUbicacion.style.display = 'none';
-            ubicacion.removeAttribute('required');
-            ubicacion.value = '';
-        }
-    }
-    rol.addEventListener('change', toggleUbicacion);
-
-    // Validación simple + confirmación de contraseña
-    (function () {
-        const form = document.querySelector('form.needs-validation');
-        form.addEventListener('submit', function (e) {
-            const pass = document.getElementById('password').value;
-            const pass2 = document.getElementById('password2').value;
-            if (pass !== pass2) {
-                e.preventDefault(); e.stopPropagation();
-                document.getElementById('password2').setCustomValidity('No coincide');
-            } else {
-                document.getElementById('password2').setCustomValidity('');
-            }
-
-            if (!form.checkValidity()) {
-                e.preventDefault(); e.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    })();
-</script>
+<!-- jQuery -->
+<script th:src="@{/vendor/jquery/jquery.min.js}"></script>
+<!-- Bootstrap bundle -->
+<script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<!-- jQuery easing -->
+<script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
+<!-- SB Admin 2 JS -->
+<script th:src="@{/js/sb-admin-2.min.js}"></script>
+<!-- Chart.js -->
+<script th:src="@{/vendor/chart.js/Chart.min.js}"></script>
+<!-- Demo charts (opcional) -->
+<script th:src="@{/js/demo/chart-area-demo.js}"></script>
+<script th:src="@{/js/demo/chart-pie-demo.js}"></script>
 </body>
 </html>

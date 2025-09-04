@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Menú</title></head>
+<body>
+<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion"
+    id="accordionSidebar"
+    th:fragment="sidebar">
+
+    <!-- (tu menú tal como lo pegaste) -->
+    <!-- Marca -->
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" th:href="@{/}">
+        <div class="sidebar-brand-icon rotate-n-15">
+            <i class="fas fa-boxes"></i>
+        </div>
+        <div class="sidebar-brand-text mx-3">Inventario</div>
+    </a>
+
+    <hr class="sidebar-divider my-0">
+
+    <!-- Panel -->
+    <li class="nav-item">
+        <a class="nav-link" th:href="@{/}">
+            <i class="fas fa-fw fa-tachometer-alt"></i>
+            <span>Panel</span>
+        </a>
+    </li>
+
+    <hr class="sidebar-divider">
+
+    <!-- Inventario -->
+    <div class="sidebar-heading">Inventario</div>
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuInventario" aria-expanded="false" aria-controls="menuInventario">
+            <i class="fas fa-fw fa-warehouse"></i>
+            <span>Inventario</span>
+        </a>
+        <div id="menuInventario" class="collapse" aria-labelledby="headingInventario" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+                <h6 class="collapse-header">Catálogo:</h6>
+                <a class="collapse-item" th:href="@{/productos}"><i class="fas fa-box-open mr-2"></i>Productos</a>
+                <a class="collapse-item" th:href="@{/presentaciones}"><i class="fas fa-cubes mr-2"></i>Presentaciones</a>
+                <div class="collapse-divider"></div>
+                <h6 class="collapse-header">Movimientos:</h6>
+                <a class="collapse-item" th:href="@{/entradas/nueva}"><i class="fas fa-arrow-down mr-2"></i>Nueva Entrada</a>
+                <a class="collapse-item" th:href="@{/salidas/nueva}"><i class="fas fa-arrow-up mr-2"></i>Nueva Salida</a>
+                <a class="collapse-item" th:href="@{/ajustes}"><i class="fas fa-balance-scale mr-2"></i>Ajustes de Stock</a>
+            </div>
+        </div>
+    </li>
+
+    <hr class="sidebar-divider">
+    <!-- Personas -->
+    <div class="sidebar-heading">Personas</div>
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuPersonas" aria-expanded="false" aria-controls="menuPersonas">
+            <i class="fas fa-fw fa-users"></i>
+            <span>Personas</span>
+        </a>
+        <div id="menuPersonas" class="collapse" aria-labelledby="headingPersonas" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+                <h6 class="collapse-header">Gestión:</h6>
+                <a class="collapse-item" th:href="@{/empleados}"><i class="fas fa-id-badge mr-2"></i>Empleados</a>
+                <a class="collapse-item" th:href="@{/usuarios}"><i class="fas fa-user-cog mr-2"></i>Usuarios</a>
+                <a class="collapse-item" th:href="@{/roles}"><i class="fas fa-user-shield mr-2"></i>Roles</a>
+            </div>
+        </div>
+    </li>
+
+    <hr class="sidebar-divider">
+    <!-- Reportes -->
+    <div class="sidebar-heading">Reportes</div>
+    <li class="nav-item">
+        <a class="nav-link" th:href="@{/reportes}">
+            <i class="fas fa-fw fa-chart-bar"></i>
+            <span>Reportes</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" th:href="@{/reportes/kardex}">
+            <i class="fas fa-fw fa-file-alt"></i>
+            <span>Kardex</span>
+        </a>
+    </li>
+
+    <hr class="sidebar-divider d-none d-md-block">
+    <!-- Configuración -->
+    <div class="sidebar-heading">Configuración</div>
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuConfig" aria-expanded="false" aria-controls="menuConfig">
+            <i class="fas fa-fw fa-cogs"></i>
+            <span>Configuración</span>
+        </a>
+        <div id="menuConfig" class="collapse" aria-labelledby="headingConfig" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+                <h6 class="collapse-header">Parámetros:</h6>
+                <a class="collapse-item" th:href="@{/categorias}"><i class="fas fa-tags mr-2"></i>Categorías</a>
+                <a class="collapse-item" th:href="@{/marcas}"><i class="fas fa-trademark mr-2"></i>Marcas</a>
+                <a class="collapse-item" th:href="@{/areas}"><i class="fas fa-project-diagram mr-2"></i>Áreas</a>
+            </div>
+        </div>
+    </li>
+
+    <hr class="sidebar-divider d-none d-md-block">
+    <div class="text-center d-none d-md-inline">
+        <button class="rounded-circle border-0" id="sidebarToggle"></button>
+    </div>
+</ul>
+</body>
+</html>
