@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Inventario — Panel</title>
+
+    <!-- Estáticos (como indicaste) -->
+    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet" />
+    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet" />
+</head>
+
+<body id="page-top">
+<!-- Page Wrapper -->
+<div id="wrapper">
+
+    <!-- Sidebar desde tu menugeneral.html -->
+    <div th:replace="~{menugeneral :: sidebar}"></div>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                    <i class="fa fa-bars"></i>
+                </button>
+
+
+                <ul class="navbar-nav ml-auto">
+                    <!-- Aquí puedes agregar alertas/usuario -->
+                </ul>
+            </nav>
+            <!-- /Topbar -->
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid">
+                <h1 class="h3 mb-4 text-gray-800">Menu</h1>
+
+                <!-- ====== TABLA MOVIMIENTOS RECIENTES ====== -->
+
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+
+        <!-- Footer -->
+        <footer class="sticky-footer bg-white">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>&copy; Inventario 2025</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <!-- End of Content Wrapper -->
+</div>
+<!-- End of Page Wrapper -->
+
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- JS -->
+<script th:src="@{/vendor/jquery/jquery.min.js}"></script>
+<script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
+<script th:src="@{/js/sb-admin-2.min.js}"></script>
+
+<!-- Chart.js -->
+<script th:src="@{/vendor/chart.js/Chart.min.js}"></script>
+
+<!-- Demos seguros (no dependen del backend) -->
+
+
+
+<!-- (Opcional) Si no quieres usar los demos por defecto, comenta estas dos líneas:
+<script th:src="@{/js/demo/chart-area-demo.js}"></script>
+<script th:src="@{/js/demo/chart-pie-demo.js}"></script>
+-->
+</body>
+</html>

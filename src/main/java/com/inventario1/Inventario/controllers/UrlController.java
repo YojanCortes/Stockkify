@@ -17,8 +17,8 @@ public class UrlController {
         return "empleadosform"; // templates/empleadosform.html
     }
 
-    // ⛔️ NO definir aquí @GetMapping("/empleados")
-    // Si quieres desde aquí ir a empleados, usa:
-    // @GetMapping("/empleadosredir")
-    // public String goEmpleados() { return "redirect:/empleados"; }
+    @GetMapping("/login")
+    public String showLogin() {
+        return "login"; // templates/login.html
+    }
 }

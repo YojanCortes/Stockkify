@@ -25,6 +25,9 @@ public class Usuario {
     @Column(nullable = true, unique = true, length = 120)
     private String email;
 
+    @Column(length = 32)
+    private String telefono;   // 👈 agregado para el formulario
+
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
@@ -36,7 +39,7 @@ public class Usuario {
     @Column(nullable = false, length = 120)
     private String nombre; // puedes guardar "Nombre Apellido"
 
-    @Column(length = 120)   // 👈 nuevo campo
+    @Column(length = 120)
     private String profesion;
 
     @Enumerated(EnumType.STRING)

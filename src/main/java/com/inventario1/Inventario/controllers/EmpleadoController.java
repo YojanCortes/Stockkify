@@ -4,11 +4,11 @@ package com.inventario1.Inventario.controllers;
 import com.inventario1.Inventario.models.Rol;
 import com.inventario1.Inventario.models.Usuario;
 import com.inventario1.Inventario.repos.UsuarioRepository;
+import com.inventario1.Inventario.web.EmpleadoForm;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,9 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.beans.PropertyEditorSupport;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 @Controller
 @RequestMapping("/empleados")
@@ -34,34 +32,30 @@ public class EmpleadoController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    /** Trim a todos los String que entren por formularios */
+    // Trim a todos los String
     @InitBinder
     public void initBinder(WebDataBinder binder) {
         binder.registerCustomEditor(String.class, new PropertyEditorSupport() {
-            @Override public void setAsText(String text) {
-                setValue(text == null ? null : text.trim());
-            }
+            @Override public void setAsText(String text) { setValue(text == null ? null : text.trim()); }
         });
     }
 
-    /** Pone los roles en el modelo para cualquier vista del controlador */
+    // Roles para las vistas
     @ModelAttribute("roles")
-    public Rol[] roles() {
-        return Rol.values();
-    }
+    public Rol[] roles() { return Rol.values(); }
 
-    // ===================== LISTA =====================
+    // LISTA
     @GetMapping
     public String lista(@RequestParam(name = "q", required = false) String q, Model model) {
-        List<Rol> rolesEnum = Arrays.asList(Rol.BODEGUERO, Rol.BARRA, Rol.SUPERVISOR);
-        List<Usuario> empleados = usuarioRepository.findByRolInAndActivoTrueOrderByNombreAsc(rolesEnum);
+        Set<Rol> rolesEnum = EnumSet.of(Rol.BODEGUERO, Rol.BARRA, Rol.SUPERVISOR);
+        var empleados = usuarioRepository.findByRolInAndActivoTrueOrderByNombreAsc(rolesEnum);
 
         if (q != null && !q.isBlank()) {
             String needle = q.toLowerCase(Locale.ROOT);
             empleados = empleados.stream().filter(u ->
-                    (u.getNombre()   != null && u.getNombre().toLowerCase(Locale.ROOT).contains(needle)) ||
+                    (u.getNombre() != null && u.getNombre().toLowerCase(Locale.ROOT).contains(needle)) ||
                             (u.getUsername() != null && u.getUsername().toLowerCase(Locale.ROOT).contains(needle)) ||
-                            (u.getEmail()    != null && u.getEmail().toLowerCase(Locale.ROOT).contains(needle))
+                            (u.getEmail() != null && u.getEmail().toLowerCase(Locale.ROOT).contains(needle))
             ).toList();
         }
 
@@ -70,170 +64,168 @@ public class EmpleadoController {
         model.addAttribute("page", 0);
         model.addAttribute("size", empleados.size());
         model.addAttribute("totalPages", 1);
-        return "empleadoslista"; // templates/empleadoslista.html
+        return "empleadoslista";
     }
 
-    // ===================== NUEVO (GET form) =====================
+    // NUEVO (GET)
     @GetMapping("/nuevo")
     public String nuevoForm(Model model) {
-        model.addAttribute("form", new EmpleadoController.EmpleadoForm());
-        model.addAttribute("roles", Rol.values()); // o usa @ModelAttribute("roles")
-        return "empleadosform"; // <-- nombre del template
+        model.addAttribute("form", new EmpleadoForm());
+        return "empleadosform";
     }
 
-    // ===================== CREAR (POST) =====================
+    // CREAR (POST) - devuelve JSON si es AJAX, o redirect si no
     @PostMapping
-    public String crear(@Valid @ModelAttribute("form") EmpleadoForm form,
-                        BindingResult binding, Model model) {
+    public Object crear(@Valid @ModelAttribute("form") EmpleadoForm form,
+                        BindingResult binding,
+                        Model model,
+                        HttpServletRequest request) {
 
-        if (binding.hasErrors()) {
-            return "empleadosform";
-        }
+        boolean ajax = "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
 
-        // Rol requerido para generar profesión por defecto si está vacía
+        // Validaciones manuales mínimas (porque quitaste campos del HTML)
         if (form.getRol() == null) {
             binding.rejectValue("rol", "rol.requerido", "Debes seleccionar un rol");
+        }
+        if (form.getPassword() == null || form.getPassword().isBlank()) {
+            binding.rejectValue("password", "password.requerido", "La contraseña es obligatoria");
+        }
+        if (form.getConfirmPassword() == null || !form.getConfirmPassword().equals(form.getPassword())) {
+            binding.rejectValue("confirmPassword", "password.noCoincide", "Las contraseñas no coinciden");
+        }
+
+        if (binding.hasErrors()) {
+            if (ajax) return ResponseEntity.badRequest().body(Map.of("error", "Validación falló", "fields", binding.getAllErrors()));
             return "empleadosform";
         }
 
-        // Autocompletar profesión si viene vacía
-        String profesion = (form.getProfesion() == null || form.getProfesion().isBlank())
-                ? profesionPorRol(form.getRol())
-                : form.getProfesion();
+        // Username automático (a partir del email)
+        String username = generarUsernameDesdeEmail(form.getEmail());
+
+        // Asegurar unicidad
+        username = deduplicarUsername(username);
+
+        // Profesión por rol (como ya no la pides en el HTML)
+        String profesion = switch (form.getRol()) {
+            case BODEGUERO -> "Bodeguero";
+            case BARRA -> "Barra";
+            case SUPERVISOR -> "Supervisor";
+        };
 
         Usuario u = Usuario.builder()
-                .username(form.getUsername())
-                .email(vacioA(nullSiVacio(form.getEmail())))
+                .username(username)
+                .email(nullSiVacio(form.getEmail()))
+                .telefono(nullSiVacio(form.getTelefono()))
                 .passwordHash(passwordEncoder.encode(form.getPassword()))
                 .requiereCambioPassword(Boolean.TRUE.equals(form.getRequiereCambioPassword()))
                 .nombre(form.getNombre())
                 .profesion(profesion)
                 .rol(form.getRol())
-                .activo(Boolean.TRUE.equals(form.getActivo()))
+                .activo(true) // por defecto
                 .build();
 
         usuarioRepository.save(u);
+
+        if (ajax) return ResponseEntity.ok(Map.of("ok", true, "id", u.getId(), "username", u.getUsername()));
         return "redirect:/empleados";
     }
 
-    // ===================== DETALLE =====================
+    // DETALLE
     @GetMapping("/{id}")
     public String detalle(@PathVariable Long id, Model model) {
         Usuario u = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
         model.addAttribute("empleado", u);
-        return "empleadosdetalle"; // templates/empleadosdetalle.html
+        return "empleadosdetalle";
     }
 
-    // ===================== EDITAR (GET form) =====================
+    // EDITAR (GET)
     @GetMapping("/{id}/editar")
     public String editarForm(@PathVariable Long id, Model model) {
         Usuario u = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
-        EmpleadoForm form = EmpleadoForm.from(u);
+        EmpleadoForm form = new EmpleadoForm();
+        form.setId(u.getId());
+        form.setNombre(u.getNombre());
+        form.setEmail(u.getEmail());
+        form.setTelefono(u.getTelefono());
+        form.setRol(u.getRol());
+        form.setProfesion(u.getProfesion());
+        form.setActivo(u.getActivo());
+        form.setRequiereCambioPassword(u.getRequiereCambioPassword());
         model.addAttribute("form", form);
         model.addAttribute("id", id);
-        return "empleadosform"; // reutiliza el mismo template
+        return "empleadosform";
     }
 
-    // ===================== ACTUALIZAR (POST) =====================
+    // ACTUALIZAR (POST) - JSON si AJAX; redirect si no
     @PostMapping("/{id}")
-    public String actualizar(@PathVariable Long id,
+    public Object actualizar(@PathVariable Long id,
                              @Valid @ModelAttribute("form") EmpleadoForm form,
-                             BindingResult binding, Model model) {
-        if (binding.hasErrors()) {
-            model.addAttribute("id", id);
-            return "empleadosform";
-        }
+                             BindingResult binding,
+                             Model model,
+                             HttpServletRequest request) {
+        boolean ajax = "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
 
         Usuario u = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
 
-        // Autocompletar profesión si quedó vacía
-        String profesion = (form.getProfesion() == null || form.getProfesion().isBlank())
-                ? profesionPorRol(form.getRol())
-                : form.getProfesion();
+        if (form.getRol() == null) {
+            binding.rejectValue("rol", "rol.requerido", "Debes seleccionar un rol");
+        }
+        if (form.getPassword() != null && !form.getPassword().isBlank()) {
+            if (form.getConfirmPassword() == null || !form.getConfirmPassword().equals(form.getPassword())) {
+                binding.rejectValue("confirmPassword", "password.noCoincide", "Las contraseñas no coinciden");
+            }
+        }
+
+        if (binding.hasErrors()) {
+            if (ajax) return ResponseEntity.badRequest().body(Map.of("error", "Validación falló", "fields", binding.getAllErrors()));
+            model.addAttribute("id", id);
+            return "empleadosform";
+        }
+
+        String profesion = switch (form.getRol()) {
+            case BODEGUERO -> "Bodeguero";
+            case BARRA -> "Barra";
+            case SUPERVISOR -> "Supervisor";
+        };
 
         u.setNombre(form.getNombre());
-        u.setProfesion(profesion);
-        u.setEmail(vacioA(nullSiVacio(form.getEmail())));
-        u.setUsername(form.getUsername());
+        u.setEmail(nullSiVacio(form.getEmail()));
+        u.setTelefono(nullSiVacio(form.getTelefono()));
         u.setRol(form.getRol());
+        u.setProfesion(profesion);
         u.setActivo(Boolean.TRUE.equals(form.getActivo()));
         u.setRequiereCambioPassword(Boolean.TRUE.equals(form.getRequiereCambioPassword()));
-
         if (form.getPassword() != null && !form.getPassword().isBlank()) {
             u.setPasswordHash(passwordEncoder.encode(form.getPassword()));
         }
 
         usuarioRepository.save(u);
+
+        if (ajax) return ResponseEntity.ok(Map.of("ok", true, "id", u.getId()));
         return "redirect:/empleados/" + id;
     }
 
-    // ===================== Helpers =====================
-    private static String profesionPorRol(Rol rol) {
-        return switch (rol) {
-            case BODEGUERO -> "Bodeguero";
-            case BARRA     -> "Barra";
-            case SUPERVISOR-> "Supervisor";
-        };
+    // ===== Helpers =====
+    private static String nullSiVacio(String s) { return (s == null || s.isBlank()) ? null : s; }
+
+    private String generarUsernameDesdeEmail(String email) {
+        if (email == null || email.isBlank()) return "user";
+        String base = email.split("@")[0].toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9._-]", "");
+        if (base.isBlank()) base = "user";
+        return base;
     }
 
-    private static String nullSiVacio(String s) {
-        return (s == null || s.isBlank()) ? null : s;
-    }
-    private static String vacioA(String s) { return s; }
-
-    // ===================== DTO (Form) =====================
-    public static class EmpleadoForm {
-        @NotBlank @Size(max = 64)
-        private String username;
-
-        @Email @Size(max = 120)
-        private String email;
-
-        @Size(min = 0)
-        private String password;
-
-        @NotBlank @Size(max = 120)
-        private String nombre;
-
-        @Size(max = 120)
-        private String profesion;
-
-        private Rol rol;
-
-        private Boolean activo = true;
-        private Boolean requiereCambioPassword = false;
-
-        public static EmpleadoForm from(Usuario u) {
-            EmpleadoForm f = new EmpleadoForm();
-            f.username = u.getUsername();
-            f.email = u.getEmail();
-            f.nombre = u.getNombre();
-            f.profesion = u.getProfesion();
-            f.rol = u.getRol();
-            f.activo = u.getActivo();
-            f.requiereCambioPassword = u.getRequiereCambioPassword();
-            return f;
+    private String deduplicarUsername(String base) {
+        String candidate = base;
+        int i = 1;
+        while (usuarioRepository.existsByUsername(candidate)) {
+            candidate = base + i;
+            i++;
         }
-
-        // Getters / Setters
-        public String getUsername() { return username; }
-        public void setUsername(String username) { this.username = username; }
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
-        public String getNombre() { return nombre; }
-        public void setNombre(String nombre) { this.nombre = nombre; }
-        public String getProfesion() { return profesion; }
-        public void setProfesion(String profesion) { this.profesion = profesion; }
-        public Rol getRol() { return rol; }
-        public void setRol(Rol rol) { this.rol = rol; }
-        public Boolean getActivo() { return activo; }
-        public void setActivo(Boolean activo) { this.activo = activo; }
-        public Boolean getRequiereCambioPassword() { return requiereCambioPassword; }
-        public void setRequiereCambioPassword(Boolean requiereCambioPassword) { this.requiereCambioPassword = requiereCambioPassword; }
+        return candidate;
     }
 }

@@ -1,16 +1,16 @@
+// src/main/java/com/inventario1/Inventario/repos/UsuarioRepository.java
 package com.inventario1.Inventario.repos;
 
 import com.inventario1.Inventario.models.Usuario;
 import com.inventario1.Inventario.models.Rol;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
-
-@Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
-    List<Usuario> findByRolInAndActivoTrueOrderByNombreAsc(Collection<Rol> roles);
-    List<Usuario> findByActivoTrueOrderByNombreAsc(); // <- deja este para la prueba del paso 1
+    Optional<Usuario> findByUsername(String username);
+    boolean existsByUsername(String username);  // 👈 AQUI
+    List<Usuario> findByRolInAndActivoTrueOrderByNombreAsc(Set<Rol> roles);
 }

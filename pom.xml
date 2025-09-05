@@ -28,6 +28,11 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Thymeleaf Extras (opcional, solo si usarás sec:authorize, sec:authentication, etc.) -->
+        <dependency>
+            <groupId>org.thymeleaf.extras</groupId>
+            <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+        </dependency>
         <!-- JPA / Hibernate -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
