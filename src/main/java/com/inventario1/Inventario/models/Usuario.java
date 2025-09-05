@@ -1,58 +1,58 @@
+// src/main/java/com/inventario1/Inventario/models/Usuario.java
 package com.inventario1.Inventario.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Usuario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "rut", length = 12)
+    private String rut;
 
-    // Cuenta
-    @Column(nullable = false, unique = true, length = 64)
+    @Column(name = "username", unique = true, nullable = false, length = 64)
     private String username;
-
-    @Column(nullable = true, unique = true, length = 120)
-    private String email;
-
-    @Column(length = 32)
-    private String telefono;   // 👈 agregado para el formulario
 
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rol", nullable = false)
+    private Rol rol;
+
+    @Column(name = "nombre", nullable = false, length = 120)
+    private String nombre;
+
+    @Column(name = "email", length = 120)
+    private String email;
+
+    @Column(name = "telefono", length = 32)
+    private String telefono;
+
+    @Column(name = "profesion", length = 120)
+    private String profesion;
+
+    @Builder.Default
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
+
+    @Builder.Default
+    @Column(name = "intentos_fallidos", nullable = false)
+    private Integer intentosFallidos = 0;
+
     @Builder.Default
     @Column(name = "requiere_cambio_password", nullable = false)
     private Boolean requiereCambioPassword = false;
-
-    // Datos visibles
-    @Column(nullable = false, length = 120)
-    private String nombre; // puedes guardar "Nombre Apellido"
-
-    @Column(length = 120)
-    private String profesion;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private Rol rol;
-
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean activo = true;
-
-    // Auditoría / seguridad (opcionales)
-    @Column(name = "intentos_fallidos")
-    private Integer intentosFallidos;
 
     @Column(name = "bloqueado_hasta")
     private LocalDateTime bloqueadoHasta;
@@ -60,7 +60,7 @@ public class Usuario {
     @Column(name = "ultimo_acceso")
     private LocalDateTime ultimoAcceso;
 
-    @Column(name = "reset_token", length = 120)
+    @Column(name = "reset_token")
     private String resetToken;
 
     @Column(name = "reset_expira")
@@ -69,17 +69,29 @@ public class Usuario {
     @Column(name = "password_actualizado_en")
     private LocalDateTime passwordActualizadoEn;
 
-    @Column(name = "creado_en")
+    // ⬇️ Timestamps obligatorios
+    @CreationTimestamp
+    @Column(name = "creado_en", nullable = false, updatable = false)
     private LocalDateTime creadoEn;
 
-    @Column(name = "actualizado_en")
+    @UpdateTimestamp
+    @Column(name = "actualizado_en", nullable = false)
     private LocalDateTime actualizadoEn;
 
-    // --- Helpers opcionales ---
-    public String getNombreCorto() {
-        if (nombre == null) return "";
-        String[] parts = nombre.trim().split("\\s+");
-        if (parts.length == 1) return parts[0];
-        return parts[0] + " " + parts[parts.length - 1];
+    // Por si algún proveedor ignora las anotaciones, garantizamos valores:
+    @PrePersist
+    void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (creadoEn == null) creadoEn = now;
+        if (actualizadoEn == null) actualizadoEn = now;
+        if (passwordActualizadoEn == null) passwordActualizadoEn = now;
+        if (intentosFallidos == null) intentosFallidos = 0;
+        if (activo == null) activo = true;
+        if (requiereCambioPassword == null) requiereCambioPassword = false;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        actualizadoEn = LocalDateTime.now();
     }
 }

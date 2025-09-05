@@ -12,13 +12,4 @@ public class UrlController {
         return "index"; // templates/index.html
     }
 
-    @GetMapping("/register")
-    public String showRegister() {
-        return "empleadosform"; // templates/empleadosform.html
-    }
-
-    @GetMapping("/login")
-    public String showLogin() {
-        return "login"; // templates/login.html
-    }
 }

@@ -33,10 +33,10 @@
         /* Badges de roles */
         .badge-role { font-size: .75rem; letter-spacing: .3px; }
 
-        /* Profesión encima de la imagen */
-        .profesion-title {
-            font-weight: 700;               /* negrita */
-            color: #4e73df;                 /* acorde a sb-admin-2 */
+        /* RUT encima de la imagen */
+        .rut-title {
+            font-weight: 700;
+            color: #4e73df;
             text-transform: uppercase;
             letter-spacing: .4px;
             font-size: .85rem;
@@ -98,14 +98,14 @@
 
                 <!-- Grid de tarjetas -->
                 <div class="row">
-                    <!-- Tarjeta por empleado (la lista ya viene filtrada desde el backend) -->
+                    <!-- Tarjeta por empleado -->
                     <div class="col-xl-3 col-lg-4 col-md-6 mb-4" th:each="empleado : ${empleados}">
                         <div class="card border-0 shadow h-100 card-zoom">
 
-                            <!-- PROFESIÓN: arriba de la imagen, en negrita -->
-                            <p class="profesion-title mb-0 text-center"
-                               th:text="${empleado.profesion != null && !#strings.isEmpty(empleado.profesion) ? empleado.profesion : 'Sin profesión'}">
-                                Sin profesión
+                            <!-- RUT: arriba de la imagen -->
+                            <p class="rut-title mb-0 text-center"
+                               th:text="${empleado.rut != null && !#strings.isEmpty(empleado.rut) ? 'RUT: ' + empleado.rut : 'RUT no definido'}">
+                                RUT no definido
                             </p>
 
                             <!-- Imagen/Avatar: placeholder -->
@@ -121,13 +121,13 @@
                                     <span th:text="${empleado.nombre}">Nombre</span>
                                 </h5>
 
-                                <!-- Botón Ver detalles: DEBAJO del nombre -->
+                                <!-- Botón Ver detalles: usa RUT -->
                                 <a class="btn btn-outline-primary btn-sm mb-2"
-                                   th:href="@{'/empleados/' + ${empleado.id}}">
+                                   th:href="@{'/empleados/' + ${empleado.rut}}">
                                     <i class="fas fa-eye mr-1"></i> Ver detalles
                                 </a>
 
-                                <!-- Badge según rol (enum) -->
+                                <!-- Badge según rol -->
                                 <div class="mt-2">
                                     <span class="badge badge-info badge-role"
                                           th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).BODEGUERO}">
@@ -143,11 +143,10 @@
                                     </span>
                                 </div>
 
-                                <!-- Extra: muestra username en pequeño -->
+                                <!-- username en pequeño -->
                                 <div class="text-muted mt-2 small" th:text="${empleado.username}">username</div>
                             </div>
 
-                            <!-- Footer vacío (opcional) -->
                             <div class="card-footer bg-white border-0 text-center"></div>
                         </div>
                     </div>
@@ -160,7 +159,7 @@
                     </div>
                 </div>
 
-                <!-- Paginación segura (sin números negativos y sin ternarios en URL) -->
+                <!-- Paginación -->
                 <div class="d-flex align-items-center justify-content-between" th:if="${totalPages != null}">
                     <div class="text-muted small">
                         Página <span th:text="${page + 1}">1</span> de <span th:text="${totalPages}">1</span>
@@ -168,35 +167,26 @@
 
                     <nav aria-label="Paginación">
                         <ul class="pagination mb-0">
-                            <!-- Anterior habilitado -->
                             <li class="page-item" th:if="${page > 0}">
-                                <a class="page-link"
-                                   th:href="@{/empleados(page=${page - 1}, size=${size}, q=${q})}"
-                                   aria-label="Anterior">
+                                <a class="page-link" th:href="@{/empleados(page=${page - 1}, size=${size}, q=${q})}" aria-label="Anterior">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
-                            <!-- Anterior deshabilitado -->
                             <li class="page-item disabled" th:if="${page == 0}">
                                 <a class="page-link" href="#" aria-label="Anterior">
                                     <span aria-hidden="true">&laquo;</span>
                                 </a>
                             </li>
 
-                            <!-- Actual -->
                             <li class="page-item disabled">
                                 <a class="page-link" href="#" th:text="${page + 1}">1</a>
                             </li>
 
-                            <!-- Siguiente habilitado -->
                             <li class="page-item" th:if="${page + 1 < totalPages}">
-                                <a class="page-link"
-                                   th:href="@{/empleados(page=${page + 1}, size=${size}, q=${q})}"
-                                   aria-label="Siguiente">
+                                <a class="page-link" th:href="@{/empleados(page=${page + 1}, size=${size}, q=${q})}" aria-label="Siguiente">
                                     <span aria-hidden="true">&raquo;</span>
                                 </a>
                             </li>
-                            <!-- Siguiente deshabilitado -->
                             <li class="page-item disabled" th:if="${page + 1 >= totalPages}">
                                 <a class="page-link" href="#" aria-label="Siguiente">
                                     <span aria-hidden="true">&raquo;</span>

@@ -53,9 +53,10 @@ public class EmpleadoController {
         if (q != null && !q.isBlank()) {
             String needle = q.toLowerCase(Locale.ROOT);
             empleados = empleados.stream().filter(u ->
-                    (u.getNombre() != null && u.getNombre().toLowerCase(Locale.ROOT).contains(needle)) ||
+                    (u.getNombre()   != null && u.getNombre().toLowerCase(Locale.ROOT).contains(needle)) ||
                             (u.getUsername() != null && u.getUsername().toLowerCase(Locale.ROOT).contains(needle)) ||
-                            (u.getEmail() != null && u.getEmail().toLowerCase(Locale.ROOT).contains(needle))
+                            (u.getEmail()    != null && u.getEmail().toLowerCase(Locale.ROOT).contains(needle)) ||
+                            (u.getRut()      != null && u.getRut().toLowerCase(Locale.ROOT).contains(needle))
             ).toList();
         }
 
@@ -74,7 +75,7 @@ public class EmpleadoController {
         return "empleadosform";
     }
 
-    // CREAR (POST) - devuelve JSON si es AJAX, o redirect si no
+    // CREAR (POST) - JSON si AJAX; redirect si no
     @PostMapping
     public Object crear(@Valid @ModelAttribute("form") EmpleadoForm form,
                         BindingResult binding,
@@ -83,7 +84,7 @@ public class EmpleadoController {
 
         boolean ajax = "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
 
-        // Validaciones manuales mínimas (porque quitaste campos del HTML)
+        // Validaciones mínimas
         if (form.getRol() == null) {
             binding.rejectValue("rol", "rol.requerido", "Debes seleccionar un rol");
         }
@@ -93,6 +94,16 @@ public class EmpleadoController {
         if (form.getConfirmPassword() == null || !form.getConfirmPassword().equals(form.getPassword())) {
             binding.rejectValue("confirmPassword", "password.noCoincide", "Las contraseñas no coinciden");
         }
+        if (form.getRut() == null || form.getRut().isBlank()) {
+            binding.rejectValue("rut", "rut.requerido", "El RUT es obligatorio");
+        }
+
+        String rutNormalizado = normalizarRut(form.getRut());
+        if (rutNormalizado == null) {
+            binding.rejectValue("rut", "rut.invalido", "RUT inválido");
+        } else if (usuarioRepository.existsByRut(rutNormalizado)) {
+            binding.rejectValue("rut", "rut.duplicado", "Ya existe un usuario con ese RUT");
+        }
 
         if (binding.hasErrors()) {
             if (ajax) return ResponseEntity.badRequest().body(Map.of("error", "Validación falló", "fields", binding.getAllErrors()));
@@ -101,18 +112,17 @@ public class EmpleadoController {
 
         // Username automático (a partir del email)
         String username = generarUsernameDesdeEmail(form.getEmail());
-
-        // Asegurar unicidad
         username = deduplicarUsername(username);
 
-        // Profesión por rol (como ya no la pides en el HTML)
+        // Profesión por rol
         String profesion = switch (form.getRol()) {
             case BODEGUERO -> "Bodeguero";
-            case BARRA -> "Barra";
-            case SUPERVISOR -> "Supervisor";
+            case BARRA     -> "Barra";
+            case SUPERVISOR-> "Supervisor";
         };
 
         Usuario u = Usuario.builder()
+                .rut(rutNormalizado) // ✅ clave
                 .username(username)
                 .email(nullSiVacio(form.getEmail()))
                 .telefono(nullSiVacio(form.getTelefono()))
@@ -121,31 +131,33 @@ public class EmpleadoController {
                 .nombre(form.getNombre())
                 .profesion(profesion)
                 .rol(form.getRol())
-                .activo(true) // por defecto
+                .activo(true)
                 .build();
 
         usuarioRepository.save(u);
 
-        if (ajax) return ResponseEntity.ok(Map.of("ok", true, "id", u.getId(), "username", u.getUsername()));
+        if (ajax) return ResponseEntity.ok(Map.of("ok", true, "rut", u.getRut(), "username", u.getUsername()));
         return "redirect:/empleados";
     }
 
     // DETALLE
-    @GetMapping("/{id}")
-    public String detalle(@PathVariable Long id, Model model) {
-        Usuario u = usuarioRepository.findById(id)
+    @GetMapping("/{rut}")
+    public String detalle(@PathVariable String rut, Model model) {
+        String r = normalizarRut(rut);
+        Usuario u = usuarioRepository.findByRut(r)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
         model.addAttribute("empleado", u);
         return "empleadosdetalle";
     }
 
     // EDITAR (GET)
-    @GetMapping("/{id}/editar")
-    public String editarForm(@PathVariable Long id, Model model) {
-        Usuario u = usuarioRepository.findById(id)
+    @GetMapping("/{rut}/editar")
+    public String editarForm(@PathVariable String rut, Model model) {
+        String r = normalizarRut(rut);
+        Usuario u = usuarioRepository.findByRut(r)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
         EmpleadoForm form = new EmpleadoForm();
-        form.setId(u.getId());
+        form.setRut(u.getRut());
         form.setNombre(u.getNombre());
         form.setEmail(u.getEmail());
         form.setTelefono(u.getTelefono());
@@ -154,20 +166,21 @@ public class EmpleadoController {
         form.setActivo(u.getActivo());
         form.setRequiereCambioPassword(u.getRequiereCambioPassword());
         model.addAttribute("form", form);
-        model.addAttribute("id", id);
+        model.addAttribute("rut", u.getRut());
         return "empleadosform";
     }
 
     // ACTUALIZAR (POST) - JSON si AJAX; redirect si no
-    @PostMapping("/{id}")
-    public Object actualizar(@PathVariable Long id,
+    @PostMapping("/{rut}")
+    public Object actualizar(@PathVariable String rut,
                              @Valid @ModelAttribute("form") EmpleadoForm form,
                              BindingResult binding,
                              Model model,
                              HttpServletRequest request) {
         boolean ajax = "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
+        String r = normalizarRut(rut);
 
-        Usuario u = usuarioRepository.findById(id)
+        Usuario u = usuarioRepository.findByRut(r)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
 
         if (form.getRol() == null) {
@@ -179,16 +192,28 @@ public class EmpleadoController {
             }
         }
 
+        // Si cambia el RUT en el formulario, validar unicidad
+        if (form.getRut() != null && !form.getRut().isBlank()) {
+            String rutNuevo = normalizarRut(form.getRut());
+            if (rutNuevo == null) {
+                binding.rejectValue("rut", "rut.invalido", "RUT inválido");
+            } else if (!rutNuevo.equals(u.getRut()) && usuarioRepository.existsByRut(rutNuevo)) {
+                binding.rejectValue("rut", "rut.duplicado", "Ya existe un usuario con ese RUT");
+            } else {
+                u.setRut(rutNuevo);
+            }
+        }
+
         if (binding.hasErrors()) {
             if (ajax) return ResponseEntity.badRequest().body(Map.of("error", "Validación falló", "fields", binding.getAllErrors()));
-            model.addAttribute("id", id);
+            model.addAttribute("rut", r);
             return "empleadosform";
         }
 
         String profesion = switch (form.getRol()) {
             case BODEGUERO -> "Bodeguero";
-            case BARRA -> "Barra";
-            case SUPERVISOR -> "Supervisor";
+            case BARRA     -> "Barra";
+            case SUPERVISOR-> "Supervisor";
         };
 
         u.setNombre(form.getNombre());
@@ -204,8 +229,8 @@ public class EmpleadoController {
 
         usuarioRepository.save(u);
 
-        if (ajax) return ResponseEntity.ok(Map.of("ok", true, "id", u.getId()));
-        return "redirect:/empleados/" + id;
+        if (ajax) return ResponseEntity.ok(Map.of("ok", true, "rut", u.getRut()));
+        return "redirect:/empleados/" + u.getRut();
     }
 
     // ===== Helpers =====
@@ -227,5 +252,18 @@ public class EmpleadoController {
             i++;
         }
         return candidate;
+    }
+
+    // Normaliza RUT (elimina puntos, deja guion, mayúscula en dígito verificador)
+    private static String normalizarRut(String rut) {
+        if (rut == null) return null;
+        String r = rut.replace(".", "").replace(" ", "").toUpperCase(Locale.ROOT);
+        if (!r.contains("-")) {
+            // intenta insertar guion antes del último caracter
+            if (r.length() >= 2) r = r.substring(0, r.length() - 1) + "-" + r.substring(r.length() - 1);
+        }
+        // Validación simple de patrón (##...-X)
+        if (!r.matches("^[0-9]{1,8}-[0-9K]$")) return null;
+        return r;
     }
 }

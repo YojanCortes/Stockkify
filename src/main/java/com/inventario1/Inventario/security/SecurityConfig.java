@@ -1,3 +1,4 @@
+// src/main/java/com/inventario1/Inventario/security/SecurityConfig.java
 package com.inventario1.Inventario.security;
 
 import lombok.RequiredArgsConstructor;
@@ -6,32 +7,37 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // Servicio que carga usuarios desde la BD (ver clase debajo)
+    // Debe cargar usuarios por RUT (verifica que tu JpaUserDetailsService lo haga con repository.findByRut)
     private final JpaUserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // BCrypt en producción
+        // BCrypt para producción
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
     public AuthenticationProvider authenticationProvider(PasswordEncoder encoder) {
-        DaoAuthenticationProvider p = new DaoAuthenticationProvider();
-        p.setUserDetailsService(userDetailsService);
-        p.setPasswordEncoder(encoder);
-        return p;
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService); // ← carga por RUT
+        provider.setPasswordEncoder(encoder);
+        return provider;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   AuthenticationProvider authProvider) throws Exception {
+
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -41,18 +47,26 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginPage("/login")              // usa templates/login.html
+                        .loginPage("/login")              // GET login page (solo debe existir 1 @GetMapping("/login"))
                         .loginProcessingUrl("/login")     // POST del form
-                        .usernameParameter("rut")         // el input del RUT en tu HTML
-                        .passwordParameter("password")    // el input de contraseña
-                        .defaultSuccessUrl("/", true)     // redirigir después de loguear
+                        .usernameParameter("rut")         // ← el input name="rut"
+                        .passwordParameter("password")    // ← el input name="password"
+                        .defaultSuccessUrl("/", true)
+                        .failureUrl("/login?error")
                         .permitAll()
+                )
+                .rememberMe(remember -> remember
+                        .rememberMeParameter("remember-me")  // checkbox name="remember-me"
+                        .userDetailsService(userDetailsService)
+                        .tokenValiditySeconds(14 * 24 * 60 * 60) // 14 días
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
                         .permitAll()
-                );
+                )
+                // Registra explícitamente el AuthenticationProvider que carga por RUT
+                .authenticationProvider(authProvider);
 
         return http.build();
     }
