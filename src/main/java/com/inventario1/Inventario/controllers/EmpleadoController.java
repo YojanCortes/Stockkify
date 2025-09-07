@@ -7,7 +7,9 @@ import com.inventario1.Inventario.repos.UsuarioRepository;
 import com.inventario1.Inventario.web.EmpleadoForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -15,10 +17,13 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.beans.PropertyEditorSupport;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 @RequestMapping("/empleados")
@@ -233,7 +238,62 @@ public class EmpleadoController {
         return "redirect:/empleados/" + u.getRut();
     }
 
-    // ===== Helpers =====
+    // ===================== Imagen (solo agregar) =====================
+
+    // SUBIR FOTO (BD) — POST /empleados/{rut}/foto
+    @PostMapping("/{rut}/foto")
+    public ResponseEntity<?> subirFoto(@PathVariable String rut,
+                                       @RequestParam("file") MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("ok", false, "error", "Archivo vacío"));
+        }
+        String ct = file.getContentType();
+        if (ct == null || !ct.startsWith("image/")) {
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                    .body(Map.of("ok", false, "error", "Solo se permiten imágenes"));
+        }
+        if (file.getSize() > 2_000_000) { // 2MB
+            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                    .body(Map.of("ok", false, "error", "La imagen no debe superar 2MB"));
+        }
+
+        String r = normalizarRut(rut);
+        Usuario u = usuarioRepository.findByRut(r)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+
+        u.setFoto(file.getBytes());
+        u.setFotoContentType(ct);
+        u.setFotoNombre(file.getOriginalFilename());
+        u.setFotoTamano(file.getSize());
+        usuarioRepository.save(u);
+
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    // VER FOTO — GET /empleados/{rut}/foto
+    @GetMapping("/{rut}/foto")
+    public ResponseEntity<byte[]> verFoto(@PathVariable String rut) {
+        String r = normalizarRut(rut);
+        Usuario u = usuarioRepository.findByRut(r)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+
+        byte[] bytes = u.getFoto();
+        if (bytes == null || bytes.length == 0) {
+            return ResponseEntity.notFound().build();
+        }
+
+        MediaType mediaType = MediaType.IMAGE_JPEG;
+        try {
+            if (u.getFotoContentType() != null) mediaType = MediaType.parseMediaType(u.getFotoContentType());
+        } catch (Exception ignored) {}
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .cacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic())
+                .body(bytes);
+    }
+
+    // ===================== Helpers =====================
     private static String nullSiVacio(String s) { return (s == null || s.isBlank()) ? null : s; }
 
     private String generarUsernameDesdeEmail(String email) {
@@ -259,10 +319,8 @@ public class EmpleadoController {
         if (rut == null) return null;
         String r = rut.replace(".", "").replace(" ", "").toUpperCase(Locale.ROOT);
         if (!r.contains("-")) {
-            // intenta insertar guion antes del último caracter
             if (r.length() >= 2) r = r.substring(0, r.length() - 1) + "-" + r.substring(r.length() - 1);
         }
-        // Validación simple de patrón (##...-X)
         if (!r.matches("^[0-9]{1,8}-[0-9K]$")) return null;
         return r;
     }

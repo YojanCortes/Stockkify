@@ -4,6 +4,7 @@ package com.inventario1.Inventario.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -42,8 +43,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/login", "/register",
-                                "/css/**", "/js/**", "/images/**", "/vendor/**"
+                                "/css/**", "/js/**", "/images/**", "/img/**", "/vendor/**"
                         ).permitAll()
+                        // Permitir VER la foto sin login (solo GET); subir sigue autenticado
+                        .requestMatchers(HttpMethod.GET, "/empleados/*/foto").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

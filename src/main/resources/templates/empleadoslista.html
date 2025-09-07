@@ -20,7 +20,7 @@
         /* Contenedor de imagen/avatar */
         .avatar-box { height: 180px; }
 
-        /* Placeholder “Sin imagen” */
+        /* Placeholder “Sin imagen” (se usa solo si falta /img/avatar-placeholder.png) */
         .avatar-placeholder {
             width: 110px; height: 110px; border-radius: 50%;
             background: #f8f9fc; border: 2px dashed #d1d3e2; color: #858796;
@@ -108,12 +108,23 @@
                                 RUT no definido
                             </p>
 
-                            <!-- Imagen/Avatar: placeholder -->
+                            <!-- Imagen/Avatar: foto si existe; si no, texto "Sin imagen" -->
                             <div class="card-img-top d-flex align-items-center justify-content-center avatar-box bg-light">
-                                <div class="avatar-placeholder">
+                                <!-- Con foto -->
+                                <img
+                                        th:if="${empleado.fotoTamano != null and empleado.fotoTamano > 0}"
+                                        th:src="@{/empleados/{rut}/foto(rut=${empleado.rut}, v=${#temporals.format(empleado.actualizadoEn, 'yyyyMMddHHmmss')})}"
+                                        th:alt="${'Foto de ' + (empleado.nombre != null ? empleado.nombre : empleado.username)}"
+                                        class="rounded-circle shadow-sm"
+                                        style="width:110px;height:110px;object-fit:cover;"
+                                />
+
+                                <!-- Sin foto: placeholder con texto -->
+                                <div class="avatar-placeholder" th:unless="${empleado.fotoTamano != null and empleado.fotoTamano > 0}">
                                     <span>Sin&nbsp;imagen</span>
                                 </div>
                             </div>
+
 
                             <div class="card-body text-center">
                                 <!-- Nombre -->
@@ -143,8 +154,6 @@
                                     </span>
                                 </div>
 
-                                <!-- username en pequeño -->
-                                <div class="text-muted mt-2 small" th:text="${empleado.username}">username</div>
                             </div>
 
                             <div class="card-footer bg-white border-0 text-center"></div>

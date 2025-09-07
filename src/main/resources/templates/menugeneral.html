@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Menú</title></head>
+<head>
+    <meta charset="UTF-8">
+    <title>Menú</title>
+</head>
 <body>
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion"
     id="accordionSidebar"
     th:fragment="sidebar">
 
-    <!-- (tu menú tal como lo pegaste) -->
     <!-- Marca -->
     <a class="sidebar-brand d-flex align-items-center justify-content-center" th:href="@{/}">
         <div class="sidebar-brand-icon rotate-n-15">
@@ -49,6 +51,7 @@
     </li>
 
     <hr class="sidebar-divider">
+
     <!-- Personas -->
     <div class="sidebar-heading">Personas</div>
     <li class="nav-item">
@@ -59,9 +62,7 @@
         <div id="menuPersonas" class="collapse" aria-labelledby="headingPersonas" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Gestión:</h6>
-                <a class="collapse-item" th:href="@{/empleados}">
-                    <i class="fas fa-id-badge mr-2"></i>Empleados
-                </a>
+                <a class="collapse-item" th:href="@{/empleados}"><i class="fas fa-id-badge mr-2"></i>Empleados</a>
                 <a class="collapse-item" th:href="@{/usuarios}"><i class="fas fa-user-cog mr-2"></i>Usuarios</a>
                 <a class="collapse-item" th:href="@{/roles}"><i class="fas fa-user-shield mr-2"></i>Roles</a>
             </div>
@@ -69,6 +70,7 @@
     </li>
 
     <hr class="sidebar-divider">
+
     <!-- Reportes -->
     <div class="sidebar-heading">Reportes</div>
     <li class="nav-item">
@@ -85,6 +87,7 @@
     </li>
 
     <hr class="sidebar-divider d-none d-md-block">
+
     <!-- Configuración -->
     <div class="sidebar-heading">Configuración</div>
     <li class="nav-item">
@@ -102,10 +105,47 @@
         </div>
     </li>
 
+    <!-- ========================================================= -->
+    <!-- OPCIÓN A (ACTIVA): Botón Cerrar sesión ANTES del toggle  -->
+    <!-- Deja el toggle como el último elemento del sidebar       -->
+    <!-- ========================================================= -->
+    <hr class="sidebar-divider my-3">
+
+    <li class="nav-item px-3 mb-3">
+        <form th:action="@{/logout}" method="post" class="d-grid">
+            <!-- CSRF (requerido cuando CSRF está habilitado) -->
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="btn btn-danger w-100">
+                <i class="fas fa-sign-out-alt mr-2"></i>
+                Cerrar sesión
+            </button>
+        </form>
+    </li>
+
     <hr class="sidebar-divider d-none d-md-block">
     <div class="text-center d-none d-md-inline">
         <button class="rounded-circle border-0" id="sidebarToggle"></button>
     </div>
+
+    <!-- ========================================================= -->
+    <!-- OPCIÓN B (ALTERNATIVA): Botón Cerrar sesión AL FINAL     -->
+    <!-- Para activarla, descomenta este bloque y elimina la       -->
+    <!-- Opción A de arriba si no quieres tener dos botones.       -->
+    <!-- ========================================================= -->
+    <!--
+    <hr class="sidebar-divider my-3">
+
+    <li class="nav-item px-3 mb-4">
+      <form th:action="@{/logout}" method="post" class="d-grid">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit" class="btn btn-danger w-100">
+          <i class="fas fa-sign-out-alt mr-2"></i>
+          Cerrar sesión
+        </button>
+      </form>
+    </li>
+    -->
+
 </ul>
 </body>
 </html>

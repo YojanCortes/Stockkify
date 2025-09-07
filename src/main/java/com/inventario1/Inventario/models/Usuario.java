@@ -69,7 +69,22 @@ public class Usuario {
     @Column(name = "password_actualizado_en")
     private LocalDateTime passwordActualizadoEn;
 
-    // ⬇️ Timestamps obligatorios
+    // ===== Imagen de perfil (guardada en BD) =====
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "foto")
+    private byte[] foto;
+
+    @Column(name = "foto_content_type", length = 100)
+    private String fotoContentType;
+
+    @Column(name = "foto_nombre", length = 255)
+    private String fotoNombre;
+
+    @Column(name = "foto_tamano")
+    private Long fotoTamano;
+
+    // ===== Timestamps obligatorios =====
     @CreationTimestamp
     @Column(name = "creado_en", nullable = false, updatable = false)
     private LocalDateTime creadoEn;
@@ -78,7 +93,7 @@ public class Usuario {
     @Column(name = "actualizado_en", nullable = false)
     private LocalDateTime actualizadoEn;
 
-    // Por si algún proveedor ignora las anotaciones, garantizamos valores:
+    // Garantiza valores por si el proveedor ignora anotaciones
     @PrePersist
     void prePersist() {
         LocalDateTime now = LocalDateTime.now();
