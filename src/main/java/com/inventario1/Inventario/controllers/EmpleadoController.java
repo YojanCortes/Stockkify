@@ -103,10 +103,11 @@ public class EmpleadoController {
             binding.rejectValue("rut", "rut.requerido", "El RUT es obligatorio");
         }
 
-        String rutNormalizado = normalizarRut(form.getRut());
-        if (rutNormalizado == null) {
+        // Normaliza/valida y guarda en formato compacto (cuerpo+DV, sin puntos/guion)
+        String rutCompacto = normalizarRutCompacto(form.getRut());
+        if (rutCompacto == null) {
             binding.rejectValue("rut", "rut.invalido", "RUT inválido");
-        } else if (usuarioRepository.existsByRut(rutNormalizado)) {
+        } else if (existsByRutFlexible(rutCompacto)) {
             binding.rejectValue("rut", "rut.duplicado", "Ya existe un usuario con ese RUT");
         }
 
@@ -127,7 +128,7 @@ public class EmpleadoController {
         };
 
         Usuario u = Usuario.builder()
-                .rut(rutNormalizado) // ✅ clave
+                .rut(rutCompacto) // ✅ guarda SIN puntos ni guion (cuerpo+DV)
                 .username(username)
                 .email(nullSiVacio(form.getEmail()))
                 .telefono(nullSiVacio(form.getTelefono()))
@@ -145,24 +146,18 @@ public class EmpleadoController {
         return "redirect:/empleados";
     }
 
-    // DETALLE
+    // ====== DETALLE → redirige a EDITAR ======
     @GetMapping("/{rut}")
-    public String detalle(@PathVariable String rut, Model model) {
-        String r = normalizarRut(rut);
-        Usuario u = usuarioRepository.findByRut(r)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
-        model.addAttribute("empleado", u);
-        return "empleadosdetalle";
+    public String detalle(@PathVariable String rut) {
+        return "redirect:/empleados/" + rut + "/editar";
     }
 
-    // EDITAR (GET)
+    // EDITAR (GET) — usa empleadosformedit.html
     @GetMapping("/{rut}/editar")
     public String editarForm(@PathVariable String rut, Model model) {
-        String r = normalizarRut(rut);
-        Usuario u = usuarioRepository.findByRut(r)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+        Usuario u = findByRutFlexibleOr404(rut);
         EmpleadoForm form = new EmpleadoForm();
-        form.setRut(u.getRut());
+        form.setRut(u.getRut()); // compacto; el front lo mostrará con puntos/guion de forma visual
         form.setNombre(u.getNombre());
         form.setEmail(u.getEmail());
         form.setTelefono(u.getTelefono());
@@ -171,8 +166,7 @@ public class EmpleadoController {
         form.setActivo(u.getActivo());
         form.setRequiereCambioPassword(u.getRequiereCambioPassword());
         model.addAttribute("form", form);
-        model.addAttribute("rut", u.getRut());
-        return "empleadosform";
+        return "empleadosformedit";
     }
 
     // ACTUALIZAR (POST) - JSON si AJAX; redirect si no
@@ -183,10 +177,7 @@ public class EmpleadoController {
                              Model model,
                              HttpServletRequest request) {
         boolean ajax = "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
-        String r = normalizarRut(rut);
-
-        Usuario u = usuarioRepository.findByRut(r)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+        Usuario u = findByRutFlexibleOr404(rut);
 
         if (form.getRol() == null) {
             binding.rejectValue("rol", "rol.requerido", "Debes seleccionar un rol");
@@ -197,22 +188,20 @@ public class EmpleadoController {
             }
         }
 
-        // Si cambia el RUT en el formulario, validar unicidad
+        // No permitimos cambiar el RUT en edición (PK). Si lo tocan, lo ignoramos o marcamos error leve.
         if (form.getRut() != null && !form.getRut().isBlank()) {
-            String rutNuevo = normalizarRut(form.getRut());
-            if (rutNuevo == null) {
+            String nuevoCompacto = normalizarRutCompacto(form.getRut());
+            if (nuevoCompacto == null) {
                 binding.rejectValue("rut", "rut.invalido", "RUT inválido");
-            } else if (!rutNuevo.equals(u.getRut()) && usuarioRepository.existsByRut(rutNuevo)) {
-                binding.rejectValue("rut", "rut.duplicado", "Ya existe un usuario con ese RUT");
-            } else {
-                u.setRut(rutNuevo);
+            } else if (!nuevoCompacto.equals(u.getRut())) {
+                // Mantener el original
+                form.setRut(u.getRut());
             }
         }
 
         if (binding.hasErrors()) {
             if (ajax) return ResponseEntity.badRequest().body(Map.of("error", "Validación falló", "fields", binding.getAllErrors()));
-            model.addAttribute("rut", r);
-            return "empleadosform";
+            return "empleadosformedit";
         }
 
         String profesion = switch (form.getRol()) {
@@ -226,8 +215,10 @@ public class EmpleadoController {
         u.setTelefono(nullSiVacio(form.getTelefono()));
         u.setRol(form.getRol());
         u.setProfesion(profesion);
-        u.setActivo(Boolean.TRUE.equals(form.getActivo()));
-        u.setRequiereCambioPassword(Boolean.TRUE.equals(form.getRequiereCambioPassword()));
+
+        if (form.getActivo() != null) u.setActivo(form.getActivo());
+        if (form.getRequiereCambioPassword() != null) u.setRequiereCambioPassword(form.getRequiereCambioPassword());
+
         if (form.getPassword() != null && !form.getPassword().isBlank()) {
             u.setPasswordHash(passwordEncoder.encode(form.getPassword()));
         }
@@ -235,10 +226,22 @@ public class EmpleadoController {
         usuarioRepository.save(u);
 
         if (ajax) return ResponseEntity.ok(Map.of("ok", true, "rut", u.getRut()));
-        return "redirect:/empleados/" + u.getRut();
+        return "redirect:/empleados/" + u.getRut() + "/editar";
     }
 
-    // ===================== Imagen (solo agregar) =====================
+    // ====== ELIMINAR (borrado lógico) ======
+    @PostMapping("/{rut}/eliminar")
+    public Object eliminar(@PathVariable String rut, HttpServletRequest request) {
+        boolean ajax = "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
+        Usuario u = findByRutFlexibleOr404(rut);
+        u.setActivo(false);
+        usuarioRepository.save(u);
+
+        if (ajax) return ResponseEntity.ok(Map.of("ok", true));
+        return "redirect:/empleados";
+    }
+
+    // ===================== Imagen =====================
 
     // SUBIR FOTO (BD) — POST /empleados/{rut}/foto
     @PostMapping("/{rut}/foto")
@@ -257,9 +260,7 @@ public class EmpleadoController {
                     .body(Map.of("ok", false, "error", "La imagen no debe superar 2MB"));
         }
 
-        String r = normalizarRut(rut);
-        Usuario u = usuarioRepository.findByRut(r)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+        Usuario u = findByRutFlexibleOr404(rut);
 
         u.setFoto(file.getBytes());
         u.setFotoContentType(ct);
@@ -273,9 +274,7 @@ public class EmpleadoController {
     // VER FOTO — GET /empleados/{rut}/foto
     @GetMapping("/{rut}/foto")
     public ResponseEntity<byte[]> verFoto(@PathVariable String rut) {
-        String r = normalizarRut(rut);
-        Usuario u = usuarioRepository.findByRut(r)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+        Usuario u = findByRutFlexibleOr404(rut);
 
         byte[] bytes = u.getFoto();
         if (bytes == null || bytes.length == 0) {
@@ -314,14 +313,81 @@ public class EmpleadoController {
         return candidate;
     }
 
-    // Normaliza RUT (elimina puntos, deja guion, mayúscula en dígito verificador)
-    private static String normalizarRut(String rut) {
-        if (rut == null) return null;
-        String r = rut.replace(".", "").replace(" ", "").toUpperCase(Locale.ROOT);
-        if (!r.contains("-")) {
-            if (r.length() >= 2) r = r.substring(0, r.length() - 1) + "-" + r.substring(r.length() - 1);
+    /** Calcula DV (Módulo 11) para un cuerpo numérico. */
+    private static String calcularDV(String body) {
+        int suma = 0, factor = 2;
+        for (int i = body.length() - 1; i >= 0; i--) {
+            suma += Character.digit(body.charAt(i), 10) * factor;
+            factor = (factor == 7) ? 2 : factor + 1;
         }
-        if (!r.matches("^[0-9]{1,8}-[0-9K]$")) return null;
-        return r;
+        int resto = 11 - (suma % 11);
+        if (resto == 11) return "0";
+        if (resto == 10) return "K";
+        return Integer.toString(resto);
+    }
+
+    /** Normaliza a formato compacto (SIN puntos ni guion): cuerpo+DV (p.ej. 12345678K).
+     *  Acepta:
+     *   - sólo dígitos (4..12): calcula DV y lo anexa;
+     *   - dígitos + DV final (3..11 dígitos + [0-9K]): valida DV.
+     *  Devuelve null si no puede normalizar.
+     */
+    private static String normalizarRutCompacto(String input) {
+        if (input == null) return null;
+        String raw = input.replaceAll("[^0-9Kk]", "").toUpperCase();
+        if (raw.isEmpty()) return null;
+
+        // Solo dígitos -> calcula DV
+        if (raw.matches("^\\d{4,12}$")) {
+            String body = raw;
+            return body + calcularDV(body);
+        }
+
+        // Dígitos + DV provisto -> valida
+        if (raw.matches("^\\d{3,11}[0-9K]$")) {
+            String body = raw.substring(0, raw.length() - 1);
+            String dv   = raw.substring(raw.length() - 1);
+            return calcularDV(body).equals(dv) ? body + dv : null;
+        }
+        return null;
+    }
+
+    /** Pasa compacto -> con guion (#######-X) para compatibilidad con datos antiguos. */
+    private static String formatearConGuion(String compacto) {
+        if (compacto == null || compacto.length() < 2) return null;
+        String body = compacto.substring(0, compacto.length() - 1);
+        String dv   = compacto.substring(compacto.length() - 1);
+        return body + "-" + dv;
+    }
+
+    /** Búsqueda “flexible”: prueba compacto (nuevo), luego legacy (con guion) y, por seguridad, el raw. */
+    private Optional<Usuario> findByRutFlexible(String rutEntrada) {
+        String compacto = normalizarRutCompacto(rutEntrada);
+        if (compacto != null) {
+            Optional<Usuario> hit = usuarioRepository.findByRut(compacto);
+            if (hit.isPresent()) return hit;
+            String legacy = formatearConGuion(compacto);
+            if (legacy != null) {
+                hit = usuarioRepository.findByRut(legacy);
+                if (hit.isPresent()) return hit;
+            }
+        }
+        // último intento literal por compatibilidad
+        return usuarioRepository.findByRut(rutEntrada);
+    }
+
+    private Usuario findByRutFlexibleOr404(String rutEntrada) {
+        return findByRutFlexible(rutEntrada)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+    }
+
+    /** ¿Existe ya (en compacto o legacy con guion)? */
+    private boolean existsByRutFlexible(String rutEntrada) {
+        String compacto = normalizarRutCompacto(rutEntrada);
+        if (compacto == null) return false;
+        if (usuarioRepository.existsByRut(compacto)) return true;
+        String legacy = formatearConGuion(compacto);
+        if (legacy != null && usuarioRepository.existsByRut(legacy)) return true;
+        return usuarioRepository.existsByRut(rutEntrada);
     }
 }

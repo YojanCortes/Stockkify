@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8">
-    <title th:text="${form.rut != null} ? 'Editar empleado' : 'Nuevo empleado'">Empleado</title>
+    <title th:text="${form.rut != null ? 'Editar empleado' : 'Nuevo empleado'}">Empleado</title>
 
     <!-- CSRF para AJAX -->
     <meta name="_csrf" th:content="${_csrf.token}">
@@ -13,19 +13,20 @@
     <style>
         .modal-header-success { background:#28a745; color:#fff; }
         .modal-header-error   { background:#dc3545; color:#fff; }
+        .btn-icon { display:inline-flex; align-items:center; }
+        .btn-icon i { margin-right:.4rem; }
 
-        /* —— Foto selector —— */
+        /* Foto */
         .foto-wrap { display:flex; align-items:center; }
-        .foto-preview {
+        .foto-preview, .foto-actual {
             width:110px; height:110px; border-radius:50%;
             object-fit:cover; box-shadow:0 0.5rem 1rem rgba(0,0,0,.15);
         }
-        .foto-placeholder {
+        .avatar-placeholder {
             width:110px; height:110px; border-radius:50%;
-            object-fit:cover; opacity:.7;
+            background:#f8f9fc; border:2px dashed #d1d3e2; color:#858796;
+            font-weight:600; display:flex; align-items:center; justify-content:center;
         }
-        .btn-icon { display:inline-flex; align-items:center; }
-        .btn-icon i { margin-right:.4rem; }
         .text-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     </style>
 </head>
@@ -36,22 +37,30 @@
 
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-
             <!-- Topbar -->
             <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
                 <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
                     <i class="fa fa-bars"></i>
                 </button>
-                <span class="navbar-text font-weight-bold" th:text="${form.rut != null} ? 'Editar empleado' : 'Nuevo empleado'">Empleado</span>
+                <span class="navbar-text font-weight-bold"
+                      th:text="${form.rut != null ? 'Editar empleado' : 'Nuevo empleado'}">Empleado</span>
                 <ul class="navbar-nav ml-auto"></ul>
             </nav>
 
             <div class="container-fluid">
                 <div class="d-sm-flex align-items-center justify-content-between mb-3">
-                    <h1 class="h3 mb-0 text-gray-800">Registro empleados</h1>
-                    <a class="btn btn-secondary btn-sm" th:href="@{/empleados}">
-                        <i class="fas fa-list mr-1"></i> Volver a la lista
-                    </a>
+                    <h1 class="h3 mb-0 text-gray-800"
+                        th:text="${form.rut != null ? 'Editar empleado' : 'Nuevo empleado'}">Empleado</h1>
+                    <div>
+                        <a class="btn btn-secondary btn-sm mr-2" th:href="@{/empleados}">
+                            <i class="fas fa-list mr-1"></i> Volver a la lista
+                        </a>
+                        <!-- Botón eliminar solo en edición -->
+                        <button type="button" class="btn btn-danger btn-sm" id="btnEliminar"
+                                th:if="${form.rut != null}">
+                            <i class="fas fa-user-times mr-1"></i> Eliminar
+                        </button>
+                    </div>
                 </div>
 
                 <div class="row">
@@ -60,22 +69,20 @@
                             <div class="card-header py-3 d-flex align-items-center">
                                 <i class="fas fa-user-edit mr-2 text-primary"></i>
                                 <h6 class="m-0 font-weight-bold text-primary"
-                                    th:text="${form.rut != null} ? 'Editar datos' : 'Nuevo empleado'">Formulario</h6>
+                                    th:text="${form.rut != null ? 'Editar datos del empleado' : 'Nuevo empleado'}">Formulario</h6>
                             </div>
                             <div class="card-body">
-
                                 <!-- FORM -->
                                 <form id="empleadoForm"
                                       th:with="rutVal=${form.rut},
-               actionUrl=${rutVal != null ? '/empleados/' + rutVal : '/empleados'},
-               isEdit=${rutVal != null}"
-                                      th:attr="data-action-url=${actionUrl}, data-edit=${isEdit}"
+                               actionUrl=${rutVal != null ? '/empleados/' + rutVal : '/empleados'}"
+                                      th:attr="data-action-url=${actionUrl}"
                                       th:object="${form}" method="post">
 
-                                <!-- CSRF fallback -->
+                                    <!-- CSRF fallback -->
                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-                                    <!-- RUT -->
+                                    <!-- RUT + Foto -->
                                     <div class="form-row">
                                         <!-- RUT -->
                                         <div class="form-group col-md-6">
@@ -91,16 +98,24 @@
                                             <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('rut')}" th:errors="*{rut}">Error</div>
                                         </div>
 
-                                        <!-- FOTO (botón seleccionar imagen + preview) -->
+                                        <!-- FOTO (ver actual + seleccionar nueva) -->
                                         <div class="form-group col-md-6">
                                             <label for="foto">Foto del empleado (opcional)</label>
                                             <div class="foto-wrap">
-                                                <!-- Placeholder mostrado si no hay imagen seleccionada -->
-                                                <img id="fotoPlaceholder" class="foto-placeholder mr-3"
-                                                     th:src="@{/img/avatar-placeholder.png}" alt="Sin imagen">
-                                                <!-- Preview real (oculta al inicio) -->
-                                                <img id="fotoPreview" class="foto-preview mr-3 d-none" alt="Vista previa">
-                                                <!-- Controles -->
+                                                <!-- Actual -->
+                                                <div class="mr-3">
+                                                    <!-- Placeholder por defecto -->
+                                                    <div id="currentFotoPH" class="avatar-placeholder">Sin&nbsp;imagen</div>
+                                                    <!-- Intento de cargar actual -->
+                                                    <img id="currentFoto" class="foto-actual d-none"
+                                                         th:if="${form.rut != null}"
+                                                         th:src="@{'/empleados/' + ${form.rut} + '/foto?v=' + ${#dates.format(#dates.createNow(), 'yyyyMMddHHmmss')}}"
+                                                         alt="Foto actual"
+                                                         onload="this.classList.remove('d-none');document.getElementById('currentFotoPH').classList.add('d-none');"
+                                                         onerror="this.classList.add('d-none');document.getElementById('currentFotoPH').classList.remove('d-none');">
+                                                </div>
+
+                                                <!-- Nueva -->
                                                 <div>
                                                     <input id="foto" name="foto" type="file" accept="image/*" class="d-none">
                                                     <div class="btn-group mb-1">
@@ -111,7 +126,11 @@
                                                             <i class="fas fa-times"></i> Quitar
                                                         </button>
                                                     </div>
-                                                    <div id="fotoMeta" class="small text-muted">JPG/PNG/WebP. Máx 2&nbsp;MB.</div>
+                                                    <!-- Preview de nueva selección -->
+                                                    <div class="mt-1">
+                                                        <img id="fotoPreview" class="foto-preview d-none" alt="Vista previa"/>
+                                                    </div>
+                                                    <div id="fotoMeta" class="small text-muted mt-1">JPG/PNG/WebP. Máx 2&nbsp;MB.</div>
                                                     <div id="fotoError" class="small text-danger d-none"></div>
                                                 </div>
                                             </div>
@@ -178,10 +197,10 @@
                                         </div>
                                     </div>
 
-                                    <!-- Password + Confirmación -->
+                                    <!-- Password + Confirmación (NO precargadas) -->
                                     <div class="form-row">
                                         <div class="form-group col-md-6">
-                                            <label for="password" th:text="${form.rut != null} ? 'Nueva contraseña (opcional)' : 'Contraseña'">Contraseña</label>
+                                            <label for="password" th:text="${form.rut != null ? 'Nueva contraseña (opcional)' : 'Contraseña'}">Contraseña</label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
@@ -211,12 +230,11 @@
                                     </div>
 
                                     <!-- Botones -->
-                                    <div class="mt-3 d-flex">
+                                    <div class="mt-3 d-flex align-items-center">
                                         <button id="btnGuardar" type="submit" class="btn btn-success mr-2">
-                                            <i class="fas fa-save mr-1"></i>
-                                            <span th:text="${form.rut != null} ? 'Guardar cambios' : 'Crear empleado'">Guardar</span>
+                                            <i class="fas fa-save mr-1"></i> Guardar cambios
                                         </button>
-                                        <a class="btn btn-danger" th:href="@{/empleados}">
+                                        <a class="btn btn-outline-secondary" th:href="@{/empleados}">
                                             <i class="fas fa-times mr-1"></i> Cancelar
                                         </a>
                                     </div>
@@ -246,7 +264,7 @@
                 <h5 class="modal-title"><i class="fas fa-check-circle mr-2"></i> Operación exitosa</h5>
             </div>
             <div class="modal-body">
-                <p class="mb-0">Usuario registrado correctamente.</p>
+                <p class="mb-0">Cambios guardados correctamente.</p>
             </div>
         </div>
     </div>
@@ -257,13 +275,13 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header modal-header-error">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i> Error al guardar</h5>
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i> Error</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p class="mb-2">Ocurrió un problema al guardar los datos. Revisa los campos o inténtalo de nuevo.</p>
+                <p class="mb-2">Ocurrió un problema. Revisa los campos o inténtalo de nuevo.</p>
                 <pre id="modalErrorDetail" class="small mb-0" style="white-space:pre-wrap;"></pre>
             </div>
             <div class="modal-footer">
@@ -280,19 +298,17 @@
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
-
 <script>
     (function () {
         const $form = $('#empleadoForm');
         if ($form.length === 0) return;
 
         const actionUrl   = $form.data('action-url');
-        const isEdit      = String($form.data('edit')) === 'true';
         const $btnGuardar = $('#btnGuardar');
 
-        // ========= RUT (solo estético, guarda máximo 8 dígitos) =========
+        /* ================== RUT (solo estética; guarda 9 exactos) ================== */
         const $rut = $('#rut');
-        const MAX_COMPACT = 9; // máximo 9 al escribir, pero solo guardamos 8
+        const MAX_COMPACT = 9; // 7-8 dígitos + 1 DV = 9
 
         function cleanCompact(v){
             return String(v || '').toUpperCase().replace(/[^0-9K]/g, '').slice(0, MAX_COMPACT);
@@ -305,10 +321,10 @@
         function formatVisualFromCompact(compact){
             const n = compact.length;
             if (n === 0) return '';
-            if (n === 1) return compact;
-            const body = compact.slice(0, n - 1);
-            const dv   = compact.slice(-1);
-            return `${formatBodyWithDots(body)}-${dv}`;
+            if (n === 1) return compact;                   // 1 char: aún sin guion
+            const body = compact.slice(0, n - 1);          // lo que no es último char
+            const dv   = compact.slice(-1);                // último char
+            return `${formatBodyWithDots(body)}-${dv}`;    // cuerpo-DV
         }
         function setVisualFromInput(el){
             const compact = cleanCompact(el.value);
@@ -317,19 +333,16 @@
             setTimeout(() => { try { el.selectionStart = el.selectionEnd = el.value.length; } catch(_){} }, 0);
         }
 
+        // Inicializa desde el valor que venga del servidor (puede venir con puntos/guion)
         (function initRut(){
-            if (isEdit) {
-                const initial = (actionUrl.split('/').pop() || '').toUpperCase().replace(/[^0-9K]/g,'').slice(0, MAX_COMPACT);
-                const visual  = formatVisualFromCompact(initial);
-                $rut.val(visual).data('compact', initial).prop('readonly', true).addClass('bg-light');
-            } else {
-                setVisualFromInput($rut[0] || { value: '' });
-                $rut.on('input', function(e){ setVisualFromInput(e.target); });
-                $rut.on('blur',  function(e){ setVisualFromInput(e.target); });
-            }
+            const initialCompact = cleanCompact($rut.val());
+            $rut.data('compact', initialCompact);
+            $rut.val(formatVisualFromCompact(initialCompact));
+            $rut.on('input', function(e){ setVisualFromInput(e.target); });
+            $rut.on('blur',  function(e){ setVisualFromInput(e.target); });
         })();
 
-        // ========= Foto (igual que antes) =========
+        /* ================== Foto (nueva selección) ================== */
         const $file   = $('#foto');
         const $btnSel = $('#btnSelectFoto');
         const $btnClr = $('#btnClearFoto');
@@ -371,9 +384,9 @@
             $meta.html(`<span class="text-mono">${f.name}</span> · ${humanSize(f.size)}`);
         });
 
-        // ========= Validación simple =========
+        /* ================== Validación ligera ================== */
         function validateClient(){
-            const compact = isEdit ? ($rut.data('compact') || '') : ($rut.data('compact') || cleanCompact($rut.val()));
+            const compact = $rut.data('compact') || cleanCompact($rut.val());
             const nombre = $('#nombre').val().trim();
             const email  = $('#email').val().trim();
             const rol    = $('#rol').val();
@@ -381,6 +394,9 @@
             const conf   = $('#confirmPassword').val();
 
             if (!compact) return 'El RUT es obligatorio';
+            if (!/^\d{7,8}[0-9K]$/.test(compact) || compact.length !== 9)
+                return 'El RUT debe tener 9 caracteres (7–8 dígitos + DV).';
+
             if (!nombre) return 'El nombre es obligatorio';
 
             if (!email) return 'El correo es obligatorio';
@@ -389,24 +405,21 @@
 
             if (!rol) return 'Debes seleccionar un rol';
 
-            if (!isEdit) {
-                if (!pass || pass.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
-                if (pass !== conf) return 'Las contraseñas no coinciden';
-            } else {
-                if (pass && pass.length < 6) return 'La nueva contraseña debe tener al menos 6 caracteres';
-                if (pass && pass !== conf) return 'Las contraseñas no coinciden';
-            }
+            // En edición, password es opcional
+            if (pass && pass.length < 6) return 'La nueva contraseña debe tener al menos 6 caracteres';
+            if (pass && pass !== conf)   return 'Las contraseñas no coinciden';
+
             return null;
         }
 
-        // ========= Subir foto =========
-        async function subirFotoSiExiste(rutCompact){
+        /* ================== Subir foto (usa SIEMPRE RUT 9) ================== */
+        async function subirFotoSiExiste(rut9){
             const f = $file[0].files && $file[0].files[0];
             if (!f) return;
             const token  = $('meta[name="_csrf"]').attr('content');
             const header = $('meta[name="_csrf_header"]').attr('content');
             const fd = new FormData(); fd.append('file', f);
-            const res = await fetch(`/empleados/${encodeURIComponent(rutCompact)}/foto`, {
+            const res = await fetch(`/empleados/${encodeURIComponent(rut9)}/foto`, {
                 method: 'POST',
                 headers: Object.assign({ 'X-Requested-With': 'XMLHttpRequest' }, header ? { [header]: token } : {}),
                 body: fd
@@ -429,7 +442,7 @@
             $('#modalError').modal('show');
         }
 
-        // ========= Submit =========
+        /* ================== Submit (editar) ================== */
         $form.on('submit', function (ev) {
             ev.preventDefault();
 
@@ -439,21 +452,21 @@
             const token  = $('meta[name="_csrf"]').attr('content');
             const header = $('meta[name="_csrf_header"]').attr('content');
 
-            // Compacto escrito (lo que tipeaste, máx 9 chars)
+            // EXACTAMENTE lo que el usuario escribió (limpio, sin puntos/guion), 9 exactos
             const compactFromUI = ($rut.data('compact') || cleanCompact($rut.val()));
-            // PERO: siempre guardamos solo los primeros 8 dígitos
-            const bodyOnly = compactFromUI.slice(0, 8);
-
-            const rutParaGuardar = bodyOnly;
+            if (compactFromUI.length !== 9) {
+                showError('El RUT debe tener 9 caracteres (cuerpo+DV).');
+                return;
+            }
+            const rut9 = compactFromUI;
 
             const formData = new FormData(this);
-            formData.set('rut', rutParaGuardar);
+            formData.set('rut', rut9);
 
-            if (isEdit) {
-                if (!formData.get('password')) {
-                    formData.delete('password');
-                    formData.delete('confirmPassword');
-                }
+            // Password vacío no se envía (evita validaciones innecesarias)
+            if (!formData.get('password')) {
+                formData.delete('password');
+                formData.delete('confirmPassword');
             }
 
             $btnGuardar.prop('disabled', true).addClass('disabled');
@@ -469,13 +482,11 @@
             })
                 .then(async (res) => {
                     const ct = res.headers.get('content-type') || '';
-
                     if (!ct.includes('application/json')) {
-                        try { await subirFotoSiExiste(rutParaGuardar); } catch(e){ console.warn(e); }
+                        try { await subirFotoSiExiste(rut9); } catch(e){ console.warn(e); }
                         showSuccessThenRedirect();
                         return;
                     }
-
                     const payload = await res.json().catch(() => ({}));
                     if (!res.ok || payload.ok === false) {
                         if (payload && payload.errors) {
@@ -491,12 +502,42 @@
                         }
                         throw new Error(payload.error || 'Validación falló');
                     }
-
-                    await subirFotoSiExiste(rutParaGuardar);
+                    await subirFotoSiExiste(rut9);
                     showSuccessThenRedirect();
                 })
                 .catch((e) => { showError(e && e.message ? e.message : e); })
                 .finally(() => { $btnGuardar.prop('disabled', false).removeClass('disabled'); });
+        });
+
+        /* ================== Eliminar (usa RUT 9) ================== */
+        $('#btnEliminar').on('click', async function () {
+            const nombre = ($('#nombre').val() || '').trim();
+            const compact = $rut.data('compact') || cleanCompact($rut.val());
+            if (compact.length !== 9) { showError('RUT inválido para eliminar.'); return; }
+
+            const visual = formatVisualFromCompact(compact);
+            const msg = `¿Seguro que deseas eliminar a ${nombre || 'este empleado'} (${visual})? Esta acción no se puede deshacer.`;
+            if (!confirm(msg)) return;
+
+            const token  = $('meta[name="_csrf"]').attr('content');
+            const header = $('meta[name="_csrf_header"]').attr('content');
+
+            try {
+                const res = await fetch(`/empleados/${encodeURIComponent(compact)}/eliminar`, {
+                    method: 'POST', // o DELETE si tu backend lo expone
+                    headers: Object.assign(
+                        { 'X-Requested-With': 'XMLHttpRequest' },
+                        header ? { [header]: token } : {}
+                    )
+                });
+                if (!res.ok) {
+                    const txt = await res.text().catch(()=> '');
+                    throw new Error(txt || `HTTP ${res.status}`);
+                }
+                window.location.href = '/empleados';
+            } catch (e) {
+                showError(e && e.message ? e.message : e);
+            }
         });
 
     })();
