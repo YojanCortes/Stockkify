@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -118,7 +119,9 @@
                 <div class="cart-head">
                     <strong>Salida actual</strong>
                     <span class="chip">Usuario:
-                        <span th:text="${usuarioActual != null ? usuarioActual : 'Invitado'}">Invitado</span>
+                        <!-- Si está autenticado muestra su username; si es anónimo muestra Invitado -->
+                        <span sec:authorize="isAuthenticated()" sec:authentication="name">Invitado</span>
+                        <span sec:authorize="isAnonymous()">Invitado</span>
                     </span>
                 </div>
             </div>
@@ -145,7 +148,8 @@
             <div class="globals">
                 <input type="text" id="motivo" placeholder="Motivo (ej. Venta, Merma…)" />
                 <input type="text" id="referencia" placeholder="Referencia (N° doc, nota…)" />
-                <input type="text" id="usuario" placeholder="Usuario (opcional)" th:value="${usuarioActual}" />
+                <input type="text" id="usuario" placeholder="Usuario (opcional)"
+                       th:value="${#authorization.expression('isAuthenticated()') ? #authentication.name : 'Invitado'}" />
             </div>
 
             <!-- Acciones -->
