@@ -55,7 +55,8 @@
                 <div style="opacity:.7;font-weight:700">ACCIONES</div>
             </div>
 
-            <div>
+            <!-- 🟢 CONTENEDOR DEL LISTADO (para AJAX) -->
+            <div id="productosContainer">
                 <!-- Loop de productos -->
                 <div class="product-row"
                      th:each="p : ${productos}"
@@ -85,14 +86,14 @@
                         Mostrando
                         <span th:text="${#lists.size(productos)}">0</span>
                         <span th:if="${totalElements != null}">
-              de <span th:text="${totalElements}">0</span>
-            </span>
+                          de <span th:text="${totalElements}">0</span>
+                        </span>
                     </div>
                     <div>Usa el lector para agregar más rápido</div>
                 </div>
 
-                <!-- Paginación -->
-                <div th:if="${totalPages != null and totalPages > 1}" style="padding:0 14px 12px;">
+                <!-- 🟢 CONTENEDOR DEL PAGINADOR (para AJAX) -->
+                <div th:if="${totalPages != null and totalPages > 1}" style="padding:0 14px 12px;" id="paginadorContainer">
                     <nav>
                         <ul class="pagination mb-0">
                             <li class="page-item" th:classappend="${page == 0} ? 'disabled' : ''">
@@ -117,8 +118,8 @@
                 <div class="cart-head">
                     <strong>Salida actual</strong>
                     <span class="chip">Usuario:
-            <span th:text="${usuarioActual != null ? usuarioActual : 'Invitado'}">Invitado</span>
-          </span>
+                        <span th:text="${usuarioActual != null ? usuarioActual : 'Invitado'}">Invitado</span>
+                    </span>
                 </div>
             </div>
 
@@ -182,4 +183,3 @@
 <script th:src="@{/js/salidas.js}"></script>
 </body>
 </html>
-<

@@ -20,7 +20,7 @@
         /* Contenedor de imagen/avatar */
         .avatar-box { height: 180px; }
 
-        /* Placeholder “Sin imagen” (se usa solo si falta /img/avatar-placeholder.png) */
+        /* Placeholder “Sin imagen” */
         .avatar-placeholder {
             width: 110px; height: 110px; border-radius: 50%;
             background: #f8f9fc; border: 2px dashed #d1d3e2; color: #858796;
@@ -97,34 +97,23 @@
                 </p>
 
                 <!-- Grid de tarjetas -->
+
                 <div class="row">
                     <!-- Tarjeta por empleado -->
                     <div class="col-xl-3 col-lg-4 col-md-6 mb-4" th:each="empleado : ${empleados}">
                         <div class="card border-0 shadow h-100 card-zoom">
 
-                            <!-- RUT: arriba de la imagen -->
-                            <p class="rut-title mb-0 text-center"
-                               th:text="${empleado.rut != null && !#strings.isEmpty(empleado.rut) ? 'RUT: ' + empleado.rut : 'RUT no definido'}">
+                            <!-- RUT (solo visual). Thymeleaf inyecta el valor en data-rut -->
+                            <p class="rut-title mb-0 text-center" th:data-rut="${empleado.rut}">
                                 RUT no definido
                             </p>
 
-                            <!-- Imagen/Avatar: foto si existe; si no, texto "Sin imagen" -->
+                            <!-- Imagen/Avatar: placeholder -->
                             <div class="card-img-top d-flex align-items-center justify-content-center avatar-box bg-light">
-                                <!-- Con foto -->
-                                <img
-                                        th:if="${empleado.fotoTamano != null and empleado.fotoTamano > 0}"
-                                        th:src="@{/empleados/{rut}/foto(rut=${empleado.rut}, v=${#temporals.format(empleado.actualizadoEn, 'yyyyMMddHHmmss')})}"
-                                        th:alt="${'Foto de ' + (empleado.nombre != null ? empleado.nombre : empleado.username)}"
-                                        class="rounded-circle shadow-sm"
-                                        style="width:110px;height:110px;object-fit:cover;"
-                                />
-
-                                <!-- Sin foto: placeholder con texto -->
-                                <div class="avatar-placeholder" th:unless="${empleado.fotoTamano != null and empleado.fotoTamano > 0}">
+                                <div class="avatar-placeholder">
                                     <span>Sin&nbsp;imagen</span>
                                 </div>
                             </div>
-
 
                             <div class="card-body text-center">
                                 <!-- Nombre -->
@@ -134,27 +123,25 @@
 
                                 <!-- Botón Ver detalles: usa RUT -->
                                 <a class="btn btn-outline-primary btn-sm mb-2"
-                                   th:href="@{'/empleados/' + ${empleado.rut} + '/editar'}">
+                                   th:href="@{'/empleados/' + ${empleado.rut}}">
                                     <i class="fas fa-eye mr-1"></i> Ver detalles
                                 </a>
 
-
                                 <!-- Badge según rol -->
                                 <div class="mt-2">
-                                    <span class="badge badge-info badge-role"
-                                          th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).BODEGUERO}">
-                                        BODEGUERO
-                                    </span>
+          <span class="badge badge-info badge-role"
+                th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).BODEGUERO}">
+            BODEGUERO
+          </span>
                                     <span class="badge badge-primary badge-role"
                                           th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).BARRA}">
-                                        BARRA
-                                    </span>
+            BARRA
+          </span>
                                     <span class="badge badge-warning badge-role text-dark"
                                           th:if="${empleado.rol == T(com.inventario1.Inventario.models.Rol).SUPERVISOR}">
-                                        SUPERVISOR
-                                    </span>
+            SUPERVISOR
+          </span>
                                 </div>
-
                             </div>
 
                             <div class="card-footer bg-white border-0 text-center"></div>
@@ -168,6 +155,8 @@
                         </div>
                     </div>
                 </div>
+
+
 
                 <!-- Paginación -->
                 <div class="d-flex align-items-center justify-content-between" th:if="${totalPages != null}">
@@ -224,6 +213,35 @@
 <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
 </a>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        document.querySelectorAll('.rut-title').forEach(function(el){
+            var rawAttr = el.getAttribute('data-rut');
+            var raw = (rawAttr == null ? '' : String(rawAttr)).trim();
+
+            if(!raw){
+                el.textContent = 'RUT no definido';
+                return;
+            }
+
+            // Limpia: sin puntos/guion/espacios; acepta 0-9 y K/k
+            var compact = raw.toUpperCase().replace(/[.\-\s]/g,'').replace(/[^0-9K]/g,'');
+
+            if(compact.length < 2){
+                el.textContent = 'RUT: ' + compact;
+                return;
+            }
+
+            var body = compact.slice(0, -1);   // 7 u 8 dígitos
+            var dv   = compact.slice(-1);      // DV (0-9 o K)
+            var bodyDots = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // puntos cada 3
+
+            el.textContent = 'RUT: ' + bodyDots + '-' + dv;
+        });
+    });
+</script>
+
 
 <!-- Scripts -->
 <script th:src="@{/vendor/jquery/jquery.min.js}"></script>
