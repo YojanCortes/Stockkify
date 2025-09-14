@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${producto.nombre} + ' - Detalles'">Detalles del producto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link th:href="@{/css/app.css}" rel="stylesheet"/>
+</head>
+<body>
+<header>
+    <h1 th:text="${producto.nombre}">Nombre del producto</h1>
+    <p><strong>Código de barras:</strong> <span th:text="${producto.codigoBarras}">000</span></p>
+</header>
+
+<section style="display:flex;gap:2rem;align-items:flex-start;">
+    <img th:src="@{/img/no-image.png}" alt="Imagen del producto" style="max-width:220px; height:auto; border:1px solid #eee;"/>
+
+    <div>
+        <p><strong>Marca:</strong> <span th:text="${producto.marca}">Marca</span></p>
+        <p><strong>Categoría:</strong> <span th:text="${producto.categoria}">CATEGORIA</span></p>
+        <p><strong>Unidad base:</strong> <span th:text="${producto.unidadBase}">UNIDAD</span></p>
+        <p><strong>Volumen nominal (ml):</strong> <span th:text="${producto.volumenNominalMl}">0</span></p>
+        <p><strong>Graduación alcohólica:</strong> <span th:text="${producto.graduacionAlcoholica}">0.0</span></p>
+        <p><strong>Perecible:</strong> <span th:text="${producto.perecible} ? 'Sí' : 'No'">No</span></p>
+        <p><strong>Retornable:</strong> <span th:text="${producto.retornable} ? 'Sí' : 'No'">No</span></p>
+        <p><strong>Stock actual:</strong> <span th:text="${producto.stockActual}">0</span></p>
+        <p><strong>Stock mínimo:</strong> <span th:text="${producto.stockMinimo}">0</span></p>
+        <p><strong>Fecha de vencimiento:</strong>
+            <span th:text="${producto.fechaVencimiento} != null ? ${#temporals.format(producto.fechaVencimiento, 'yyyy-MM-dd')} : '—'">—</span>
+        </p>
+        <p><strong>Activo:</strong> <span th:text="${producto.activo} ? 'Sí' : 'No'">Sí</span></p>
+    </div>
+</section>
+
+<p style="margin-top:2rem;">
+    <a th:href="@{/}">← Volver</a>
+</p>
+</body>
+</html>

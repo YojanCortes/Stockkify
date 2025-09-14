@@ -40,11 +40,10 @@ public class SalidaController {
     public String nueva(@RequestParam(value = "codigo", required = false) String codigo,
                         @RequestParam(value = "q", required = false) String q,
                         @RequestParam(value = "page", defaultValue = "0") int page,
-                        @RequestParam(value = "size", defaultValue = "3") int size,
+                        @RequestParam(value = "size", defaultValue = "12") int size,
                         Model model,
                         @ModelAttribute("seleccionIds") List<String> seleccionIds) {
 
-        // Normaliza size
         if (size <= 0) size = 12;
 
         // Si viene un código puntual (flujo original): busca por codigoBarras
@@ -62,7 +61,7 @@ public class SalidaController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
         Page<Producto> pagina = (q != null && !q.isBlank())
-                ? inventarioService.buscarProductos(q.trim(), pageable)   // usa búsqueda por nombre o código
+                ? inventarioService.buscarProductos(q.trim(), pageable)   // búsqueda por nombre o código
                 : inventarioService.listarProductos(pageable);
 
         List<ProductoView> productosView = pagina.getContent()
@@ -70,7 +69,7 @@ public class SalidaController {
                 .map(this::toView)
                 .collect(Collectors.toList());
 
-        // Reconstruir selección (los ids en sesión son códigos de barras)
+        // Reconstruir selección (ids en sesión son códigos de barras)
         List<ProductoView> seleccionados = seleccionIds.isEmpty()
                 ? Collections.emptyList()
                 : seleccionIds.stream()
@@ -133,11 +132,11 @@ public class SalidaController {
     // ------------ helpers (ViewModel) ------------
     private ProductoView toView(Producto p) {
         return ProductoView.builder()
-                .id(nz(p.getCodigoBarras()))          // id lógico en la vista = código de barras
+                .id(nz(p.getCodigoBarras()))                    // id lógico en la vista = código de barras
                 .nombre(nz(p.getNombre()))
                 .sku(nz(p.getCodigoBarras()))
                 .marca(p.getMarca())
-                .categoria(p.getCategoria())
+                .categoria(p.getCategoria() != null ? p.getCategoria().name() : null) // enum -> texto
                 .stockActual(p.getStockActual() == null ? 0 : p.getStockActual())
                 .stockMinimo(p.getStockMinimo())
                 .build();
@@ -157,7 +156,7 @@ public class SalidaController {
         private String nombre;
         private String sku;          // codigo_barras
         private String marca;
-        private String categoria;
+        private String categoria;    // texto del enum (GENERAL/ALIMENTOS/INSUMOS)
         private Integer stockActual; // stock_actual
         private Integer stockMinimo; // stock_minimo
     }

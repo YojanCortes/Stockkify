@@ -2,6 +2,7 @@ package com.inventario1.Inventario.repos;
 
 import com.inventario1.Inventario.models.Producto;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -20,33 +21,45 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
        ========================= */
 
     /**
-     * Búsqueda paginada por nombre o código de barras (case-insensitive en nombre).
+     * Búsqueda paginada por nombre o código de barras.
      * Si q es null o vacío, devuelve todo (paginado).
+     * Se agrega countQuery y readOnly para rendimiento.
      */
-    @Query("""
-           SELECT p FROM Producto p
-           WHERE (:q IS NULL OR :q = '')
-              OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
-              OR p.codigoBarras LIKE CONCAT('%', :q, '%')
-           """)
+    @Query(
+            value = """
+                SELECT p FROM Producto p
+                WHERE (:q IS NULL OR :q = ''
+                       OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+                       OR p.codigoBarras LIKE CONCAT('%', :q, '%'))
+                """,
+            countQuery = """
+                     SELECT COUNT(p) FROM Producto p
+                     WHERE (:q IS NULL OR :q = ''
+                            OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+                            OR p.codigoBarras LIKE CONCAT('%', :q, '%'))
+                     """
+    )
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     Page<Producto> search(@Param("q") String q, Pageable pageable);
 
     /**
-     * Búsqueda sin paginar (útil para listados rápidos; ojo en tablas grandes).
+     * Búsqueda sin paginar (ojo en tablas grandes).
+     * Si q es null o vacío, devuelve todo.
      */
     @Query("""
            SELECT p FROM Producto p
-           WHERE (:q IS NULL OR :q = '')
-              OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
-              OR p.codigoBarras LIKE CONCAT('%', :q, '%')
+           WHERE (:q IS NULL OR :q = ''
+                  OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+                  OR p.codigoBarras LIKE CONCAT('%', :q, '%'))
            """)
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     List<Producto> search(@Param("q") String q);
 
     /**
      * Primeros 200, ordenados por código de barras ascendente.
      */
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     List<Producto> findTop200ByOrderByCodigoBarrasAsc();
-
 
     /* =========================
        LOOKUP / UTILIDADES
@@ -57,24 +70,23 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     boolean existsByCodigoBarras(String codigoBarras);
 
     /**
-     * Carga en bloque por lista de códigos (usado por el servicio de movimientos).
+     * Carga en bloque por lista de códigos.
      */
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     List<Producto> findAllByCodigoBarrasIn(Collection<String> codigos);
 
     /**
-     * (Opcional) Lock pesimista para lecturas-modificaciones explícitas.
-     * No es necesario para movimientos porque el stock lo ajustan los triggers.
+     * Lock pesimista para lecturas-modificaciones explícitas.
+     * Requiere transacción activa en el servicio que la invoque.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Producto p WHERE p.codigoBarras = :codigo")
     Optional<Producto> lockByCodigo(@Param("codigo") String codigoBarras);
 
-
     /* =========================
        IMPORTANTE
        =========================
-       Se eliminaron las operaciones atómicas de stock (descontar/incrementar)
-       porque ahora el stock se gestiona en la BD con triggers.
-       Mantén la lógica de entradas/salidas a través del servicio de movimientos.
+       Se eliminaron operaciones atómicas de stock en el repositorio.
+       Maneja el stock vía movimientos/servicio.
      */
 }

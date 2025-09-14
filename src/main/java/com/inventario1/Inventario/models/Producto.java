@@ -2,6 +2,7 @@ package com.inventario1.Inventario.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,7 +12,7 @@ public class Producto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")               // <- PK real en la BD
+    @Column(name = "id") // PK real en la BD
     private Long id;
 
     @Column(name = "codigo_barras", length = 32, nullable = false, unique = true)
@@ -21,8 +22,16 @@ public class Producto {
     private String nombre;
 
     private String marca;
-    private String categoria;
+
+    // Drop-down en la vista (puede ser String o Enum; por ahora String)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32, columnDefinition = "varchar(32)")
+    @Builder.Default
+    private Categoria categoria = Categoria.GENERAL;
+
     private String unidadBase;
+
+    // Datos opcionales según tu dominio
     private Integer volumenNominalMl;
     private Integer graduacionAlcoholica;
 
@@ -32,11 +41,19 @@ public class Producto {
     @Column(nullable = false)
     private boolean retornable;
 
+    // Cantidad SIEMPRE no nula para que la vista no explote
+    @Builder.Default
     @Column(name = "stock_actual", nullable = false)
-    private Integer stockActual;
+    private Integer stockActual = 0;
 
+    // Puede ser null para indicar “sin mínimo definido”
     private Integer stockMinimo;
 
+    // Nuevo: fecha de vencimiento (puede ser null)
+    @Column(name = "fecha_vencimiento")
+    private LocalDate fechaVencimiento;
+
+    @Builder.Default
     @Column(nullable = false)
     private boolean activo = true;
 
@@ -52,11 +69,14 @@ public class Producto {
     @PrePersist
     public void prePersist() {
         var now = LocalDateTime.now();
+        if (stockActual == null) stockActual = 0;
         creadoEn = now;
         actualizadoEn = now;
     }
+
     @PreUpdate
     public void preUpdate() {
+        if (stockActual == null) stockActual = 0;
         actualizadoEn = LocalDateTime.now();
     }
 }
