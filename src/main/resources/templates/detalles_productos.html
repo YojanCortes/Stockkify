@@ -1,39 +1,167 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"/>
-    <title th:text="${producto.nombre} + ' - Detalles'">Detalles del producto</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <link th:href="@{/css/app.css}" rel="stylesheet"/>
+    <meta charset="utf-8">
+    <title th:text="${producto.nombre} + ' — Detalles'">Detalles</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Estilos del theme -->
+    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet"/>
+    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet"/>
+
+    <style>
+        .product-card img{max-width:240px;height:auto;border:1px solid #eee;border-radius:.5rem}
+        .stock--low{color:#e74a3b;font-weight:700}
+        .stock--ok{color:#1cc88a;font-weight:700}
+    </style>
 </head>
-<body>
-<header>
-    <h1 th:text="${producto.nombre}">Nombre del producto</h1>
-    <p><strong>Código de barras:</strong> <span th:text="${producto.codigoBarras}">000</span></p>
-</header>
+<body id="page-top">
+<div id="wrapper">
+    <!-- Sidebar -->
+    <div th:replace="~{menugeneral :: sidebar}"></div>
 
-<section style="display:flex;gap:2rem;align-items:flex-start;">
-    <img th:src="@{/img/no-image.png}" alt="Imagen del producto" style="max-width:220px; height:auto; border:1px solid #eee;"/>
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                    <i class="fa fa-bars"></i>
+                </button>
+                <ul class="navbar-nav ml-auto"></ul>
+            </nav>
 
-    <div>
-        <p><strong>Marca:</strong> <span th:text="${producto.marca}">Marca</span></p>
-        <p><strong>Categoría:</strong> <span th:text="${producto.categoria}">CATEGORIA</span></p>
-        <p><strong>Unidad base:</strong> <span th:text="${producto.unidadBase}">UNIDAD</span></p>
-        <p><strong>Volumen nominal (ml):</strong> <span th:text="${producto.volumenNominalMl}">0</span></p>
-        <p><strong>Graduación alcohólica:</strong> <span th:text="${producto.graduacionAlcoholica}">0.0</span></p>
-        <p><strong>Perecible:</strong> <span th:text="${producto.perecible} ? 'Sí' : 'No'">No</span></p>
-        <p><strong>Retornable:</strong> <span th:text="${producto.retornable} ? 'Sí' : 'No'">No</span></p>
-        <p><strong>Stock actual:</strong> <span th:text="${producto.stockActual}">0</span></p>
-        <p><strong>Stock mínimo:</strong> <span th:text="${producto.stockMinimo}">0</span></p>
-        <p><strong>Fecha de vencimiento:</strong>
-            <span th:text="${producto.fechaVencimiento} != null ? ${#temporals.format(producto.fechaVencimiento, 'yyyy-MM-dd')} : '—'">—</span>
-        </p>
-        <p><strong>Activo:</strong> <span th:text="${producto.activo} ? 'Sí' : 'No'">Sí</span></p>
+            <div class="container-fluid">
+                <div class="d-sm-flex align-items-center justify-content-between mb-3">
+                    <h1 class="h3 mb-0 text-gray-800">
+                        <i class="fas fa-box-open mr-2"></i>
+                        <span th:text="${producto.nombre}">Producto</span>
+                    </h1>
+                    <a class="btn btn-sm btn-secondary" th:href="@{/}">
+                        <i class="fas fa-arrow-left mr-1"></i> Volver
+                    </a>
+                </div>
+
+                <div class="row">
+                    <!-- Col Imagen -->
+                    <div class="col-xl-4 col-lg-5 mb-4">
+                        <div class="card shadow product-card">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <i class="fas fa-image mr-1"></i> Imagen
+                                </h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <img th:src="@{/img/no-image.png}" alt="Imagen del producto">
+                                <div class="mt-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-camera mr-1"></i> Cambiar imagen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Col Datos -->
+                    <div class="col-xl-8 col-lg-7 mb-4">
+                        <div class="card shadow">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <i class="fas fa-info-circle mr-1"></i> Detalles
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Código de barras</label>
+                                        <div class="font-weight-bold" th:text="${producto.codigoBarras}">000</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Marca</label>
+                                        <div class="font-weight-bold" th:text="${producto.marca}">Marca</div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Categoría</label>
+                                        <div class="font-weight-bold" th:text="${producto.categoria}">CATEGORIA</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Unidad base</label>
+                                        <div class="font-weight-bold" th:text="${producto.unidadBase}">UNIDAD</div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Volumen nominal (ml)</label>
+                                        <div class="font-weight-bold" th:text="${producto.volumenNominalMl}">0</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Graduación alcohólica</label>
+                                        <div class="font-weight-bold" th:text="${producto.graduacionAlcoholica}">0.0</div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Perecible</label>
+                                        <div class="font-weight-bold" th:text="${producto.perecible} ? 'Sí' : 'No'">No</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Retornable</label>
+                                        <div class="font-weight-bold" th:text="${producto.retornable} ? 'Sí' : 'No'">No</div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Stock actual</label>
+                                        <div class="font-weight-bold"
+                                             th:classappend="${producto.stockActual} <= ${producto.stockMinimo} ? ' stock--low' : ' stock--ok'"
+                                             th:text="${producto.stockActual}">0</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Stock mínimo</label>
+                                        <div class="font-weight-bold" th:text="${producto.stockMinimo}">0</div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Fecha de vencimiento</label>
+                                        <div class="font-weight-bold"
+                                             th:text="${producto.fechaVencimiento} != null ? ${#temporals.format(producto.fechaVencimiento, 'yyyy-MM-dd')} : '—'">—</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="small text-muted">Activo</label>
+                                        <div class="font-weight-bold" th:text="${producto.activo} ? 'Sí' : 'No'">Sí</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción debajo de imagen y formulario -->
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            <a class="btn btn-primary" th:href="@{'/productos/editar/' + ${producto.codigoBarras}}">
+                                <i class="fas fa-edit mr-1"></i> Editar
+                            </a>
+                            <a class="btn btn-outline-secondary" th:href="@{/}">
+                                <i class="fas fa-list mr-1"></i> Ir al listado
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="sticky-footer bg-white">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>&copy; Inventario 2025</span>
+                </div>
+            </div>
+        </footer>
     </div>
-</section>
+</div>
 
-<p style="margin-top:2rem;">
-    <a th:href="@{/}">← Volver</a>
-</p>
+<a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
+
+<!-- JS theme -->
+<script th:src="@{/vendor/jquery/jquery.min.js}"></script>
+<script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
+<script th:src="@{/js/sb-admin-2.min.js}"></script>
 </body>
 </html>
