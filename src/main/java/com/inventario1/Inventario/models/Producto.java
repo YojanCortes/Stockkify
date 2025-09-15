@@ -2,6 +2,7 @@ package com.inventario1.Inventario.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -23,39 +24,41 @@ public class Producto {
 
     private String marca;
 
-    // Drop-down en la vista (puede ser String o Enum; por ahora String)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32, columnDefinition = "varchar(32)")
+    @Column(nullable = false, length = 32)
     @Builder.Default
     private Categoria categoria = Categoria.GENERAL;
 
-    private String unidadBase;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unidad_base", nullable = false)
+    private UnidadBase unidadBase;
 
-    // Datos opcionales según tu dominio
+    @Column(name = "graduacion_alcoholica")
+    private Double graduacionAlcoholica;
+
     private Integer volumenNominalMl;
-    private Integer graduacionAlcoholica;
 
+    // Usamos Boolean para que Lombok genere getPerecible()/getRetornable()/getActivo()
+    @Builder.Default
     @Column(nullable = false)
-    private boolean perecible;
+    private Boolean perecible = false;
 
+    @Builder.Default
     @Column(nullable = false)
-    private boolean retornable;
+    private Boolean retornable = false;
 
-    // Cantidad SIEMPRE no nula para que la vista no explote
     @Builder.Default
     @Column(name = "stock_actual", nullable = false)
     private Integer stockActual = 0;
 
-    // Puede ser null para indicar “sin mínimo definido”
     private Integer stockMinimo;
 
-    // Nuevo: fecha de vencimiento (puede ser null)
     @Column(name = "fecha_vencimiento")
     private LocalDate fechaVencimiento;
 
     @Builder.Default
     @Column(nullable = false)
-    private boolean activo = true;
+    private Boolean activo = true;
 
     @Column(name = "creado_en", updatable = false)
     private LocalDateTime creadoEn;
@@ -70,6 +73,9 @@ public class Producto {
     public void prePersist() {
         var now = LocalDateTime.now();
         if (stockActual == null) stockActual = 0;
+        if (perecible == null) perecible = false;
+        if (retornable == null) retornable = false;
+        if (activo == null) activo = true;
         creadoEn = now;
         actualizadoEn = now;
     }
@@ -77,6 +83,9 @@ public class Producto {
     @PreUpdate
     public void preUpdate() {
         if (stockActual == null) stockActual = 0;
+        if (perecible == null) perecible = false;
+        if (retornable == null) retornable = false;
+        if (activo == null) activo = true;
         actualizadoEn = LocalDateTime.now();
     }
 }

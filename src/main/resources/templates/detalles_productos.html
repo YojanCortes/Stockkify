@@ -110,7 +110,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="small text-muted">Stock actual</label>
                                         <div class="font-weight-bold"
-                                             th:classappend="${producto.stockActual} <= ${producto.stockMinimo} ? ' stock--low' : ' stock--ok'"
+                                             th:classappend="${((producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)) ? ' stock--low' : ' stock--ok'}"
                                              th:text="${producto.stockActual}">0</div>
                                     </div>
                                     <div class="col-md-6 mb-3">
@@ -132,14 +132,67 @@
                         </div>
 
                         <!-- Botones de acción debajo de imagen y formulario -->
-                        <div class="mt-3 d-flex flex-wrap gap-2">
-                            <a class="btn btn-primary" th:href="@{'/productos/editar/' + ${producto.codigoBarras}}">
+                        <div class="mt-3 d-flex flex-wrap">
+                            <a class="btn btn-primary mr-2 mb-2"
+                               th:href="@{'/productos/editar/' + ${producto.codigoBarras}}">
                                 <i class="fas fa-edit mr-1"></i> Editar
                             </a>
-                            <a class="btn btn-outline-secondary" th:href="@{/}">
-                                <i class="fas fa-list mr-1"></i> Ir al listado
-                            </a>
+
+                            <!-- Eliminar (POST con CSRF) -->
+                            <form class="d-inline-block mr-2 mb-2"
+                                  th:action="@{'/productos/' + ${producto.codigoBarras} + '/eliminar'}"
+                                  method="post"
+                                  onsubmit="return confirm('¿Seguro que deseas eliminar este producto? Esta acción no se puede deshacer.');">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash-alt mr-1"></i> Eliminar producto
+                                </button>
+                            </form>
                         </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal: Confirmar eliminación -->
+        <div class="modal fade" id="confirmarEliminarModal" tabindex="-1" role="dialog"
+             aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content border-0">
+                    <div class="modal-header bg-white border-0">
+                        <h5 class="modal-title d-flex align-items-center" id="confirmarEliminarLabel">
+                            <i class="fas fa-exclamation-triangle text-danger mr-2" style="font-size:1.6rem;"></i>
+                            <span class="font-weight-bold">¿Estás seguro de eliminar el producto?</span>
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body text-center">
+                        <div class="mb-2">
+                            <i class="fas fa-box-open text-danger" style="font-size:3rem;"></i>
+                        </div>
+                        <div class="h4 mb-1" th:text="${producto.nombre}">Nombre del producto</div>
+                        <div class="text-muted">
+                            <span>Código de barras: </span>
+                            <span th:text="${producto.codigoBarras}">0000000000000</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i> Cancelar
+                        </button>
+
+                        <!-- Form que ejecuta la eliminación -->
+                        <form th:action="@{'/productos/' + ${producto.codigoBarras} + '/eliminar'}"
+                              method="post" class="m-0">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt mr-1"></i> Eliminar
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
