@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <title th:text="'Editar: ' + (${producto} != null ? ${producto.nombre} : ${form.nombre})">Editar producto</title>
+    <title th:text="${'Editar: ' + ((producto != null) ? producto.nombre : form.nombre)}">Editar producto</title>
 
     <!-- Estáticos -->
     <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet"/>
@@ -46,8 +46,8 @@
                         <i class="fas fa-pen-square mr-2"></i>
                         Editar producto
                         <span class="badge badge-warning badge-editing ml-2">
-              <i class="fas fa-edit mr-1"></i> Modo edición
-            </span>
+                          <i class="fas fa-edit mr-1"></i> Modo edición
+                        </span>
                     </h1>
                 </div>
 
@@ -84,41 +84,71 @@
                     </div>
 
                     <div class="row">
+
                         <!-- Columna izquierda: imagen -->
-                        <div class="col-lg-4 mb-4">
+                        <div class="col-lg-4">
                             <div class="card shadow-sm">
                                 <div class="card-header py-3">
                                     <h6 class="m-0 font-weight-bold text-primary">
-                                        <i class="fas fa-image mr-1"></i> Imagen del producto
+                                        <i class="fas fa-image mr-1"></i> Imagen
                                     </h6>
                                 </div>
+
                                 <div class="card-body">
                                     <div class="card-img-wrapper text-center">
-                                        <img id="preview"
+                                        <!-- Intenta cargar la imagen actual del producto; si no hay, cae al placeholder -->
+                                        <img id="fotoActual"
                                              class="img-preview"
-                                             th:src="@{/img/no-image.png}"
-                                             alt="Imagen del producto"
-                                             th:attr="onerror=|this.onerror=null; this.src='@{/img/no-image.png}'|"/>
+                                             th:src="@{|/productos/${form.codigoBarras}/imagen|}"
+                                             onerror="this.onerror=null; this.src='/img/no-image.png';"
+                                             alt="Imagen actual">
+
+                                        <!-- Preview del archivo recién seleccionado (oculta al inicio) -->
+                                        <img id="fotoPreview" class="img-preview d-none" alt="Vista previa">
                                     </div>
 
-
-                                    <div class="mt-3 d-flex flex-wrap gap-2">
-                                        <label class="btn btn-outline-primary mb-0">
-                                            <i class="fas fa-camera mr-1"></i> Cambiar imagen
-                                            <!-- name=imagen DEBE existir en el DTO -->
-                                            <input type="file" id="fileInput" name="imagen" accept="image/*" hidden>
-                                        </label>
-                                        <small class="text-muted ml-2">
-                                            <i class="far fa-question-circle"></i>
-                                            PNG/JPG máx. 3&nbsp;MB
-                                        </small>
+                                    <div class="form-group mt-3">
+                                        <div class="custom-file">
+                                            <!-- NOMBRE DEL CAMPO DEBE SER 'imagen' (o usar th:field) -->
+                                            <input type="file"
+                                                   class="custom-file-input"
+                                                   id="imagen"
+                                                   th:field="*{imagen}"
+                                                   accept="image/*">
+                                            <label class="custom-file-label" for="imagen" id="imagenLabel">Elegir imagen…</label>
+                                        </div>
                                     </div>
-
-                                    <div class="text-danger mt-2" th:if="${#fields.hasErrors('imagen')}"
-                                         th:errors="*{imagen}">Error imagen</div>
                                 </div>
-                            </div>
                         </div>
+
+                        <script>
+                            (function () {
+                                const input   = document.getElementById('imagen');
+                                const label   = document.getElementById('imagenLabel');
+                                const current = document.getElementById('fotoActual');
+                                const preview = document.getElementById('fotoPreview');
+
+                                input.addEventListener('change', () => {
+                                    const file = input.files && input.files[0];
+                                    if (file) {
+                                        label.textContent = file.name;
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => {
+                                            preview.src = e.target.result;
+                                            preview.classList.remove('d-none');
+                                            current.classList.add('d-none');
+                                        };
+                                        reader.readAsDataURL(file);
+                                    } else {
+                                        label.textContent = 'Elegir imagen…';
+                                        preview.classList.add('d-none');
+                                        current.classList.remove('d-none');
+                                    }
+                                });
+                            })();
+                        </script>
+
+                    </div>
 
                         <!-- Columna derecha: datos -->
                         <div class="col-lg-8">
@@ -128,9 +158,11 @@
                                         <i class="fas fa-box-open mr-1"></i> Datos del producto
                                     </h6>
                                     <span class="text-xs text-muted">
-                    Última actualización:
-                    <span th:text="${producto != null && producto.actualizadoEn != null} ? ${#temporals.format(producto.actualizadoEn, 'yyyy-MM-dd HH:mm')} : '—'">—</span>
-                  </span>
+                                      Última actualización:
+                                      <span th:text="${(producto != null and producto.actualizadoEn != null)
+                                                       ? #temporals.format(producto.actualizadoEn, 'yyyy-MM-dd HH:mm')
+                                                       : '—'}">—</span>
+                                    </span>
                                 </div>
 
                                 <div class="card-body">
@@ -324,17 +356,37 @@
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
 <script>
-    // Preview de imagen
+    // Preview de imagen (placeholder + preview)
     const fileInput = document.getElementById('fileInput');
-    const preview   = document.getElementById('preview');
+    const fotoPlaceholder = document.getElementById('fotoPlaceholder');
+    const fotoPreview = document.getElementById('fotoPreview');
 
     if (fileInput) {
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files && e.target.files[0];
-            if (!file) return;
+            if (!file) {
+                // Sin archivo: mostrar placeholder
+                if (fotoPreview) fotoPreview.classList.add('d-none');
+                if (fotoPlaceholder) fotoPlaceholder.classList.remove('d-none');
+                return;
+            }
             const reader = new FileReader();
-            reader.onload = (ev) => preview.src = ev.target.result;
+            reader.onload = (ev) => {
+                if (fotoPreview) {
+                    fotoPreview.src = ev.target.result;
+                    fotoPreview.classList.remove('d-none');
+                }
+                if (fotoPlaceholder) {
+                    fotoPlaceholder.classList.add('d-none');
+                }
+            };
             reader.readAsDataURL(file);
+
+            // Actualizar etiqueta de archivo (Bootstrap custom-file)
+            const label = fileInput.nextElementSibling;
+            if (label && label.classList.contains('custom-file-label')) {
+                label.textContent = file.name;
+            }
         });
     }
 

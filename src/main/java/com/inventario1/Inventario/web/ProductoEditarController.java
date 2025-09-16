@@ -7,6 +7,7 @@ import com.inventario1.Inventario.repos.ProductoRepository;
 import com.inventario1.Inventario.web.dto.ProductoEditarForm;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,77 +27,80 @@ import java.nio.file.StandardCopyOption;
 @Controller
 @RequestMapping("/productos/editar")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductoEditarController {
 
     private final ProductoRepository productoRepository;
 
-    /**
-     * Directorio donde guardaremos las imágenes subidas (configurable).
-     * Puedes sobreescribir con: app.uploads.productos-dir=/ruta/absoluta
-     */
     @Value("${app.uploads.productos-dir:uploads/productos}")
     private String productosDir;
 
-    /* ---------- Datos comunes para combos en el formulario ---------- */
+    /* ---------- Datos comunes para combos ---------- */
 
     @ModelAttribute("categorias")
-    public Categoria[] categorias() {
-        return Categoria.values();
-    }
+    public Categoria[] categorias() { return Categoria.values(); }
 
     @ModelAttribute("unidadesBase")
-    public UnidadBase[] unidadesBase() {
-        return UnidadBase.values();
-    }
+    public UnidadBase[] unidadesBase() { return UnidadBase.values(); }
 
     /* ----------------------------- GET ------------------------------ */
 
     @GetMapping("/{codigoBarras}")
     public String editarForm(@PathVariable String codigoBarras, Model model) {
+        log.info("GET editarForm - código barras: {}", codigoBarras);
+
         Producto producto = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
 
         ProductoEditarForm form = toForm(producto);
         model.addAttribute("form", form);
-        return "editar_producto"; // nombre del template Thymeleaf
+        return "editar_producto";
     }
 
     /* ----------------------------- POST ----------------------------- */
 
-    @PostMapping(
-            value = "/{codigoBarras}",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
+    @PostMapping(value = "/{codigoBarras}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public String actualizar(@PathVariable String codigoBarras,
                              @Valid @ModelAttribute("form") ProductoEditarForm form,
                              BindingResult binding,
                              RedirectAttributes ra,
                              Model model) {
 
+        log.info("POST actualizar - código barras: {}", codigoBarras);
+
         Producto existente = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
 
-        // Validación del form
         if (binding.hasErrors()) {
-            // El @ModelAttribute de combos ya los vuelve a inyectar
+            log.warn("POST actualizar - errores de validación: {}", binding.getAllErrors());
             return "editar_producto";
         }
 
-        // Aplicar cambios del form -> entidad existente
+        // Aplicar cambios del form
         apply(form, existente);
 
-        // Persistir
-        productoRepository.save(existente);
+        // Guardar cambios base
+        existente = productoRepository.save(existente);
+        log.info("POST actualizar - Producto guardado en BD. id={}, version={}",
+                existente.getId(), existente.getVersion());
 
-        // Guardar imagen (opcional)
+        // Guardar imagen y metadatos (si vino archivo)
         try {
-            storeImageIfPresent(existente.getCodigoBarras(), form.getImagen());
+            ImageMeta meta = storeImageIfPresent(existente.getCodigoBarras(), form.getImagen());
+            if (meta != null) {
+                existente.setImagenUrl("/productos/" + existente.getCodigoBarras() + "/imagen"); // o tu URL preferida
+                existente.setImagenContentType(meta.contentType());
+                existente.setImagenNombre(meta.nombre());
+                existente.setImagenTamano(meta.tamano()); // <-- Long
+                productoRepository.save(existente);
+            }
         } catch (IOException e) {
-            // No interrumpimos el flujo; solo avisamos
+            log.error("POST actualizar - Error guardando imagen para {}: {}", codigoBarras, e.getMessage(), e);
             ra.addFlashAttribute("error", "El producto se actualizó, pero hubo un problema al guardar la imagen.");
             return "redirect:/productos/" + existente.getCodigoBarras();
         }
 
+        log.info("POST actualizar - Proceso completado OK para {}", codigoBarras);
         ra.addFlashAttribute("ok", "Producto actualizado correctamente");
         return "redirect:/productos/" + existente.getCodigoBarras();
     }
@@ -114,17 +118,14 @@ public class ProductoEditarController {
         f.setGraduacionAlcoholica(p.getGraduacionAlcoholica());
         f.setPerecible(p.getPerecible());
         f.setRetornable(p.getRetornable());
+        f.setStockActual(p.getStockActual());
         f.setStockMinimo(p.getStockMinimo());
         f.setFechaVencimiento(p.getFechaVencimiento());
         f.setActivo(p.getActivo());
-        // imagen se deja nula; sólo es para subida
         return f;
     }
 
     private void apply(ProductoEditarForm f, Producto p) {
-        // No permitimos cambiar código de barras aquí:
-        // p.setCodigoBarras(p.getCodigoBarras());
-
         p.setNombre(f.getNombre());
         p.setMarca(f.getMarca());
         p.setCategoria(f.getCategoria());
@@ -133,28 +134,40 @@ public class ProductoEditarController {
         p.setGraduacionAlcoholica(f.getGraduacionAlcoholica());
         p.setPerecible(Boolean.TRUE.equals(f.getPerecible()));
         p.setRetornable(Boolean.TRUE.equals(f.getRetornable()));
+        p.setStockActual(f.getStockActual());
         p.setStockMinimo(f.getStockMinimo());
         p.setFechaVencimiento(f.getFechaVencimiento());
         p.setActivo(Boolean.TRUE.equals(f.getActivo()));
-        // OJO: stockActual no se toca desde este formulario.
     }
 
-    private void storeImageIfPresent(String codigoBarras, MultipartFile imagen) throws IOException {
-        if (imagen == null || imagen.isEmpty()) return;
+    /** Guarda la imagen (si viene) y retorna metadatos para persistir en la entidad. */
+    private ImageMeta storeImageIfPresent(String codigoBarras, MultipartFile imagen) throws IOException {
+        if (imagen == null || imagen.isEmpty()) {
+            log.info("storeImageIfPresent - No hay archivo para {}", codigoBarras);
+            return null;
+        }
+
+        log.info("storeImageIfPresent - Recibido archivo: nombre='{}', contentType={}, size={} bytes",
+                imagen.getOriginalFilename(), imagen.getContentType(), imagen.getSize());
 
         // Crear el directorio si no existe
         Path baseDir = Path.of(productosDir);
         Files.createDirectories(baseDir);
 
         String ext = detectExtension(imagen);
-        if (ext == null) {
-            // Si no detectamos, por defecto .png
-            ext = ".png";
-        }
-        Path destino = baseDir.resolve(codigoBarras + ext);
+        if (ext == null) ext = ".png";
 
-        // Guardar (sobrescribe si existía)
+        Path destino = baseDir.resolve(codigoBarras + ext);
+        log.info("storeImageIfPresent - Guardando imagen en: {}", destino.toAbsolutePath());
         Files.copy(imagen.getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
+        log.info("storeImageIfPresent - Imagen guardada OK ({} bytes)", imagen.getSize());
+
+        String original = imagen.getOriginalFilename();
+        String nombre = (original != null && !original.isBlank()) ? original : (codigoBarras + ext);
+        String ctype = (imagen.getContentType() != null) ? imagen.getContentType() : MediaType.IMAGE_PNG_VALUE;
+        Long tamano = imagen.getSize(); // Long
+
+        return new ImageMeta(nombre, ctype, tamano);
     }
 
     private String detectExtension(MultipartFile file) {
@@ -167,9 +180,11 @@ public class ProductoEditarController {
         String original = file.getOriginalFilename();
         if (original != null && original.contains(".")) {
             String ext = original.substring(original.lastIndexOf('.')).toLowerCase();
-            // Permitimos algunas extensiones comunes
             if (ext.matches("\\.(png|jpg|jpeg|webp)")) return ext.equals(".jpeg") ? ".jpg" : ext;
         }
         return null;
     }
+
+    /* ---------- Tipo anidado para metadatos (usa Long) ---------- */
+    private record ImageMeta(String nombre, String contentType, Long tamano) {}
 }

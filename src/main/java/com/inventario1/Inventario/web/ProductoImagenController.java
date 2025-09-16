@@ -1,82 +1,109 @@
 package com.inventario1.Inventario.web;
 
-import com.inventario1.Inventario.files.FileStorageService;
+import com.inventario1.Inventario.models.Producto;
 import com.inventario1.Inventario.repos.ProductoRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
-@Controller
+@Slf4j
+@RestController
+@RequestMapping("/productos")
+@RequiredArgsConstructor
 public class ProductoImagenController {
 
-    private final FileStorageService storage;
-    private final ProductoRepository repo;
+    private final ProductoRepository productoRepository;
 
-    public ProductoImagenController(FileStorageService storage, ProductoRepository repo) {
-        this.storage = storage;
-        this.repo = repo;
-    }
+    @Value("${app.uploads.productos-dir:uploads/productos}")
+    private String productosDir;
 
-    // Ver imagen del producto (con placeholder si no existe)
-    @GetMapping("/productos/{codigo}/imagen")
-    public ResponseEntity<Resource> verImagen(@PathVariable String codigo) {
-        try {
-            Path p = storage.findExisting(codigo);
-            Resource res;
-            MediaType type;
-            if (p != null) {
-                res = new FileSystemResource(p);
-                String name = p.getFileName().toString().toLowerCase();
-                if (name.endsWith(".png")) type = MediaType.IMAGE_PNG;
-                else if (name.endsWith(".webp")) type = MediaType.parseMediaType("image/webp");
-                else type = MediaType.IMAGE_JPEG;
+    @GetMapping("/{codigoBarras}/imagen")
+    public ResponseEntity<byte[]> obtenerImagen(@PathVariable String codigoBarras) {
+        log.info("GET imagen - código barras: {}", codigoBarras);
+
+        // 1) DISCO
+        ResponseFromDisk fromDisk = loadFromDisk(codigoBarras);
+        if (fromDisk != null) {
+            log.info("GET imagen - Servida desde DISCO: {}", fromDisk.path().toAbsolutePath());
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(fromDisk.contentType()))
+                    .header(HttpHeaders.CACHE_CONTROL, "max-age=3600, public")
+                    .body(fromDisk.bytes());
+        } else {
+            log.info("GET imagen - No encontrada en DISCO para {}", codigoBarras);
+        }
+
+        // 2) BD (BLOB)
+        Optional<Producto> opt = productoRepository.findByCodigoBarras(codigoBarras);
+        if (opt.isPresent()) {
+            Producto p = opt.get();
+            if (p.getImagen() != null && p.getImagen().length > 0) {
+                String ctype = (p.getImagenContentType() != null && !p.getImagenContentType().isBlank())
+                        ? p.getImagenContentType() : MediaType.IMAGE_JPEG_VALUE;
+                log.info("GET imagen - Servida desde BD (BLOB) para {}", codigoBarras);
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(ctype))
+                        .header(HttpHeaders.CACHE_CONTROL, "max-age=3600, public")
+                        .body(p.getImagen());
             } else {
-                res = new ClassPathResource("static/img/no-image.png");
-                type = MediaType.IMAGE_PNG;
+                log.info("GET imagen - En BD sin BLOB para {}", codigoBarras);
             }
-            return ResponseEntity.ok().contentType(type).body(res);
-        } catch (Exception e) {
+        } else {
+            log.warn("GET imagen - Producto no existe: {}", codigoBarras);
+        }
+
+        // 3) Placeholder
+        try {
+            ClassPathResource cpr = new ClassPathResource("static/img/no-image.png");
+            byte[] bytes = cpr.getContentAsByteArray();
+            log.info("GET imagen - Servida placeholder para {}", codigoBarras);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .contentType(MediaType.IMAGE_PNG)
+                    .body(bytes);
+        } catch (IOException e) {
+            log.error("GET imagen - Error cargando placeholder: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
-    // Formulario para subir imagen
-    @GetMapping("/admin/productos/{codigo}/imagen")
-    public String formImagen(@PathVariable String codigo, Model model) {
-        boolean existe = repo.existsByCodigoBarras(codigo); // <-- usar barcode
-        model.addAttribute("codigo", codigo);
-        model.addAttribute("existe", existe);
-        return "producto_imagen";
+    private ResponseFromDisk loadFromDisk(String codigoBarras) {
+        String[] exts = {".jpg", ".jpeg", ".png", ".webp"};
+        for (String ext : exts) {
+            Path path = Path.of(productosDir).resolve(codigoBarras + ext);
+            if (Files.exists(path)) {
+                try {
+                    byte[] bytes = Files.readAllBytes(path);
+                    String ctype = probeOrDefault(path);
+                    return new ResponseFromDisk(path, bytes, ctype);
+                } catch (IOException e) {
+                    log.warn("loadFromDisk - No se pudo leer {}: {}", path.toAbsolutePath(), e.getMessage());
+                }
+            }
+        }
+        return null;
     }
 
-    // Subir imagen (jpg/png/webp)
-    @PostMapping(value = "/admin/productos/{codigo}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String subirImagen(@PathVariable String codigo,
-                              @RequestParam("file") MultipartFile file,
-                              Model model) {
+    private String probeOrDefault(Path p) {
         try {
-            boolean existe = repo.existsByCodigoBarras(codigo); // <-- usar barcode
-            if (!existe) {
-                model.addAttribute("error", "El producto " + codigo + " no existe");
-            } else {
-                storage.saveForCodigo(codigo, file);
-                model.addAttribute("ok", "Imagen actualizada para " + codigo);
-            }
-            model.addAttribute("existe", existe);
-        } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
-            model.addAttribute("existe", repo.existsByCodigoBarras(codigo));
-        }
-        model.addAttribute("codigo", codigo);
-        return "producto_imagen";
+            String ctype = Files.probeContentType(p);
+            if (ctype != null) return ctype;
+        } catch (IOException ignored) { }
+        String name = p.getFileName().toString().toLowerCase();
+        if (name.endsWith(".png"))  return MediaType.IMAGE_PNG_VALUE;
+        if (name.endsWith(".webp")) return "image/webp";
+        return MediaType.IMAGE_JPEG_VALUE; // default
     }
+
+    private record ResponseFromDisk(Path path, byte[] bytes, String contentType) {}
 }

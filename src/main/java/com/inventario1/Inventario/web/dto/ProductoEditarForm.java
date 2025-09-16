@@ -2,16 +2,20 @@ package com.inventario1.Inventario.web.dto;
 
 import com.inventario1.Inventario.models.Categoria;
 import com.inventario1.Inventario.models.UnidadBase;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductoEditarForm {
+
     @NotBlank
     private String codigoBarras;
 
@@ -26,19 +30,37 @@ public class ProductoEditarForm {
     @NotNull
     private UnidadBase unidadBase;
 
-    private Integer volumenNominalMl;
-    private Double graduacionAlcoholica;
+    @Min(0)
+    private Integer volumenNominalMl; // opcional, pero si viene debe ser >= 0
 
-    // NUEVO
+    @DecimalMin(value = "0.0")
+    @DecimalMax(value = "100.0")
+    private Double graduacionAlcoholica; // 0–100%
+
+    // Inventario
     @NotNull
     @Min(0)
     private Integer stockActual = 0;
 
+    @Min(0)
     private Integer stockMinimo;
+
     private Boolean perecible = false;
     private Boolean retornable = false;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate fechaVencimiento;
+
     private Boolean activo = true;
 
+    // Imagen (opcional)
     private MultipartFile imagen;
+
+    // Permite borrar la imagen actual del producto
+    private Boolean eliminarImagen = false;
+
+    // Conveniencia
+    public boolean hasImagen() {
+        return imagen != null && !imagen.isEmpty();
+    }
 }

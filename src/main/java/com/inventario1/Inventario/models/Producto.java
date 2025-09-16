@@ -13,7 +13,7 @@ public class Producto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id") // PK real en la BD
+    @Column(name = "id")
     private Long id;
 
     @Column(name = "codigo_barras", length = 32, nullable = false, unique = true)
@@ -38,7 +38,6 @@ public class Producto {
 
     private Integer volumenNominalMl;
 
-    // Usamos Boolean para que Lombok genere getPerecible()/getRetornable()/getActivo()
     @Builder.Default
     @Column(nullable = false)
     private Boolean perecible = false;
@@ -68,6 +67,24 @@ public class Producto {
 
     @Version
     private Long version;
+
+    // --- Imagen en BD (lo que necesita tu controlador) ---
+    @Lob
+    @Column(name = "imagen", columnDefinition = "LONGBLOB")
+    private byte[] imagen;
+
+    @Column(name = "imagen_content_type", length = 100)
+    private String imagenContentType;
+
+    @Column(name = "imagen_nombre", length = 255)
+    private String imagenNombre;
+
+    @Column(name = "imagen_tamano")
+    private Long imagenTamano;
+
+    // --- (Opcional) si ya creaste esta columna antes puedes mantenerla, si no, elimínala ---
+    @Column(name = "imagen_url", length = 255)
+    private String imagenUrl;
 
     @PrePersist
     public void prePersist() {
