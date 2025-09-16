@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Agregar producto</title>
+
+    <!-- Estáticos -->
+    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet"/>
+    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet"/>
+
+    <style>
+        /* Detalles visuales para modo creación */
+        .create-ribbon { background:#e6fffa; border:1px solid #b2f5ea; color:#234e52; }
+        .card-img-wrapper { border: 1px dashed #cbd5e0; border-radius: .5rem; padding: 1rem; background:#f8fafc; }
+        .img-preview { max-width: 100%; height: auto; border-radius:.5rem; }
+        .badge-creating { font-size: .85rem; }
+    </style>
+</head>
+
+<body id="page-top">
+<div id="wrapper">
+
+    <!-- Sidebar -->
+    <div th:replace="~{menugeneral :: sidebar}"></div>
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                    <i class="fa fa-bars"></i>
+                </button>
+                <ul class="navbar-nav ml-auto"></ul>
+            </nav>
+
+            <!-- Begin Page Content -->
+            <div class="container-fluid">
+
+                <!-- Encabezado -->
+                <div class="d-sm-flex align-items-center justify-content-between mb-3">
+                    <h1 class="h3 text-gray-800 mb-0">
+                        <i class="fas fa-plus-square mr-2"></i>
+                        Agregar producto
+                        <span class="badge badge-info badge-creating ml-2">
+                          <i class="fas fa-wand-magic-sparkles mr-1"></i> Modo creación
+                        </span>
+                    </h1>
+                </div>
+
+                <!-- Aviso modo creación -->
+                <div class="alert create-ribbon" role="alert">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Estás creando un nuevo producto. Completa los campos y presiona <strong>Guardar</strong>.
+                </div>
+
+                <!-- Formulario -->
+                <form th:action="@{/productos/agregar}"
+                      th:object="${form}"
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="needs-validation" novalidate>
+
+                    <!-- CSRF -->
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                    <!-- Resumen de errores -->
+                    <div class="alert alert-danger" th:if="${#fields.hasErrors()}">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-exclamation-triangle fa-lg mr-2 mt-1"></i>
+                            <div>
+                                <h5 class="mb-1">Faltan datos o hay información inválida</h5>
+                                <ul class="mb-0 pl-3">
+                                    <li th:each="e : ${#fields.errors('*')}" th:text="${e}">Mensaje de error</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+
+                        <!-- Columna izquierda: imagen -->
+                        <div class="col-lg-4">
+                            <div class="card shadow-sm">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-image mr-1"></i> Imagen
+                                    </h6>
+                                </div>
+
+                                <div class="card-body">
+                                    <div class="card-img-wrapper text-center">
+                                        <!-- Placeholder inicial -->
+                                        <img id="fotoPlaceholder"
+                                             class="img-preview"
+                                             th:src="@{/img/no-image.png}"
+                                             alt="Sin imagen">
+                                        <!-- Preview del archivo recién seleccionado (oculta al inicio) -->
+                                        <img id="fotoPreview" class="img-preview d-none" alt="Vista previa">
+                                    </div>
+
+                                    <div class="form-group mt-3">
+                                        <div class="custom-file">
+                                            <!-- Usa 'imagen' para alinear con th:field="*{imagen}" -->
+                                            <input type="file"
+                                                   class="custom-file-input"
+                                                   id="imagen"
+                                                   th:field="*{imagen}"
+                                                   accept="image/*">
+                                            <label class="custom-file-label" for="imagen" id="imagenLabel">Elegir imagen…</label>
+                                        </div>
+                                        <div class="small text-muted mt-2">
+                                            formatos: JPG/PNG/WEBP · máx. ~5MB (según configuración)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <script>
+                                (function () {
+                                    const input   = document.getElementById('imagen');
+                                    const label   = document.getElementById('imagenLabel');
+                                    const placeholder = document.getElementById('fotoPlaceholder');
+                                    const preview = document.getElementById('fotoPreview');
+
+                                    if (!input) return;
+
+                                    input.addEventListener('change', () => {
+                                        const file = input.files && input.files[0];
+                                        if (file) {
+                                            label.textContent = file.name;
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                                preview.src = e.target.result;
+                                                preview.classList.remove('d-none');
+                                                if (placeholder) placeholder.classList.add('d-none');
+                                            };
+                                            reader.readAsDataURL(file);
+                                        } else {
+                                            label.textContent = 'Elegir imagen…';
+                                            if (preview) preview.classList.add('d-none');
+                                            if (placeholder) placeholder.classList.remove('d-none');
+                                        }
+                                    });
+                                })();
+                            </script>
+                        </div>
+
+                        <!-- Columna derecha: datos -->
+                        <div class="col-lg-8">
+                            <div class="card shadow-sm">
+                                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-box-open mr-1"></i> Datos del producto
+                                    </h6>
+                                </div>
+
+                                <div class="card-body">
+                                    <div class="form-row">
+                                        <div class="form-group col-md-8">
+                                            <label for="nombre">Nombre <span class="text-danger">*</span></label>
+                                            <input id="nombre" type="text" th:field="*{nombre}" class="form-control"
+                                                   placeholder="Ej: Cerveza Lager 330ml" required
+                                                   th:classappend="${#fields.hasErrors('nombre')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{nombre}">
+                                                El nombre es obligatorio.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-4">
+                                            <label for="marca">Marca</label>
+                                            <input id="marca" type="text" th:field="*{marca}" class="form-control"
+                                                   placeholder="Ej: Marca X"
+                                                   th:classappend="${#fields.hasErrors('marca')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{marca}">Revisa la marca.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label for="categoria">Categoría <span class="text-danger">*</span></label>
+                                            <select id="categoria" th:field="*{categoria}" class="form-control" required
+                                                    th:classappend="${#fields.hasErrors('categoria')} ? ' is-invalid'">
+                                                <option value="" disabled selected>— Selecciona —</option>
+                                                <option th:each="c : ${T(com.inventario1.Inventario.models.Categoria).values()}"
+                                                        th:value="${c}"
+                                                        th:text="${#strings.capitalize(c.name().toLowerCase())}">
+                                                    CATEGORIA
+                                                </option>
+                                            </select>
+                                            <div class="invalid-feedback" th:errors="*{categoria}">
+                                                Selecciona una categoría.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-6">
+                                            <label for="unidadBase">Unidad base <span class="text-danger">*</span></label>
+                                            <select id="unidadBase" th:field="*{unidadBase}" class="form-control" required
+                                                    th:classappend="${#fields.hasErrors('unidadBase')} ? ' is-invalid'">
+                                                <option value="" disabled selected>— Selecciona —</option>
+                                                <option th:each="u : ${T(com.inventario1.Inventario.models.UnidadBase).values()}"
+                                                        th:value="${u}"
+                                                        th:text="${#strings.capitalize(u.name().toLowerCase())}">
+                                                    UNIDAD
+                                                </option>
+                                            </select>
+                                            <div class="invalid-feedback" th:errors="*{unidadBase}">
+                                                Selecciona una unidad.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-md-4">
+                                            <label for="volumenNominalMl">Volumen nominal (ml)</label>
+                                            <input id="volumenNominalMl" type="number" min="0" step="1"
+                                                   th:field="*{volumenNominalMl}" class="form-control"
+                                                   placeholder="Ej: 330"
+                                                   th:classappend="${#fields.hasErrors('volumenNominalMl')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{volumenNominalMl}">
+                                                Revisa el volumen.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-4">
+                                            <label for="graduacionAlcoholica">Grad. alcohólica (%)</label>
+                                            <input id="graduacionAlcoholica" type="number" min="0" step="0.1"
+                                                   th:field="*{graduacionAlcoholica}" class="form-control"
+                                                   placeholder="Ej: 5.0"
+                                                   th:classappend="${#fields.hasErrors('graduacionAlcoholica')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{graduacionAlcoholica}">
+                                                Revisa la graduación.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-4">
+                                            <label for="fechaVencimiento">Fecha de vencimiento</label>
+                                            <input id="fechaVencimiento" type="date" th:field="*{fechaVencimiento}"
+                                                   class="form-control"
+                                                   th:classappend="${#fields.hasErrors('fechaVencimiento')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{fechaVencimiento}">
+                                                Revisa la fecha.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-md-4">
+                                            <label for="stockActual">Stock actual</label>
+                                            <input id="stockActual" type="number" min="0" step="1"
+                                                   th:field="*{stockActual}" class="form-control"
+                                                   th:classappend="${#fields.hasErrors('stockActual')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{stockActual}">
+                                                Revisa el stock actual.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-4">
+                                            <label for="stockMinimo">Stock mínimo</label>
+                                            <input id="stockMinimo" type="number" min="0" step="1"
+                                                   th:field="*{stockMinimo}" class="form-control"
+                                                   th:classappend="${#fields.hasErrors('stockMinimo')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{stockMinimo}">
+                                                Revisa el stock mínimo.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-4">
+                                            <label for="codigoBarras">Código de barras <span class="text-danger">*</span></label>
+                                            <input id="codigoBarras" type="text" th:field="*{codigoBarras}"
+                                                   class="form-control" placeholder="Ej: 7791234567898" required
+                                                   th:classappend="${#fields.hasErrors('codigoBarras')} ? ' is-invalid'">
+                                            <div class="invalid-feedback" th:errors="*{codigoBarras}">
+                                                Ingresa un código de barras válido.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group col-md-4">
+                                            <div class="custom-control custom-switch mt-4">
+                                                <input type="checkbox" class="custom-control-input" id="perecible"
+                                                       th:field="*{perecible}">
+                                                <label class="custom-control-label" for="perecible">
+                                                    <i class="fas fa-apple-alt mr-1"></i> Perecible
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-4">
+                                            <div class="custom-control custom-switch mt-4">
+                                                <input type="checkbox" class="custom-control-input" id="retornable"
+                                                       th:field="*{retornable}">
+                                                <label class="custom-control-label" for="retornable">
+                                                    <i class="fas fa-recycle mr-1"></i> Retornable
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-4">
+                                            <div class="custom-control custom-switch mt-4">
+                                                <input type="checkbox" class="custom-control-input" id="activo"
+                                                       th:field="*{activo}" th:checked="${form == null or form.activo}">
+                                                <label class="custom-control-label" for="activo">
+                                                    <i class="fas fa-toggle-on mr-1"></i> Activo
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Botones -->
+                                <div class="card-footer d-flex justify-content-between">
+                                    <a class="btn btn-outline-secondary" th:href="@{/buscar}">
+                                        <i class="fas fa-times mr-1"></i> Cancelar
+                                    </a>
+
+                                    <div class="d-flex gap-2">
+                                        <button type="reset" class="btn btn-warning mr-2">
+                                            <i class="fas fa-broom mr-1"></i> Limpiar
+                                        </button>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save mr-1"></i> Guardar
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+            <!-- /.container-fluid -->
+        </div>
+
+        <!-- Footer -->
+        <footer class="sticky-footer bg-white">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>&copy; Inventario 2025</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<a class="scroll-to-top rounded" href="#page-top">
+    <i class="fas fa-angle-up"></i>
+</a>
+
+<!-- JS -->
+<script th:src="@{/vendor/jquery/jquery.min.js}"></script>
+<script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
+<script th:src="@{/js/sb-admin-2.min.js}"></script>
+
+<script>
+    // Bootstrap client-side validation (opcional)
+    (function () {
+        'use strict';
+        const forms = document.getElementsByClassName('needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+
+    // (Opcional) forzar solo dígitos en código de barras
+    (function () {
+        const cb = document.getElementById('codigoBarras');
+        if (!cb) return;
+        cb.addEventListener('input', () => {
+            cb.value = cb.value.replace(/[^\d]/g, '').slice(0, 32); // máx 32 como en tu columna
+        });
+    })();
+</script>
+</body>
+</html>

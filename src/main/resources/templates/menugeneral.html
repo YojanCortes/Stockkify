@@ -3,14 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Menú</title>
+    <style>
+        /* Micro-mejoras de diseño */
+        .sidebar .collapse-inner .collapse-item i { width: 18px; text-align: center; }
+        .sidebar .collapse-inner .collapse-item { transition: background .12s ease, color .12s ease; }
+        .sidebar .collapse-inner .collapse-item:hover { background: rgba(255,255,255,.35); color: #fff; }
+
+        /* Ícono de logout: efecto suave */
+        .sidebar-logout-sep { opacity: .3; }
+        .btn-logout-icon { line-height: 1; padding: .5rem .75rem; border-radius: .5rem; }
+        .btn-logout-icon:hover { background: rgba(255,255,255,.08); }
+    </style>
 </head>
 <body>
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion"
     id="accordionSidebar"
     th:fragment="sidebar">
 
-    <!-- Marca -->
-    <a class="sidebar-brand d-flex align-items-center justify-content-center" th:href="@{/}">
+    <!-- Marca -> ahora lleva al menú de productos -->
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" th:href="@{/inventario}">
         <div class="sidebar-brand-icon rotate-n-15">
             <i class="fas fa-boxes"></i>
         </div>
@@ -31,21 +42,42 @@
 
     <!-- Inventario -->
     <div class="sidebar-heading">Inventario</div>
+
+    <!-- Acceso directo al Menú de productos -->
     <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuInventario" aria-expanded="false" aria-controls="menuInventario">
+        <a class="nav-link" th:href="@{/menu_inventario}">
             <i class="fas fa-fw fa-warehouse"></i>
-            <span>Inventario</span>
+            <span>Menú de productos</span>
+        </a>
+    </li>
+
+    <!-- Opciones del inventario (colapsable) -->
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuInventario"
+           aria-expanded="false" aria-controls="menuInventario">
+            <i class="fas fa-fw fa-box-open"></i>
+            <span>Opciones</span>
         </a>
         <div id="menuInventario" class="collapse" aria-labelledby="headingInventario" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Catálogo:</h6>
-                <a class="collapse-item" th:href="@{/buscar}"><i class="fas fa-box-open mr-2"></i>Productos</a>
-                <a class="collapse-item" th:href="@{/presentaciones}"><i class="fas fa-cubes mr-2"></i>Presentaciones</a>
+                <a class="collapse-item" th:href="@{/buscar}">
+                    <i class="fas fa-box-open mr-2"></i>Productos
+                </a>
+                <a class="collapse-item" th:href="@{/presentaciones}">
+                    <i class="fas fa-cubes mr-2"></i>Presentaciones
+                </a>
                 <div class="collapse-divider"></div>
                 <h6 class="collapse-header">Movimientos:</h6>
-                <a class="collapse-item" th:href="@{/entradas/nueva}"><i class="fas fa-arrow-down mr-2"></i>Nueva Entrada</a>
-                <a class="collapse-item" th:href="@{/salidas/nueva}"><i class="fas fa-arrow-up mr-2"></i>Nueva Salida</a>
-                <a class="collapse-item" th:href="@{/ajustes}"><i class="fas fa-balance-scale mr-2"></i>Ajustes de Stock</a>
+                <a class="collapse-item" th:href="@{/entradas/nueva}">
+                    <i class="fas fa-arrow-down mr-2"></i>Nueva Entrada
+                </a>
+                <a class="collapse-item" th:href="@{/salidas/nueva}">
+                    <i class="fas fa-arrow-up mr-2"></i>Nueva Salida
+                </a>
+                <a class="collapse-item" th:href="@{/ajustes}">
+                    <i class="fas fa-balance-scale mr-2"></i>Ajustes de Stock
+                </a>
             </div>
         </div>
     </li>
@@ -55,16 +87,23 @@
     <!-- Personas -->
     <div class="sidebar-heading">Personas</div>
     <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuPersonas" aria-expanded="false" aria-controls="menuPersonas">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuPersonas"
+           aria-expanded="false" aria-controls="menuPersonas">
             <i class="fas fa-fw fa-users"></i>
             <span>Personas</span>
         </a>
         <div id="menuPersonas" class="collapse" aria-labelledby="headingPersonas" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Gestión:</h6>
-                <a class="collapse-item" th:href="@{/empleados}"><i class="fas fa-id-badge mr-2"></i>Empleados</a>
-                <a class="collapse-item" th:href="@{/usuarios}"><i class="fas fa-user-cog mr-2"></i>Usuarios</a>
-                <a class="collapse-item" th:href="@{/roles}"><i class="fas fa-user-shield mr-2"></i>Roles</a>
+                <a class="collapse-item" th:href="@{/empleados}">
+                    <i class="fas fa-id-badge mr-2"></i>Empleados
+                </a>
+                <a class="collapse-item" th:href="@{/usuarios}">
+                    <i class="fas fa-user-cog mr-2"></i>Usuarios
+                </a>
+                <a class="collapse-item" th:href="@{/roles}">
+                    <i class="fas fa-user-shield mr-2"></i>Roles
+                </a>
             </div>
         </div>
     </li>
@@ -91,33 +130,37 @@
     <!-- Configuración -->
     <div class="sidebar-heading">Configuración</div>
     <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuConfig" aria-expanded="false" aria-controls="menuConfig">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuConfig"
+           aria-expanded="false" aria-controls="menuConfig">
             <i class="fas fa-fw fa-cogs"></i>
             <span>Configuración</span>
         </a>
         <div id="menuConfig" class="collapse" aria-labelledby="headingConfig" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Parámetros:</h6>
-                <a class="collapse-item" th:href="@{/categorias}"><i class="fas fa-tags mr-2"></i>Categorías</a>
-                <a class="collapse-item" th:href="@{/marcas}"><i class="fas fa-trademark mr-2"></i>Marcas</a>
-                <a class="collapse-item" th:href="@{/areas}"><i class="fas fa-project-diagram mr-2"></i>Áreas</a>
+                <a class="collapse-item" th:href="@{/categorias}">
+                    <i class="fas fa-tags mr-2"></i>Categorías
+                </a>
+                <a class="collapse-item" th:href="@{/marcas}">
+                    <i class="fas fa-trademark mr-2"></i>Marcas
+                </a>
+                <a class="collapse-item" th:href="@{/areas}">
+                    <i class="fas fa-project-diagram mr-2"></i>Áreas
+                </a>
             </div>
         </div>
     </li>
 
-    <!-- ========================================================= -->
-    <!-- OPCIÓN A (ACTIVA): Botón Cerrar sesión ANTES del toggle  -->
-    <!-- Deja el toggle como el último elemento del sidebar       -->
-    <!-- ========================================================= -->
-    <hr class="sidebar-divider my-3">
+    <!-- Separador suave antes del icono de logout -->
+    <hr class="sidebar-divider my-3 sidebar-logout-sep">
 
-    <li class="nav-item px-3 mb-3">
-        <form th:action="@{/logout}" method="post" class="d-grid">
-            <!-- CSRF (requerido cuando CSRF está habilitado) -->
+    <!-- Cerrar sesión: solo ícono (POST /logout con CSRF) -->
+    <li class="nav-item text-center mb-3">
+        <form th:action="@{/logout}" method="post" class="m-0 p-0 d-inline-block">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button type="submit" class="btn btn-danger w-100">
-                <i class="fas fa-sign-out-alt mr-2"></i>
-                Cerrar sesión
+            <!-- Usa fa-sign-out-alt (FontAwesome 5 usado por SB Admin 2) -->
+            <button type="submit" class="btn btn-link text-white-50 btn-logout-icon" title="Cerrar sesión">
+                <i class="fas fa-sign-out-alt fa-lg"></i>
             </button>
         </form>
     </li>
@@ -126,25 +169,6 @@
     <div class="text-center d-none d-md-inline">
         <button class="rounded-circle border-0" id="sidebarToggle"></button>
     </div>
-
-    <!-- ========================================================= -->
-    <!-- OPCIÓN B (ALTERNATIVA): Botón Cerrar sesión AL FINAL     -->
-    <!-- Para activarla, descomenta este bloque y elimina la       -->
-    <!-- Opción A de arriba si no quieres tener dos botones.       -->
-    <!-- ========================================================= -->
-    <!--
-    <hr class="sidebar-divider my-3">
-
-    <li class="nav-item px-3 mb-4">
-      <form th:action="@{/logout}" method="post" class="d-grid">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <button type="submit" class="btn btn-danger w-100">
-          <i class="fas fa-sign-out-alt mr-2"></i>
-          Cerrar sesión
-        </button>
-      </form>
-    </li>
-    -->
 
 </ul>
 </body>
