@@ -321,16 +321,89 @@
                                        th:href="@{/productos/{cb}(cb=${form.codigoBarras})}">
                                         <i class="fas fa-times mr-1"></i> Cancelar
                                     </a>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save mr-1"></i> Guardar
-                                    </button>
+
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-danger mr-2"
+                                                data-toggle="modal" data-target="#confirmDeleteModal">
+                                            <i class="fas fa-trash-alt mr-1"></i> Eliminar
+                                        </button>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save mr-1"></i> Guardar
+                                        </button>
+                                    </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
                 </form>
 
+                <!-- Form oculto para eliminar (fuera del form de edición) -->
+                <form id="deleteForm"
+                      th:action="@{/productos/{cb}/eliminar(cb=${form.codigoBarras})}"
+                      method="post" class="d-none">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <!-- Si prefieres DELETE con HiddenHttpMethodFilter:
+                    <input type="hidden" name="_method" value="delete"/>
+                    -->
+                </form>
+
             </div>
+
+            <!-- Modal: Confirmar eliminación -->
+            <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog"
+                 aria-labelledby="confirmDeleteTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title d-flex align-items-center" id="confirmDeleteTitle">
+                                <i class="fas fa-triangle-exclamation mr-2"></i>
+                                Confirmar eliminación
+                            </h5>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body text-center p-4">
+                            <div class="display-4 mb-3 text-danger">
+                                <i class="fas fa-trash-alt"></i>
+                            </div>
+                            <p class="mb-2">¿Estás segur@ de que deseas eliminar este producto?</p>
+                            <h6 class="mb-1" th:text="${form.nombre}">Nombre del producto</h6>
+                            <div class="text-muted small">
+                                Cód. barras: <span th:text="${form.codigoBarras}">000000</span>
+                            </div>
+
+                            <div class="alert alert-warning mt-3 mb-3">
+                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                Esta acción no se puede deshacer.
+                            </div>
+
+                            <!-- Caja de error/aviso (se muestra sólo si hay problema) -->
+                            <div id="deleteError" class="alert alert-danger d-none mb-0" role="alert">
+                                <i class="fas fa-circle-exclamation mr-1"></i>
+                                <span id="deleteErrorMsg">Ocurrió un error.</span>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                                <i class="fas fa-times mr-1"></i> No, cancelar
+                            </button>
+                            <button id="confirmDeleteBtn" type="button" class="btn btn-danger">
+                                <i class="fas fa-check mr-1"></i> Sí, eliminar
+                            </button>
+
+                            <!-- CSRF para uso directo desde el modal -->
+                            <input type="hidden" id="csrfParam" th:value="${_csrf.parameterName}"/>
+                            <input type="hidden" id="csrfToken" th:value="${_csrf.token}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- /.container-fluid -->
         </div>
 
@@ -354,6 +427,101 @@
 <script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
+
+<script>
+    (function () {
+        const btn = document.getElementById('confirmDeleteBtn');
+        const errorBox = document.getElementById('deleteError');
+        const errorMsg = document.getElementById('deleteErrorMsg');
+        const form = document.getElementById('deleteForm');
+
+        if (!btn || !form) return;
+
+        function showError(msg, type) {
+            // type: 'danger' | 'warning' (por si devuelves 409)
+            const cls = type === 'warning' ? 'alert-warning' : 'alert-danger';
+            if (errorBox) {
+                errorBox.classList.remove('d-none', 'alert-danger', 'alert-warning');
+                errorBox.classList.add(cls);
+            }
+            if (errorMsg) errorMsg.textContent = msg || 'Ocurrió un error.';
+        }
+
+        btn.addEventListener('click', async function () {
+            // Limpiar errores previos
+            if (errorBox) errorBox.classList.add('d-none');
+
+            const action = form.getAttribute('action');
+
+            // Armar payload con CSRF
+            const fd = new FormData();
+            // 1) Desde inputs del modal (más explícito)
+            const csrfParam = document.getElementById('csrfParam')?.value;
+            const csrfToken = document.getElementById('csrfToken')?.value;
+            if (csrfParam && csrfToken) {
+                fd.append(csrfParam, csrfToken);
+            } else {
+                // 2) Fallback: tomar del input oculto del form
+                const csrfInput = form.querySelector('input[type="hidden"]');
+                if (csrfInput) fd.append(csrfInput.getAttribute('name'), csrfInput.value);
+            }
+
+            // Deshabilitar botón mientras procesa
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+
+            try {
+                const resp = await fetch(action, {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    redirect: 'manual' // evita seguir redirecciones del servidor
+                });
+
+                // Intentar parsear JSON (si el servidor respondió JSON)
+                let data = {};
+                const ct = resp.headers.get('content-type') || '';
+                if (ct.includes('application/json')) {
+                    data = await resp.json().catch(() => ({}));
+                }
+
+                if (resp.ok && (data.status === 200 || data.ok === true)) {
+                    // Eliminado OK -> redirigir (o cerrar modal si prefieres)
+                    window.location.assign(data.redirect || '/buscar');
+                    return;
+                }
+
+                if (resp.status === 409) {
+                    // Marcado inactivo u otro conflicto controlado
+                    showError(
+                        data.message || 'No se puede eliminar. El producto fue marcado como inactivo.',
+                        'warning'
+                    );
+                } else if (resp.status >= 400) {
+                    showError(
+                        data.message || 'No se pudo eliminar el producto.',
+                        'danger'
+                    );
+                } else {
+                    // Respuesta no-JSON o redirección bloqueada
+                    showError('No se pudo procesar la respuesta del servidor.', 'danger');
+                }
+
+            } catch (e) {
+                showError('Error de red. Intenta nuevamente.', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+    })();
+</script>
+
+
 
 <script>
     // Preview de imagen (placeholder + preview)

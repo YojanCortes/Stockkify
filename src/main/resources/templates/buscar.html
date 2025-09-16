@@ -1,150 +1,251 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Inventario · Buscar</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Inventario</title>
 
     <!-- SB Admin 2 -->
-    <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" />
-    <link href="/css/sb-admin-2.min.css" rel="stylesheet" />
+    <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet"/>
+    <link href="/css/sb-admin-2.min.css" rel="stylesheet"/>
 
     <style>
-        /* Tamaño fijo del cuadro de imagen */
-        :root { --thumb-size: 80px; }
-        .thumb-box{
-            width:var(--thumb-size);
-            height:var(--thumb-size);
-            border:1px solid #e2e8f0;
-            border-radius:10px;
-            background:#f8f9fc;
-            position:relative;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            overflow:hidden;              /* recorta lo que sobresalga */
+        /* Hero */
+        .hero {
+            padding: 2rem 1rem 1.25rem;
+            text-align: center;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-bottom: 1px solid #e2e8f0;
         }
-        .thumb-box img{
-            max-width:100%;
-            max-height:100%;
-            width:auto;
-            height:auto;
-            object-fit:cover;
-            display:block;
+        .hero h1 {
+            font-weight: 800;
+            letter-spacing: .3px;
+            color: #1f2937;
+            margin: 0;
         }
-        .thumb-box .no-img{
-            position:absolute;
-            inset:0;
-            display:none;                 /* se muestra si no hay imagen */
-            align-items:center;
-            justify-content:center;
-            color:#6c757d;
-            font-size:.75rem;
-            font-weight:600;
-            text-transform:uppercase;
-            letter-spacing:.5px;
-            text-align:center;
-            padding:6px;
+        .hero p {
+            margin: .35rem 0 0;
+            color: #6b7280;
         }
-        .thumb-box.is-empty img{ display:none; }
-        .thumb-box.is-empty .no-img{ display:flex; }
 
-        .cell-img{ display:flex; align-items:center; gap:.75rem; }
+        /* Buscador */
+        .search-wrap {
+            margin: 1rem auto 0;
+            max-width: 720px;
+        }
+        .search-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, .06);
+            overflow: hidden;
+        }
+        .search-inner {
+            display: flex;
+            align-items: stretch;
+            gap: .5rem;
+            padding: .75rem;
+            background: #fff;
+        }
+        .search-input-wrap {
+            position: relative;
+            flex: 1 1 auto;
+        }
+        .search-input-wrap i {
+            position: absolute;
+            left: .75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: .55;
+        }
+        .search-input {
+            padding: .6rem .9rem .6rem 2.25rem;
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color .2s ease;
+        }
+        .search-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+        }
+        .search-btn {
+            white-space: nowrap;
+            border-radius: 10px !important;
+        }
+
+        /* Tabla */
+        :root { --thumb-size: 70px; }
+        .thumb-box {
+            width: var(--thumb-size);
+            height: var(--thumb-size);
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #f8f9fc;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .thumb-box img { max-width: 100%; max-height: 100%; object-fit: cover; }
+        .thumb-box .no-img {
+            position: absolute; inset: 0; display: none;
+            align-items: center; justify-content: center;
+            color: #6b7280; font-size: .7rem; font-weight: 700; text-transform: uppercase;
+        }
+        .thumb-box.is-empty img { display: none; }
+        .thumb-box.is-empty .no-img { display: flex; }
         .table td, .table th { vertical-align: middle; }
-        .btn-sm { padding: .25rem .5rem; }
+        .subtle { color:#6b7280; font-size:.85rem; }
+        .badge-pill { border-radius: 999px; padding:.35rem .6rem; }
     </style>
 </head>
 <body id="page-top">
 <div id="wrapper">
 
-    <!-- Sidebar desde tu menugeneral.html -->
+    <!-- Sidebar -->
     <div th:replace="~{menugeneral :: sidebar}"></div>
 
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
 
-            <!-- Topbar -->
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                <h1 class="h5 mb-0 text-gray-800">Inventario · Buscar</h1>
-                <form class="ml-auto" method="get" action="/buscar">
-                    <div class="input-group">
-                        <input id="q" name="q" type="text" class="form-control bg-light border-0 small"
-                               placeholder="Nombre o código de barras..." th:value="${q}">
-                        <div class="input-group-append">
-                            <button class="btn btn-primary" type="submit"><i class="fas fa-search fa-sm"></i></button>
-                        </div>
-                    </div>
-                </form>
+            <!-- Topbar (sin buscador) -->
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-0 static-top shadow-sm">
+                <div class="ml-auto"></div>
             </nav>
-            <!-- /Topbar -->
 
-            <div class="container-fluid" th:with="total=${productos != null ? #lists.size(productos) : 0}">
+            <!-- Hero + Buscador -->
+            <section class="hero">
+                <h1>Inventario</h1>
+                <p th:text="${page != null ? page.totalElements + ' resultado(s)' : '—'}">—</p>
+
+                <div class="search-wrap">
+                    <div class="search-card">
+                        <form class="search-inner" method="get" th:action="@{/buscar}">
+                            <input type="hidden" name="size" value="5"/>
+                            <div class="search-input-wrap">
+                                <i class="fas fa-search"></i>
+                                <input class="search-input" type="text" name="q"
+                                       placeholder="Nombre o código de barras..."
+                                       th:value="${q}">
+                            </div>
+                            <button class="btn btn-primary search-btn" type="submit">
+                                <i class="fas fa-search mr-1"></i> Buscar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <div class="container-fluid py-3">
+
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-box-open mr-2"></i>Inventario</h6>
-                        <div class="small text-muted"><span th:text="${total}">0</span> resultado(s)</div>
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-box-open mr-2"></i> Resultados
+                        </h6>
+                        <div class="small text-muted" th:if="${page != null}">
+                            Página <span th:text="${page.number + 1}">1</span> de
+                            <span th:text="${page.totalPages}">1</span>
+                        </div>
                     </div>
 
                     <div class="card-body">
-                        <div th:if="${total == 0}" class="alert alert-info mb-0">No hay productos para mostrar.</div>
 
-                        <div th:if="${total > 0}" class="table-responsive">
-                            <table class="table table-bordered table-hover">
+                        <!-- Sin resultados -->
+                        <div th:if="${page == null or page.totalElements == 0}" class="alert alert-info mb-0">
+                            No hay productos para mostrar.
+                        </div>
+
+                        <!-- Tabla -->
+                        <div th:if="${page != null and page.totalElements > 0}" class="table-responsive">
+                            <table class="table table-hover">
                                 <thead class="thead-light">
                                 <tr>
                                     <th>Imagen</th>
-                                    <th style="min-width:140px">Código de barras</th>
+                                    <th style="min-width:140px">Código</th>
                                     <th>Nombre</th>
-                                    <th style="min-width:80px">Unidad</th>
-                                    <th class="text-center" style="min-width:90px">Perecible</th>
-                                    <th class="text-center" style="min-width:90px">Retornable</th>
-                                    <th class="text-right"  style="min-width:90px">Cantidad</th>
-                                    <th style="min-width:120px" class="text-center">Acciones</th>
+                                    <th class="text-nowrap">Unidad</th>
+                                    <th class="text-right text-nowrap">Stock</th>
+                                    <th class="text-right text-nowrap">Mín.</th>
+                                    <th class="text-center text-nowrap">Perecible</th>
+                                    <th class="text-center text-nowrap">Retornable</th>
+                                    <th class="text-center text-nowrap">Acciones</th>
                                 </tr>
                                 </thead>
-
                                 <tbody>
-                                <tr th:each="prod : ${productos}">
-                                    <!-- Imagen con fallback "Sin imagen" -->
+                                <tr th:each="prod : ${page.content}">
                                     <td>
-                                        <div class="cell-img">
-                                            <div class="thumb-box">
-                                                <img th:src="@{'/productos/' + ${prod.codigoBarras} + '/imagen'}"
-                                                     alt=""
-                                                     onerror="this.closest('.thumb-box').classList.add('is-empty')">
-                                                <div class="no-img">Sin imagen</div>
-                                            </div>
+                                        <div class="thumb-box">
+                                            <img th:src="@{'/productos/' + ${prod.codigoBarras} + '/imagen'}"
+                                                 alt=""
+                                                 onerror="this.closest('.thumb-box').classList.add('is-empty')">
+                                            <div class="no-img">Sin imagen</div>
                                         </div>
                                     </td>
+                                    <td class="text-monospace" th:text="${prod.codigoBarras}">00000000</td>
+                                    <td>
+                                        <div class="font-weight-semibold" th:text="${prod.nombre}">Nombre</div>
+                                        <div class="subtle" th:text="${prod.marca}">Marca</div>
+                                    </td>
+                                    <td class="text-nowrap" th:text="${prod.unidadBase}">UNIDAD</td>
 
-                                    <td th:text="${prod.codigoBarras}">00000000</td>
-                                    <td th:text="${prod.nombre}">Nombre</td>
-                                    <td th:text="${prod.unidadBase}">ML</td>
+                                    <!-- STOCK REAL -->
+                                    <td class="text-right">
+                    <span th:with="ok=${prod.stockActual != null ? prod.stockActual : 0},
+                                   min=${prod.stockMinimo != null ? prod.stockMinimo : 0}"
+                          th:classappend="${ok <= min} ? 'badge badge-pill badge-danger' : 'badge badge-pill badge-success'"
+                          th:text="${prod.stockActual != null ? prod.stockActual : 0}">0</span>
+                                    </td>
+
+                                    <td class="text-right" th:text="${prod.stockMinimo != null ? prod.stockMinimo : 0}">0</td>
 
                                     <td class="text-center">
-                                        <span th:if="${prod.perecible == true}" class="badge badge-warning">Sí</span>
-                                        <span th:if="${prod.perecible != true}" class="badge badge-secondary">No</span>
+                                        <span th:if="${prod.perecible}" class="badge badge-warning">Sí</span>
+                                        <span th:if="${!prod.perecible}" class="badge badge-secondary">No</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span th:if="${prod.retornable}" class="badge badge-info">Sí</span>
+                                        <span th:if="${!prod.retornable}" class="badge badge-secondary">No</span>
                                     </td>
 
                                     <td class="text-center">
-                                        <span th:if="${prod.retornable == true}" class="badge badge-info">Sí</span>
-                                        <span th:if="${prod.retornable != true}" class="badge badge-secondary">No</span>
-                                    </td>
-
-                                    <!-- Cantidad: cambia a prod.cantidad si tu entidad/tabla ya la tiene -->
-                                    <td class="text-right" th:text="${prod.stockMinimo != null ? prod.stockMinimo : '—'}">—</td>
-
-                                    <td class="text-center">
-                                        <a class="btn btn-sm btn-primary"
+                                        <a class="btn btn-sm btn-outline-primary"
                                            th:href="@{/productos/{cb}(cb=${prod.codigoBarras})}">
-                                            <i class="fas fa-eye mr-1"></i> Ver detalles
+                                            <i class="fas fa-eye mr-1"></i> Ver
+                                        </a>
+                                        <a class="btn btn-sm btn-primary"
+                                           th:href="@{/productos/editar/{cb}(cb=${prod.codigoBarras})}">
+                                            <i class="fas fa-edit mr-1"></i> Editar
                                         </a>
                                     </td>
-
                                 </tr>
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Paginación -->
+                        <nav th:if="${page != null and page.totalPages > 1}" aria-label="Paginación">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                                    <a class="page-link"
+                                       th:href="@{/buscar(page=${page.number - 1}, size=${page.size}, q=${q})}"
+                                       tabindex="-1">Anterior</a>
+                                </li>
+
+                                <li class="page-item"
+                                    th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
+                                    th:classappend="${i} == ${page.number} ? 'active'">
+                                    <a class="page-link"
+                                       th:text="${i + 1}"
+                                       th:href="@{/buscar(page=${i}, size=${page.size}, q=${q})}">1</a>
+                                </li>
+
+                                <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                                    <a class="page-link"
+                                       th:href="@{/buscar(page=${page.number + 1}, size=${page.size}, q=${q})}">Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
 
                     </div>
                 </div>
@@ -155,7 +256,7 @@
         <footer class="sticky-footer bg-white">
             <div class="container my-auto">
                 <div class="copyright text-center my-auto">
-                    <span>© Tu Empresa · 2025</span>
+                    <span>© Inventario · 2025</span>
                 </div>
             </div>
         </footer>

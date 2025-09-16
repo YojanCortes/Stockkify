@@ -52,7 +52,7 @@
                                  th:src="@{|/productos/${producto.codigoBarras}/imagen|}"
                                  onerror="this.onerror=null; this.src='/img/no-image.png';"
                                  th:alt="${'Imagen de ' + producto.nombre}"
-                                 style="max-height:140px; width:auto;">
+                                 style="max-height:300px; width:auto;">
                         </a>
 
                     </div>
@@ -126,25 +126,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Botones de acción debajo de imagen y formulario -->
-                        <div class="mt-3 d-flex flex-wrap">
-                            <a class="btn btn-primary mr-2 mb-2"
-                               th:href="@{'/productos/editar/' + ${producto.codigoBarras}}">
-                                <i class="fas fa-edit mr-1"></i> Editar
-                            </a>
-
-                            <!-- Eliminar (POST con CSRF) -->
-                            <form class="d-inline-block mr-2 mb-2"
-                                  th:action="@{'/productos/' + ${producto.codigoBarras} + '/eliminar'}"
-                                  method="post"
-                                  onsubmit="return confirm('¿Seguro que deseas eliminar este producto? Esta acción no se puede deshacer.');">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                <button type="submit" class="btn btn-danger">
-                                    <i class="fas fa-trash-alt mr-1"></i> Eliminar producto
-                                </button>
-                            </form>
                         </div>
 
                     </div>
