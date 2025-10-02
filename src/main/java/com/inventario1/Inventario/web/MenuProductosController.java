@@ -16,6 +16,6 @@ public class MenuProductosController {
     // (Opcional) si quieres que "/" vaya al menú también
     // @GetMapping("/")
     // public String root() {
-    //     return "redirect:/inventario";
+    //     return "redirect:/inventari o";
     // }
 }

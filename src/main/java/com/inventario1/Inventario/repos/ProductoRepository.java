@@ -20,6 +20,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     /* =========================
        BÚSQUEDA PAGINADA (NUEVA)
        ========================= */
+    @Query("select p.codigoBarras from Producto p where p.codigoBarras in :cbs")
+    List<String> findExistingCodigos(@Param("cbs") Collection<String> cbs);
 
     /**
      * Búsqueda derivada (Spring Data) para /buscar:

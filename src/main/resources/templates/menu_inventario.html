@@ -128,6 +128,24 @@
                         </div>
                     </div>
 
+                    <!-- 💥 Nuevo: Agregar varios productos -->
+                    <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="card menu-card">
+                            <div class="card-body">
+                                <div class="menu-icon">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                <h5 class="menu-title">Agregar varios productos</h5>
+                                <p class="menu-desc">Carga múltiple en tabla dinámica (con o sin imagen).</p>
+                                <div class="menu-actions mt-2">
+                                    <a class="btn btn-success" th:href="@{/productos/agregar-varios}">
+                                        <i class="fas fa-plus-square mr-1"></i> Crear varios
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Ver movimientos de productos -->
                     <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card menu-card">
@@ -209,7 +227,7 @@
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
-<!-- Atajos rápidos (opcional): V, A, M, B, X -->
+<!-- Atajos rápidos (opcional): V, A, G, M, B, X -->
 <script>
     (function () {
         document.addEventListener('keydown', function (e) {
@@ -219,11 +237,12 @@
                 if (el) { window.location.assign(el.getAttribute('href')); }
             };
             switch ((e.key || '').toLowerCase()) {
-                case 'v': go('[th\\:href="@{/buscar}"]'); break;                 // Ver productos
-                case 'a': go('[th\\:href="@{/productos/agregar}"]'); break;      // Agregar
-                case 'm': go('[th\\:href="@{/movimientos}"]'); break;            // Movimientos
-                case 'b': go('[th\\:href="@{/reportes/bajo-stock}"]'); break;    // Bajo stock
-                case 'x': go('[th\\:href="@{/reportes/por-vencer}"]'); break;    // Por vencer
+                case 'v': go('[th\\:href="@{/buscar}"]'); break;                      // Ver productos
+                case 'a': go('[th\\:href="@{/productos/agregar}"]'); break;           // Agregar
+                case 'g': go('[th\\:href="@{/productos/agregar-varios}"]'); break;    // Agregar varios
+                case 'm': go('[th\\:href="@{/movimientos}"]'); break;                 // Movimientos
+                case 'b': go('[th\\:href="@{/reportes/bajo-stock}"]'); break;         // Bajo stock
+                case 'x': go('[th\\:href="@{/reportes/por-vencer}"]'); break;         // Por vencer
             }
         });
     })();

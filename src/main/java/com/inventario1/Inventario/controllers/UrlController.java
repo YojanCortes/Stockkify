@@ -7,9 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class UrlController {
 
-    @GetMapping("/")
+    @GetMapping("/home")           // 🔁 antes era "/"
     public String home() {
-        return "index"; // templates/index.html
+        return "redirect:/";       // o retorna otra vista si quieres
     }
-
 }

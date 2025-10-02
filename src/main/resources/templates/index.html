@@ -7,16 +7,105 @@
 
     <title>Inventario — Panel</title>
 
-    <!-- Estáticos (como indicaste) -->
+    <!-- Estáticos -->
     <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet" />
     <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet" />
+
+    <style>
+        /* Ventana emergente de alertas */
+        #alertPopup {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            width: 320px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1050;
+        }
+        #alertPopup .header {
+            background: #f8f9fc;
+            padding: 10px 12px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #alertPopup .item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        #alertPopup .item:last-child { border-bottom: none; }
+        #alertPopup .icon { margin-right: 10px; }
+        #alertPopup .footer { padding: 10px 12px; text-align: center; }
+        .alert-link { cursor: pointer; }
+    </style>
+    <style>
+        /* ===== POPUP ===== */
+        #alertPopup {
+          display: none; position: absolute; top: 60px; right: 20px; width: 360px;
+          background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+          box-shadow: 0 10px 30px rgba(0,0,0,.15); z-index: 1050; overflow: hidden;
+        }
+        #alertPopup .header {
+          background: #f8f9fc; padding: 10px 14px; font-weight: 700;
+          border-bottom: 1px solid #e9ecef;
+        }
+        .alert-list { max-height: 320px; overflow-y: auto; }
+        .alert-row {
+          display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+          border-bottom: 1px solid #f1f3f5; text-decoration: none !important;
+        }
+        .alert-row:last-child { border-bottom: none; }
+        .alert-row:hover { background: #f8fafc; }
+
+        .alert-avatar {
+          width: 46px; height: 46px; border-radius: 8px; background: #f1f3f5;
+          display: grid; place-items: center; flex: 0 0 auto; overflow: hidden;
+          border: 1px solid #e9ecef;
+        }
+        .alert-avatar img {
+          width: 100%; height: 100%; object-fit: contain; /* no recorta */
+        }
+        .alert-avatar .placeholder {
+          color: #9aa0a6; font-size: 1.15rem;
+        }
+
+        .alert-info { min-width: 0; flex: 1 1 auto; }
+        .alert-name {
+          font-weight: 700; font-size: .95rem; color: #111827;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .qty-badge {
+          display: inline-flex; align-items: center; gap: 6px;
+          min-width: 48px; justify-content: center;
+          font-weight: 800; font-size: .95rem; padding: 6px 10px;
+          border-radius: 999px; color: #111; border: 1px solid transparent;
+        }
+        /* Colores del estado (reutiliza tus clases bg-warning / bg-danger) */
+        .qty-badge.bg-warning { background: #fff3cd; color: #664d03; border-color: #ffec9f; }
+        .qty-badge.bg-danger  { background: #f8d7da; color: #842029; border-color: #f1aeb5; }
+
+        .popup-footer {
+          display: flex; justify-content: center; padding: 10px; background: #fafbff;
+          border-top: 1px solid #eef1f4;
+        }
+        .popup-footer a { font-weight: 700; }
+    </style>
+
 </head>
 
 <body id="page-top">
 <!-- Page Wrapper -->
 <div id="wrapper">
 
-    <!-- Sidebar desde tu menugeneral.html -->
+    <!-- Sidebar (fragmento) -->
     <div th:replace="~{menugeneral :: sidebar}"></div>
 
     <!-- Content Wrapper -->
@@ -32,7 +121,8 @@
                 <!-- Buscador -->
                 <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                     <div class="input-group">
-                        <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar..." aria-label="Buscar" aria-describedby="btn-buscar">
+                        <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar..."
+                               aria-label="Buscar" aria-describedby="btn-buscar">
                         <div class="input-group-append">
                             <button class="btn btn-primary" type="button" id="btn-buscar">
                                 <i class="fas fa-search fa-sm"></i>
@@ -41,17 +131,67 @@
                     </div>
                 </form>
 
+                <!-- Notificaciones -->
                 <ul class="navbar-nav ml-auto">
-                    <!-- Aquí puedes agregar alertas/usuario -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="javascript:void(0)" id="alertToggle">
+                            <i class="fas fa-bell fa-fw"></i>
+                            <!-- Contador dinámico totalAlertas -->
+                            <span class="badge badge-danger badge-counter"
+                                  th:text="${totalAlertas != null ? totalAlertas : 0}">0</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             <!-- /Topbar -->
+
+            <!-- Ventana emergente de alertas -->
+            <!-- Ventana emergente de alertas -->
+            <div id="alertPopup">
+                <div class="header">Alertas de Inventario</div>
+
+                <!-- Sin alertas -->
+                <div th:if="${totalAlertas == 0}" class="alert-list">
+                    <div class="alert-row">
+                        <div class="alert-avatar"><i class="fas fa-check placeholder"></i></div>
+                        <div class="alert-info">
+                            <div class="alert-name">Todo OK</div>
+                            <small class="text-muted">No hay productos críticos</small>
+                        </div>
+                        <span class="qty-badge bg-warning">0</span>
+                    </div>
+                </div>
+
+                <!-- Top 3 con imagen, nombre y badge de color -->
+                <div class="alert-list" th:if="${totalAlertas > 0}">
+                    <a th:each="a : ${alertasTop3}" th:href="@{/alertas}" class="alert-row">
+                        <div class="alert-avatar">
+                            <img th:if="${a.imagenUrl != null}" th:src="${a.imagenUrl}" alt="img">
+                            <i th:if="${a.imagenUrl == null}" class="fas fa-image placeholder" title="Sin imagen"></i>
+                        </div>
+                        <div class="alert-info">
+                            <div class="alert-name" th:text="${a.nombreProducto}">Producto</div>
+                            <small class="text-muted">Stock actual</small>
+                        </div>
+                        <span class="qty-badge" th:classappend="${' ' + a.color}">
+        <i class="fas fa-boxes"></i>
+        <span th:text="${a.stock}">0</span>
+      </span>
+                    </a>
+                </div>
+
+                <!-- Ver todas -->
+                <div class="popup-footer">
+                    <a th:href="@{/alertas}" class="small">Ver todas las alertas</a>
+                </div>
+            </div>
+
 
             <!-- Begin Page Content -->
             <div class="container-fluid">
                 <h1 class="h3 mb-4 text-gray-800">Dashboard</h1>
 
-                <!-- ====== FILA DE CARDS KPI ====== -->
+                <!-- === KPI CARDS === -->
                 <div class="row">
                     <!-- Productos -->
                     <div class="col-xl-3 col-md-6 mb-4">
@@ -59,8 +199,7 @@
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                            Productos</div>
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Productos</div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800">1,245</div>
                                     </div>
                                     <div class="col-auto">
@@ -77,8 +216,7 @@
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                            Stock total</div>
+                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Stock total</div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800">8,940</div>
                                     </div>
                                     <div class="col-auto">
@@ -95,8 +233,7 @@
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                            Bajo mínimo</div>
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Bajo mínimo</div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800">27</div>
                                     </div>
                                     <div class="col-auto">
@@ -113,8 +250,7 @@
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                            Vencidos</div>
+                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Vencidos</div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800">5</div>
                                     </div>
                                     <div class="col-auto">
@@ -126,7 +262,7 @@
                     </div>
                 </div>
 
-                <!-- ====== GRÁFICAS ====== -->
+                <!-- === GRÁFICAS === -->
                 <div class="row">
                     <!-- Área -->
                     <div class="col-xl-6">
@@ -135,9 +271,7 @@
                                 <h6 class="m-0 font-weight-bold text-primary">Movimientos últimos 30 días</h6>
                             </div>
                             <div class="card-body">
-                                <div class="chart-area">
-                                    <canvas id="myAreaChart"></canvas>
-                                </div>
+                                <div class="chart-area"><canvas id="myAreaChart"></canvas></div>
                             </div>
                         </div>
                     </div>
@@ -149,15 +283,13 @@
                                 <h6 class="m-0 font-weight-bold text-primary">Stock por categoría</h6>
                             </div>
                             <div class="card-body">
-                                <div class="chart-bar">
-                                    <canvas id="myBarChart"></canvas>
-                                </div>
+                                <div class="chart-bar"><canvas id="myBarChart"></canvas></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ====== PIE (opcional, para evitar errores si cargas demo de pie) ====== -->
+                <!-- === PIE === -->
                 <div class="row">
                     <div class="col-xl-6">
                         <div class="card shadow mb-4">
@@ -165,15 +297,13 @@
                                 <h6 class="m-0 font-weight-bold text-primary">Top categorías</h6>
                             </div>
                             <div class="card-body">
-                                <div class="chart-pie pt-4 pb-2">
-                                    <canvas id="myPieChart"></canvas>
-                                </div>
+                                <div class="chart-pie pt-4 pb-2"><canvas id="myPieChart"></canvas></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ====== TABLA MOVIMIENTOS RECIENTES ====== -->
+                <!-- === TABLA MOVIMIENTOS === -->
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold text-primary">Movimientos recientes</h6>
@@ -231,9 +361,7 @@
             </div>
         </footer>
     </div>
-    <!-- End of Content Wrapper -->
 </div>
-<!-- End of Page Wrapper -->
 
 <a class="scroll-to-top rounded" href="#page-top">
     <i class="fas fa-angle-up"></i>
@@ -244,12 +372,32 @@
 <script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
-
-<!-- Chart.js -->
 <script th:src="@{/vendor/chart.js/Chart.min.js}"></script>
 
-<!-- Demos seguros (no dependen del backend) -->
 <script>
+    // Toggle ventana emergente y click en items -> /alertas
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle = document.getElementById('alertToggle');
+        const popup  = document.getElementById('alertPopup');
+
+        if (toggle && popup) {
+            toggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                popup.style.display = (popup.style.display === 'block') ? 'none' : 'block';
+            });
+            document.addEventListener('click', function (e) {
+                if (popup.style.display === 'block' &&
+                    !popup.contains(e.target) &&
+                    !toggle.contains(e.target)) {
+                    popup.style.display = 'none';
+                }
+            });
+        }
+    });
+</script>
+
+<script>
+    // Chart.js demo seguro
     document.addEventListener('DOMContentLoaded', function () {
         if (!window.Chart) return;
 
@@ -260,11 +408,7 @@
                 type: 'line',
                 data: {
                     labels: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
-                    datasets: [{
-                        label: 'Movimientos',
-                        data: [5, 9, 7, 12, 10, 4, 6],
-                        fill: true
-                    }]
+                    datasets: [{ label: 'Movimientos', data: [5, 9, 7, 12, 10, 4, 6], fill: true }]
                 },
                 options: { maintainAspectRatio: false }
             });
@@ -277,35 +421,25 @@
                 type: 'bar',
                 data: {
                     labels: ['Cervezas', 'Snacks', 'Licores', 'Refrescos', 'Otros'],
-                    datasets: [{
-                        label: 'Stock',
-                        data: [120, 80, 60, 90, 30]
-                    }]
+                    datasets: [{ label: 'Stock', data: [120, 80, 60, 90, 30] }]
                 },
                 options: { maintainAspectRatio: false }
             });
         }
 
-        // Pie (para que no falle si cargas los demo scripts de pie)
+        // Pie
         const pieEl = document.getElementById('myPieChart');
         if (pieEl) {
             new Chart(pieEl, {
                 type: 'doughnut',
                 data: {
                     labels: ['Cervezas', 'Licores', 'Refrescos'],
-                    datasets: [{
-                        data: [55, 25, 20]
-                    }]
+                    datasets: [{ data: [55, 25, 20] }]
                 },
                 options: { maintainAspectRatio: false }
             });
         }
     });
 </script>
-
-<!-- (Opcional) Si no quieres usar los demos por defecto, comenta estas dos líneas:
-<script th:src="@{/js/demo/chart-area-demo.js}"></script>
-<script th:src="@{/js/demo/chart-pie-demo.js}"></script>
--->
 </body>
 </html>
