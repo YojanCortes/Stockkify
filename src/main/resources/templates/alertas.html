@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
     <title>Inventario — Alertas</title>
 
     <!-- Estilos -->
@@ -12,134 +11,82 @@
     <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet"/>
 
     <style>
-        /* ====== LAYOUT GRID: máx 4 por fila ====== */
-        .grid-alerts {
-            display: grid;
-            grid-template-columns: repeat(1, 1fr);
-            gap: 14px;
-        }
-        @media (min-width: 576px) { .grid-alerts { grid-template-columns: repeat(2, 1fr); } }
-        @media (min-width: 992px) { .grid-alerts { grid-template-columns: repeat(3, 1fr); } }
-        @media (min-width: 1200px){ .grid-alerts { grid-template-columns: repeat(4, 1fr); } }
+        /* ====== GRID: máx 3 por fila; 2 filas por página ====== */
+        .grid-alerts{ display:grid; gap:14px; grid-template-columns:repeat(1,1fr); }
+        @media (min-width: 768px){ .grid-alerts{ grid-template-columns:repeat(2,1fr); } }
+        @media (min-width: 1200px){ .grid-alerts{ grid-template-columns:repeat(3,1fr); } } /* 👈 nunca más de 3 */
 
-        /* ====== TILE CUADRADO ====== */
-        .alert-tile {
-            position: relative;
-            aspect-ratio: 1 / 1; /* cuadrado perfecto */
+        /* ====== TILE / CARD ====== */
+        .alert-tile{ position:relative; aspect-ratio:1 / 1.45; min-height:clamp(360px, 42vw, 520px); }
+        .alert-card{
+          position:absolute; inset:0; display:flex; flex-direction:column;
+          border-radius:14px; overflow:hidden; border-width:2px!important; background:#fff;
+          transition:transform .18s ease, box-shadow .18s ease; padding:10px;
         }
-        .alert-card {
-            position: absolute;
-            inset: 0;
-            border-radius: 14px;
-            overflow: hidden;
-            border-width: 2px !important;
-            display: flex;
-            flex-direction: column;
-            transition: transform .18s ease, box-shadow .18s ease;
-            background: #fff;
-        }
-        .alert-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 24px rgba(0,0,0,.12);
-        }
+        .alert-card:hover{ transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.12); }
 
-        /* ====== IMAGEN (ahora más alta: 50% extra) ====== */
-        .image-box {
-            flex: 2.5 1 auto;   /* ✅ antes era 1, ahora ocupa 50% más */
-            min-height: 0;
-            background: #11151a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            overflow: hidden;
-            padding: 6px;
+        /* ====== IMAGEN ====== */
+        .image-box{
+          position:relative; flex:0 0 54%; min-height:0; background:#11151a;
+          display:flex; align-items:center; justify-content:center; border-radius:10px; overflow:hidden; padding:6px;
         }
+        .image-box img{ width:100%; height:100%; object-fit:contain; border-radius:8px; }
+        .image-placeholder{
+          color:#9aa0a6; font-weight:600; font-size:.95rem;
+          display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; gap:6px;
+        }
+        .image-placeholder i{ font-size:2.4rem; }
 
-        .image-box img {
-            max-width: 95%;
-            max-height: 95%;
-            object-fit: contain;
-            border-radius: 8px;
+        /* ====== CINTA DE ESTADO ====== */
+        .status-ribbon{
+          position:absolute; top:8px; left:8px; z-index:5;
+          display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+          font-size:.8rem; font-weight:800; letter-spacing:.2px; box-shadow:0 6px 16px rgba(0,0,0,.18); pointer-events:none;
         }
+        .status-critico{ background:#f8d7da; color:#842029; }
+        .status-bajo{ background:#fff3cd; color:#664d03; }
 
-        .image-placeholder {
-            color: #9aa0a6;
-            font-weight: 600;
-            font-size: .95rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            gap: 6px;
+        /* ====== CÓDIGO DE BARRAS ====== */
+        .barcode-box{
+          display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 2px 0; padding:6px 10px;
+          background:#f8f9fa; border:1px dashed #dee2e6; border-radius:8px;
         }
-        .image-placeholder i { font-size: 2.4rem; }
+        .barcode-left{ display:flex; align-items:center; gap:8px; overflow:hidden; }
+        .barcode-label{ font-weight:700; font-size:.85rem; color:#495057; white-space:nowrap; }
+        .barcode-value{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; font-weight:700; }
+        .btn-copy{ border:1px solid #ced4da; background:#fff; font-size:.75rem; padding:3px 8px; border-radius:6px; cursor:pointer; }
+        .btn-copy:active{ transform:scale(.98); }
 
         /* ====== CONTENIDO ====== */
-        .card-body-compact {
-            flex: 0 0 auto;
-            padding: 10px 12px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .prod-name {
-            font-size: 1rem;
-            font-weight: 700;
-            line-height: 1.2;
-            height: 2.4em;
-            overflow: hidden;
-            text-align: center;
-        }
+        .card-body-compact{ flex:1 1 auto; padding:10px 8px 12px; display:flex; flex-direction:column; gap:8px; min-height:0; }
+        .prod-name{ font-size:1rem; font-weight:700; line-height:1.2; height:2.4em; overflow:hidden; text-align:center; }
 
-        /* ====== STOCK DESTACADO ====== */
-        .stock-box {
-            font-size: 1.3rem;
-            font-weight: 800;
-            padding: 10px 12px;
-            border-radius: 10px;
-            text-align: center;
-            letter-spacing: .3px;
-        }
-        .stock-box.bg-danger { background: #f8d7da; color: #842029; }
-        .stock-box.bg-warning { background: #fff3cd; color: #664d03; }
+        /* ====== STOCK ====== */
+        .stock-box{ font-size:1.3rem; font-weight:800; padding:10px 12px; border-radius:10px; text-align:center; letter-spacing:.3px; }
+        .stock-box.bg-danger{ background:#f8d7da; color:#842029; }
+        .stock-box.bg-warning{ background:#fff3cd; color:#664d03; }
+        .stock-box.bg-success{ background:#d1e7dd; color:#0f5132; } /* soporte estado OK */
 
         /* ====== ESTADO ====== */
-        .estado {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-weight: 700;
-            margin-top: 2px;
-            text-align: center;
-        }
-        .estado.text-danger { color: #dc3545 !important; }
-        .estado.text-warning { color: #ffc107 !important; }
+        .estado{ display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; margin-top:2px; text-align:center; }
+        .estado.text-danger{ color:#dc3545!important; }
+        .estado.text-warning{ color:#ffc107!important; }
+        .estado.text-success{ color:#198754!important; }
 
-        /* ====== BOTÓN ====== */
-        .btn-action { font-weight: 600; }
+        .btn-action{ font-weight:600; margin-top:auto; }
 
         /* ====== PAGINACIÓN ====== */
-        .pagination-wrap { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .count-label { font-size: .9rem; color: #6c757d; }
-        .pagination { margin: 0; }
-
+        .pagination-wrap{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        .count-label{ font-size:.9rem; color:#6c757d; }
+        .pagination{ margin:0; }
     </style>
-
 </head>
 
 <body id="page-top">
-
-<!-- Page Wrapper -->
 <div id="wrapper">
-
     <!-- Sidebar -->
     <div th:replace="~{menugeneral :: sidebar}"></div>
 
-    <!-- Content Wrapper -->
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
 
@@ -152,74 +99,95 @@
                     <i class="fas fa-bell"></i> Alertas de Inventario
                 </h5>
             </nav>
-            <!-- /Topbar -->
 
             <!-- Contenido -->
             <div class="container-fluid">
-                <!-- Si no hay alertas -->
                 <div th:if="${alertas == null or #lists.isEmpty(alertas)}" class="alert alert-success text-center">
                     ✅ Todos los productos están con stock suficiente
                 </div>
 
-                <!-- Grid de alertas (todas) -->
+                <!-- Grid de alertas -->
                 <div id="alertsGrid" class="grid-alerts" th:if="${alertas != null and !#lists.isEmpty(alertas)}">
-                    <!-- TILE -->
                     <div class="alert-tile alert-item"
                          th:each="alerta : ${alertas}"
                          th:attr="data-stock=${alerta.stock}">
                         <div class="alert-card shadow-sm"
-                             th:classappend="${alerta.color == 'bg-danger' ? ' border-danger' : ' border-warning'}">
+                             th:classappend="${alerta.color == 'bg-danger' ? ' border-danger' : (alerta.color == 'bg-warning' ? ' border-warning' : ' border-success')}">
 
-                            <!-- Imagen o Placeholder -->
+                            <!-- Imagen / Placeholder -->
                             <div class="image-box">
-                                <img th:if="${alerta.imagenUrl != null}" th:src="${alerta.imagenUrl}" alt="Producto"/>
-                                <div th:if="${alerta.imagenUrl == null}" class="image-placeholder">
-                                    <i class="fas fa-image"></i>
-                                    <span>Sin imagen</span>
+                                <!-- Cinta (solo críticos o bajo) -->
+                                <div class="status-ribbon"
+                                     th:if="${alerta.color == 'bg-danger' or alerta.color == 'bg-warning'}"
+                                     th:classappend="${alerta.color == 'bg-danger'} ? ' status-critico' : ' status-bajo'">
+                                    <i class="fas"
+                                       th:classappend="${alerta.color == 'bg-danger'} ? ' fa-exclamation-circle' : ' fa-exclamation-triangle'"></i>
+                                    <span th:text="${alerta.color == 'bg-danger'} ? 'Crítico' : 'Bajo stock'">Crítico</span>
                                 </div>
+
+                                <!-- Imagen por código de barras -->
+                                <img th:if="${alerta.codigoBarras != null}"
+                                     th:src="@{/productos/{cb}/imagen(cb=${alerta.codigoBarras})}"
+                                     alt="Producto" loading="lazy" decoding="async"
+                                     onerror="this.onerror=null; this.src='/img/no-image.png';"/>
+
+                                <!-- Fallback URL -->
+                                <img th:if="${alerta.codigoBarras == null and alerta.imagenUrl != null}"
+                                     th:src="${alerta.imagenUrl}" alt="Producto" loading="lazy" decoding="async"
+                                     onerror="this.onerror=null; this.src='/img/no-image.png';"/>
+
+                                <!-- Placeholder -->
+                                <div th:if="${(alerta.codigoBarras == null and alerta.imagenUrl == null)}" class="image-placeholder">
+                                    <i class="fas fa-image"></i><span>Sin imagen</span>
+                                </div>
+                            </div>
+
+                            <!-- Código de barras -->
+                            <div class="barcode-box">
+                                <div class="barcode-left">
+                                    <i class="fas fa-barcode"></i>
+                                    <span class="barcode-label">Código:</span>
+                                    <span class="barcode-value" th:text="${alerta.codigoBarras} ?: '—'">—</span>
+                                </div>
+                                <button type="button" class="btn-copy" th:attr="data-bc=${alerta.codigoBarras}" title="Copiar código">Copiar</button>
                             </div>
 
                             <!-- Contenido -->
                             <div class="card-body-compact">
                                 <div class="prod-name" th:text="${alerta.nombreProducto}">Producto</div>
 
-                                <!-- Stock -->
                                 <div th:class="'stock-box ' + ${alerta.color}">
-                                    <i class="fas fa-box-open"></i>
-                                    <span class="ml-1">Stock:</span>
+                                    <i class="fas fa-box-open"></i> <span class="ml-1">Stock:</span>
                                     <span th:text="${alerta.stock}">0</span>
                                 </div>
 
-                                <!-- Estado -->
                                 <div class="estado"
-                                     th:classappend="${alerta.color == 'bg-danger' ? ' text-danger' : ' text-warning'}">
+                                     th:classappend="${alerta.color == 'bg-danger'} ? ' text-danger'
+                                     : (${alerta.color == 'bg-warning'} ? ' text-warning' : ' text-success')">
                                     <i class="fas"
-                                       th:classappend="${alerta.color == 'bg-danger' ? ' fa-exclamation-circle' : ' fa-exclamation-triangle'}"></i>
-                                    <span th:text="${alerta.color == 'bg-danger' ? 'Crítico' : 'Cercano al mínimo'}">
-                                        Estado
-                                    </span>
+                                       th:classappend="${alerta.color == 'bg-danger'} ? ' fa-exclamation-circle'
+                                     : (${alerta.color == 'bg-warning'} ? ' fa-exclamation-triangle' : ' fa-check-circle')"></i>
+                                    <span th:text="${alerta.estado}">OK</span>
                                 </div>
 
-                                <!-- Ver producto (ajusta URL a tu ruta real; aquí ejemplo por nombre) -->
                                 <a class="btn btn-primary btn-sm btn-block btn-action"
-                                   th:href="@{'/productos/buscar?nombre=' + ${alerta.nombreProducto}}">
+                                   th:href="${alerta.codigoBarras} != null
+                             ? @{/productos/{cb}(cb=${alerta.codigoBarras})}
+                             : (${alerta.id} != null
+                                ? @{/productos/detalles/{id}(id=${alerta.id})}
+                                : @{/productos/buscar(nombre=${alerta.nombreProducto})})">
                                     <i class="fas fa-search"></i> Ver producto
                                 </a>
                             </div>
                         </div>
                     </div>
-                    <!-- /TILE -->
                 </div>
 
                 <!-- Paginación -->
                 <div id="paginationWrap" class="pagination-wrap mt-3" style="display:none;">
-                    <div class="count-label">
-                        <span id="rangeLabel">Mostrando 0–0 de 0</span>
-                    </div>
+                    <div class="count-label"><span id="rangeLabel">Mostrando 0–0 de 0</span></div>
                     <nav aria-label="Paginación de alertas">
-                        <ul id="pagination" class="pagination pagination-sm mb-0">
-                            <!-- botones generados por JS -->
-                        </ul>
+                        <ul id="pagination" class="pagination pagination-sm mb-0"></ul>
                     </nav>
                 </div>
             </div>
@@ -237,7 +205,6 @@
     </div>
 </div>
 
-<!-- Botón scroll -->
 <a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 
 <!-- JS -->
@@ -247,71 +214,86 @@
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
 <script>
-    /* ====== Ordenar min->max y paginar (4 x 5 = 20 por página) ====== */
+    /* Copiar código de barras */
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.classList.contains('btn-copy')) {
+        const bc = e.target.getAttribute('data-bc');
+        if (bc) {
+          navigator.clipboard.writeText(bc).then(() => {
+            const old = e.target.textContent;
+            e.target.textContent = '¡Copiado!';
+            setTimeout(() => e.target.textContent = old, 1200);
+          });
+        }
+      }
+    });
+
+    /* Ordenar min->max y paginar con 3x2 (cols dinámicas => perPage = cols * 2) */
     document.addEventListener('DOMContentLoaded', function () {
-        const grid = document.getElementById('alertsGrid');
-        if (!grid) return;
+      const grid = document.getElementById('alertsGrid');
+      if (!grid) return;
 
-        const items = Array.from(grid.querySelectorAll('.alert-item'));
+      const items = Array.from(grid.querySelectorAll('.alert-item'));
 
-        // 1) Orden min->max según data-stock
-        items.sort((a, b) => Number(a.dataset.stock || 0) - Number(b.dataset.stock || 0));
-        items.forEach(el => grid.appendChild(el));
+      // Orden min->max
+      items.sort((a, b) => Number(a.dataset.stock || 0) - Number(b.dataset.stock || 0));
+      items.forEach(el => grid.appendChild(el));
 
-        // 2) Paginación
-        const perPage = 20; // 4 por fila x 5 filas
-        let current = 1;
+      const paginationWrap = document.getElementById('paginationWrap');
+      const rangeLabel = document.getElementById('rangeLabel');
+      const pagination = document.getElementById('pagination');
+
+      let current = 1;
+
+      function getCols() {
+        const cs = window.getComputedStyle(grid).gridTemplateColumns;
+        return Math.min(3, cs.split(' ').filter(Boolean).length || 1);
+      }
+      function getPerPage() {
+        return getCols() * 2; // 👈 2 filas máximo
+      }
+
+      function renderPage(page) {
+        const perPage = getPerPage();
         const total = items.length;
         const pages = Math.max(1, Math.ceil(total / perPage));
+        current = Math.min(Math.max(1, page), pages);
 
-        const paginationWrap = document.getElementById('paginationWrap');
-        const rangeLabel = document.getElementById('rangeLabel');
-        const pagination = document.getElementById('pagination');
+        const startIdx = (current - 1) * perPage;
+        const endIdx = Math.min(startIdx + perPage, total);
+
+        items.forEach((el, i) => el.style.display = (i >= startIdx && i < endIdx) ? '' : 'none');
+
+        rangeLabel.textContent = `Mostrando ${startIdx + 1}–${endIdx} de ${total}`;
         paginationWrap.style.display = pages > 1 ? 'flex' : 'none';
 
-        function renderPage(page) {
-            current = Math.min(Math.max(1, page), pages);
-            const startIdx = (current - 1) * perPage;
-            const endIdx = Math.min(startIdx + perPage, total);
+        pagination.innerHTML = '';
+        const addBtn = (label, target, disabled = false, active = false) => {
+          const li = document.createElement('li');
+          li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+          const a = document.createElement('a');
+          a.className = 'page-link'; a.href = 'javascript:void(0)'; a.textContent = label;
+          if (!disabled && !active) a.addEventListener('click', () => renderPage(target));
+          li.appendChild(a); pagination.appendChild(li);
+        };
+        addBtn('«', 1, current === 1);
+        addBtn('‹', current - 1, current === 1);
 
-            items.forEach((el, i) => {
-                el.style.display = (i >= startIdx && i < endIdx) ? '' : 'none';
-            });
+        const windowSize = 5;
+        const pagesTotal = Math.max(1, Math.ceil(items.length / perPage));
+        let start = Math.max(1, current - Math.floor(windowSize / 2));
+        let end = Math.min(pagesTotal, start + windowSize - 1);
+        if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
 
-            // rango visible
-            rangeLabel.textContent = `Mostrando ${startIdx + 1}–${endIdx} de ${total}`;
+        for (let p = start; p <= end; p++) addBtn(String(p), p, false, p === current);
 
-            // botones
-            pagination.innerHTML = '';
+        addBtn('›', current + 1, current === pagesTotal);
+        addBtn('»', pagesTotal, current === pagesTotal);
+      }
 
-            const addBtn = (label, target, disabled = false, active = false) => {
-                const li = document.createElement('li');
-                li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-                const a = document.createElement('a');
-                a.className = 'page-link';
-                a.href = 'javascript:void(0)';
-                a.textContent = label;
-                if (!disabled && !active) a.addEventListener('click', () => renderPage(target));
-                li.appendChild(a);
-                pagination.appendChild(li);
-            };
-
-            addBtn('«', 1, current === 1);
-            addBtn('‹', current - 1, current === 1);
-
-            // limitar cantidad de números visibles
-            const windowSize = 5;
-            let start = Math.max(1, current - Math.floor(windowSize / 2));
-            let end = Math.min(pages, start + windowSize - 1);
-            if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
-
-            for (let p = start; p <= end; p++) addBtn(String(p), p, false, p === current);
-
-            addBtn('›', current + 1, current === pages);
-            addBtn('»', pages, current === pages);
-        }
-
-        renderPage(1);
+      // Primera renderización y re-render en resize (por cambio de columnas)
+      renderPage(1);
+      window.addEventListener('resize', () => renderPage(current));
     });
 </script>
 </body>

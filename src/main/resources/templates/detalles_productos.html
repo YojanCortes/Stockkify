@@ -10,7 +10,89 @@
     <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet"/>
 
     <style>
-        .product-card img{max-width:240px;height:auto;border:1px solid #eee;border-radius:.5rem}
+        :root{
+            --card-r:14px;
+            --soft-shadow:0 10px 24px rgba(0,0,0,.10);
+        }
+
+        /* ---------- Header ---------- */
+        .page-actions .btn{ border-radius:999px; }
+
+        /* ---------- Col izquierda (imagen) ---------- */
+        .media-card{
+            background:#fff; border-radius:var(--card-r);
+            box-shadow:var(--soft-shadow); overflow:hidden;
+            border:1px solid #eef1f4;
+        }
+        .media-top{
+            position:relative; background:#0f141a;
+            display:flex; align-items:center; justify-content:center;
+            min-height:280px;
+        }
+        .media-top img{
+            max-width:100%; max-height:360px; width:auto; height:auto;
+            object-fit:contain;
+        }
+        .status-ribbon{
+            position:absolute; top:10px; left:10px; z-index:2;
+            display:inline-flex; align-items:center; gap:8px;
+            padding:6px 12px; border-radius:999px;
+            font-weight:800; font-size:.85rem; letter-spacing:.2px;
+            box-shadow:0 6px 16px rgba(0,0,0,.18);
+        }
+        .status-critico{ background:#f8d7da; color:#842029; }
+        .status-ok{ background:#d1e7dd; color:#0f5132; }
+
+        .barcode-box{
+            display:flex; align-items:center; justify-content:space-between;
+            gap:8px; padding:10px 12px; background:#f8f9fa;
+            border-top:1px dashed #e3e6ea;
+        }
+        .barcode-left{ display:flex; align-items:center; gap:8px; overflow:hidden; }
+        .barcode-label{ font-weight:700; font-size:.85rem; color:#495057; white-space:nowrap; }
+        .barcode-value{
+            font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-weight:700; color:#212529;
+        }
+        .btn-copy{
+            border:1px solid #ced4da; background:#fff; font-size:.75rem;
+            padding:6px 10px; border-radius:8px; cursor:pointer;
+        }
+        .btn-copy:active{ transform:scale(.98); }
+
+        /* ---------- Badges ---------- */
+        .chip{
+            display:inline-flex; align-items:center; gap:6px;
+            padding:6px 10px; border-radius:999px; font-weight:700; font-size:.85rem;
+        }
+        .chip-ok{ background:#e8f7ef; color:#198754; }
+        .chip-warn{ background:#fff3cd; color:#664d03; }
+        .chip-danger{ background:#f8d7da; color:#842029; }
+        .chip-muted{ background:#eef1f4; color:#5c6b76; }
+
+        /* ---------- Panel de detalles ---------- */
+        .card.shadow{ border-radius:var(--card-r); }
+        .card-header{ background:linear-gradient(180deg,#ffffff,#f8fbff);}
+        .data-list{
+            display:grid; grid-template-columns: 1fr 1fr; gap:14px;
+        }
+        @media (max-width: 768px){
+            .data-list{ grid-template-columns:1fr; }
+        }
+        .data-item{
+            display:flex; align-items:flex-start; gap:12px;
+            padding:10px 12px; border:1px solid #eef1f4; border-radius:12px;
+            background:#fff;
+        }
+        .ico{
+            width:38px; height:38px; border-radius:10px;
+            background:#f3f6f9; display:grid; place-items:center; flex:0 0 38px;
+            color:#4e73df;
+        }
+        .data-item .label{ font-size:.75rem; color:#6c757d; margin-bottom:2px; }
+        .data-item .value{ font-weight:700; color:#2c3e50; }
+
+        /* ---------- Stock antiguo (compatibilidad con tu lógica) ---------- */
         .stock--low{color:#e74a3b;font-weight:700}
         .stock--ok{color:#1cc88a;font-weight:700}
     </style>
@@ -31,79 +113,199 @@
             </nav>
 
             <div class="container-fluid">
+
+                <!-- Título + acciones -->
                 <div class="d-sm-flex align-items-center justify-content-between mb-3">
-                    <h1 class="h3 mb-0 text-gray-800">
-                        <i class="fas fa-box-open mr-2"></i>
-                        <span th:text="${producto.nombre}">Producto</span>
-                    </h1>
-                    <a class="btn btn-sm btn-secondary" th:href="@{/}">
-                        <i class="fas fa-arrow-left mr-1"></i> Volver
-                    </a>
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <h1 class="h3 mb-0 text-gray-800 d-flex align-items-center">
+                            <i class="fas fa-box-open mr-2"></i>
+                            <span th:text="${producto.nombre}">Producto</span>
+                        </h1>
+                        <!-- Badges rápidos -->
+                        <span class="ml-2 chip"
+                              th:classappend="${(producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)} ? ' chip-danger' : ' chip-ok'">
+                            <i class="fas" th:classappend="${(producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)} ? ' fa-exclamation-triangle' : ' fa-check-circle'"></i>
+                            <span th:text="${(producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)} ? 'Stock crítico' : 'Stock OK'">Stock</span>
+                        </span>
+                        <span class="ml-2 chip" th:classappend="${producto.activo} ? ' chip-ok' : ' chip-muted'">
+                            <i class="fas" th:classappend="${producto.activo} ? ' fa-toggle-on' : ' fa-toggle-off'"></i>
+                            <span th:text="${producto.activo} ? 'Activo' : 'Inactivo'">Activo</span>
+                        </span>
+                    </div>
+
+                    <div class="page-actions">
+                        <a class="btn btn-outline-primary btn-sm mr-2"
+                           th:href="@{'/productos/editar/' + ${producto.codigoBarras}}">
+                            <i class="fas fa-pen mr-1"></i> Editar
+                        </a>
+                        <a class="btn btn-sm btn-secondary" th:href="@{/}">
+                            <i class="fas fa-arrow-left mr-1"></i> Volver
+                        </a>
+                    </div>
                 </div>
 
                 <div class="row">
-                    <!-- Col Imagen -->
-                    <div class="mt-3 d-flex flex-wrap">
-                        <!-- Imagen clickeable que lleva al formulario de edición -->
-                        <a class="mr-2 mb-2"
-                           th:href="@{'/productos/editar/' + ${producto.codigoBarras}}"
-                           style="display:inline-block">
-                            <img class="img-thumbnail"
-                                 th:src="@{|/productos/${producto.codigoBarras}/imagen|}"
-                                 onerror="this.onerror=null; this.src='/img/no-image.png';"
-                                 th:alt="${'Imagen de ' + producto.nombre}"
-                                 style="max-height:300px; width:auto;">
-                        </a>
+                    <!-- Col Imagen (izquierda) -->
+                    <div class="col-xl-4 col-lg-5 mb-4">
+                        <div class="media-card">
+                            <div class="media-top">
+                                <!-- Cinta de estado -->
+                                <div class="status-ribbon"
+                                     th:classappend="${(producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)} ? ' status-critico' : ' status-ok'">
+                                    <i class="fas"
+                                       th:classappend="${(producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)} ? ' fa-exclamation-circle' : ' fa-check'"></i>
+                                    <span th:text="${(producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)} ? 'Crítico' : 'OK'">OK</span>
+                                </div>
 
+                                <!-- Imagen clickeable que lleva al formulario de edición -->
+                                <a th:href="@{'/productos/editar/' + ${producto.codigoBarras}}" class="d-inline-block">
+                                    <img th:src="@{|/productos/${producto.codigoBarras}/imagen|}"
+                                         onerror="this.onerror=null; this.src='/img/no-image.png';"
+                                         th:alt="${'Imagen de ' + producto.nombre}"
+                                         loading="lazy" decoding="async">
+                                </a>
+                            </div>
+
+                            <!-- Código de barras + copiar -->
+                            <div class="barcode-box">
+                                <div class="barcode-left">
+                                    <i class="fas fa-barcode text-muted"></i>
+                                    <span class="barcode-label">Código:</span>
+                                    <span id="barcodeVal" class="barcode-value" th:text="${producto.codigoBarras}">0000000000000</span>
+                                </div>
+                                <button id="btnCopyBarcode" class="btn-copy" type="button" title="Copiar código">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-
-                    <!-- Col Datos -->
+                    <!-- Col Datos (derecha) -->
                     <div class="col-xl-8 col-lg-7 mb-4">
                         <div class="card shadow">
-                            <div class="card-header py-3">
+                            <div class="card-header py-3 d-flex align-items-center justify-content-between">
                                 <h6 class="m-0 font-weight-bold text-primary">
                                     <i class="fas fa-info-circle mr-1"></i> Detalles
                                 </h6>
+                                <!-- Indicadores compactos -->
+                                <div>
+                                    <span class="chip chip-muted mr-1">
+                                        <i class="fas fa-boxes"></i>
+                                        <span>Stock</span>:
+                                        <strong class="ml-1"
+                                                th:classappend="${((producto.stockActual ?: 0) <= (producto.stockMinimo ?: 0)) ? ' text-danger' : ' text-success'}"
+                                                th:text="${producto.stockActual}">0</strong>
+                                    </span>
+                                    <span class="chip chip-muted">
+                                        <i class="fas fa-sort-amount-down"></i>
+                                        <span>Mín.:</span>
+                                        <strong class="ml-1" th:text="${producto.stockMinimo}">0</strong>
+                                    </span>
+                                </div>
                             </div>
+
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Código de barras</label>
-                                        <div class="font-weight-bold" th:text="${producto.codigoBarras}">000</div>
+                                <div class="data-list">
+                                    <!-- Código de barras -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-barcode"></i></div>
+                                        <div>
+                                            <div class="label">Código de barras</div>
+                                            <div class="value" th:text="${producto.codigoBarras}">000</div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Marca</label>
-                                        <div class="font-weight-bold" th:text="${producto.marca}">Marca</div>
+                                    <!-- Marca -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-tags"></i></div>
+                                        <div>
+                                            <div class="label">Marca</div>
+                                            <div class="value" th:text="${producto.marca}">Marca</div>
+                                        </div>
                                     </div>
+                                    <!-- Categoría -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-layer-group"></i></div>
+                                        <div>
+                                            <div class="label">Categoría</div>
+                                            <div class="value" th:text="${producto.categoria}">CATEGORIA</div>
+                                        </div>
+                                    </div>
+                                    <!-- Unidad base -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-ruler-combined"></i></div>
+                                        <div>
+                                            <div class="label">Unidad base</div>
+                                            <div class="value" th:text="${producto.unidadBase}">UNIDAD</div>
+                                        </div>
+                                    </div>
+                                    <!-- Volumen nominal (ml) -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-wine-bottle"></i></div>
+                                        <div>
+                                            <div class="label">Volumen nominal (ml)</div>
+                                            <div class="value" th:text="${producto.volumenNominalMl} ?: '—'">—</div>
+                                        </div>
+                                    </div>
+                                    <!-- Graduación alcohólica -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-percentage"></i></div>
+                                        <div>
+                                            <div class="label">Graduación alcohólica</div>
+                                            <div class="value" th:text="${producto.graduacionAlcoholica} ?: '—'">—</div>
+                                        </div>
+                                    </div>
+                                    <!-- Perecible -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-leaf"></i></div>
+                                        <div>
+                                            <div class="label">Perecible</div>
+                                            <div class="value">
+                                                <span class="chip" th:classappend="${producto.perecible} ? ' chip-warn' : ' chip-muted'">
+                                                    <i class="fas" th:classappend="${producto.perecible} ? ' fa-exclamation' : ' fa-minus'"></i>
+                                                    <span th:text="${producto.perecible} ? 'Sí' : 'No'">No</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Retornable -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-recycle"></i></div>
+                                        <div>
+                                            <div class="label">Retornable</div>
+                                            <div class="value">
+                                                <span class="chip" th:classappend="${producto.retornable} ? ' chip-ok' : ' chip-muted'">
+                                                    <i class="fas" th:classappend="${producto.retornable} ? ' fa-check' : ' fa-minus'"></i>
+                                                    <span th:text="${producto.retornable} ? 'Sí' : 'No'">No</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Fecha de vencimiento -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-hourglass-end"></i></div>
+                                        <div>
+                                            <div class="label">Fecha de vencimiento</div>
+                                            <div class="value"
+                                                 th:text="${producto.fechaVencimiento != null ? #temporals.format(producto.fechaVencimiento, 'yyyy-MM-dd') : '—'}">—</div>
+                                        </div>
+                                    </div>
+                                    <!-- Activo -->
+                                    <div class="data-item">
+                                        <div class="ico"><i class="fas fa-toggle-on"></i></div>
+                                        <div>
+                                            <div class="label">Activo</div>
+                                            <div class="value">
+                                                <span class="chip" th:classappend="${producto.activo} ? ' chip-ok' : ' chip-muted'">
+                                                    <i class="fas" th:classappend="${producto.activo} ? ' fa-check' : ' fa-times'"></i>
+                                                    <span th:text="${producto.activo} ? 'Sí' : 'No'">Sí</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Categoría</label>
-                                        <div class="font-weight-bold" th:text="${producto.categoria}">CATEGORIA</div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Unidad base</label>
-                                        <div class="font-weight-bold" th:text="${producto.unidadBase}">UNIDAD</div>
-                                    </div>
-
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Volumen nominal (ml)</label>
-                                        <div class="font-weight-bold" th:text="${producto.volumenNominalMl}">0</div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Graduación alcohólica</label>
-                                        <div class="font-weight-bold" th:text="${producto.graduacionAlcoholica}">0.0</div>
-                                    </div>
-
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Perecible</label>
-                                        <div class="font-weight-bold" th:text="${producto.perecible} ? 'Sí' : 'No'">No</div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Retornable</label>
-                                        <div class="font-weight-bold" th:text="${producto.retornable} ? 'Sí' : 'No'">No</div>
-                                    </div>
-
+                                <!-- Compatibilidad: bloques originales de stock (opcional mantener) -->
+                                <div class="row mt-3 d-none">
                                     <div class="col-md-6 mb-3">
                                         <label class="small text-muted">Stock actual</label>
                                         <div class="font-weight-bold"
@@ -114,24 +316,22 @@
                                         <label class="small text-muted">Stock mínimo</label>
                                         <div class="font-weight-bold" th:text="${producto.stockMinimo}">0</div>
                                     </div>
-
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Fecha de vencimiento</label>
-                                        <div class="font-weight-bold"
-                                             th:text="${producto.fechaVencimiento} != null ? ${#temporals.format(producto.fechaVencimiento, 'yyyy-MM-dd')} : '—'">—</div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="small text-muted">Activo</label>
-                                        <div class="font-weight-bold" th:text="${producto.activo} ? 'Sí' : 'No'">Sí</div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Acciones secundarias -->
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            <a class="btn btn-outline-danger"
+                               data-toggle="modal" data-target="#confirmarEliminarModal">
+                                <i class="fas fa-trash-alt mr-1"></i> Eliminar
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
         <!-- Modal: Confirmar eliminación -->
         <div class="modal fade" id="confirmarEliminarModal" tabindex="-1" role="dialog"
              aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
@@ -194,5 +394,21 @@
 <script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
+
+<!-- Copiar código de barras -->
+<script>
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.id === 'btnCopyBarcode') {
+            const val = document.getElementById('barcodeVal')?.textContent?.trim();
+            if (!val) return;
+            navigator.clipboard.writeText(val).then(() => {
+                const btn = e.target;
+                const old = btn.textContent;
+                btn.textContent = '¡Copiado!';
+                setTimeout(() => btn.textContent = old, 1200);
+            });
+        }
+    });
+</script>
 </body>
 </html>

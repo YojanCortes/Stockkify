@@ -19,7 +19,8 @@ import java.util.Optional;
 
 @Slf4j
 @RestController
-@RequestMapping("/productos")
+// ⚠️ Cambio de base path para evitar el choque con /productos/{cb}/imagen del ProductoController
+@RequestMapping("/img/productos")
 @RequiredArgsConstructor
 public class ProductoImagenController {
 
@@ -28,20 +29,21 @@ public class ProductoImagenController {
     @Value("${app.uploads.productos-dir:uploads/productos}")
     private String productosDir;
 
-    @GetMapping("/{codigoBarras}/imagen")
+    // Ahora expone: GET /img/productos/{codigoBarras}
+    @GetMapping("/{codigoBarras}")
     public ResponseEntity<byte[]> obtenerImagen(@PathVariable String codigoBarras) {
-        log.info("GET imagen - código barras: {}", codigoBarras);
+        log.info("GET IMG - código barras: {}", codigoBarras);
 
         // 1) DISCO
         ResponseFromDisk fromDisk = loadFromDisk(codigoBarras);
         if (fromDisk != null) {
-            log.info("GET imagen - Servida desde DISCO: {}", fromDisk.path().toAbsolutePath());
+            log.info("GET IMG - Servida desde DISCO: {}", fromDisk.path().toAbsolutePath());
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(fromDisk.contentType()))
                     .header(HttpHeaders.CACHE_CONTROL, "max-age=3600, public")
                     .body(fromDisk.bytes());
         } else {
-            log.info("GET imagen - No encontrada en DISCO para {}", codigoBarras);
+            log.info("GET IMG - No encontrada en DISCO para {}", codigoBarras);
         }
 
         // 2) BD (BLOB)
@@ -51,28 +53,28 @@ public class ProductoImagenController {
             if (p.getImagen() != null && p.getImagen().length > 0) {
                 String ctype = (p.getImagenContentType() != null && !p.getImagenContentType().isBlank())
                         ? p.getImagenContentType() : MediaType.IMAGE_JPEG_VALUE;
-                log.info("GET imagen - Servida desde BD (BLOB) para {}", codigoBarras);
+                log.info("GET IMG - Servida desde BD (BLOB) para {}", codigoBarras);
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(ctype))
                         .header(HttpHeaders.CACHE_CONTROL, "max-age=3600, public")
                         .body(p.getImagen());
             } else {
-                log.info("GET imagen - En BD sin BLOB para {}", codigoBarras);
+                log.info("GET IMG - En BD sin BLOB para {}", codigoBarras);
             }
         } else {
-            log.warn("GET imagen - Producto no existe: {}", codigoBarras);
+            log.warn("GET IMG - Producto no existe: {}", codigoBarras);
         }
 
         // 3) Placeholder
         try {
             ClassPathResource cpr = new ClassPathResource("static/img/no-image.png");
             byte[] bytes = cpr.getContentAsByteArray();
-            log.info("GET imagen - Servida placeholder para {}", codigoBarras);
+            log.info("GET IMG - Servida placeholder para {}", codigoBarras);
             return ResponseEntity.status(HttpStatus.OK)
                     .contentType(MediaType.IMAGE_PNG)
                     .body(bytes);
         } catch (IOException e) {
-            log.error("GET imagen - Error cargando placeholder: {}", e.getMessage(), e);
+            log.error("GET IMG - Error cargando placeholder: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
@@ -80,7 +82,7 @@ public class ProductoImagenController {
     private ResponseFromDisk loadFromDisk(String codigoBarras) {
         String[] exts = {".jpg", ".jpeg", ".png", ".webp"};
         for (String ext : exts) {
-            Path path = Path.of(productosDir).resolve(codigoBarras + ext);
+            Path path = Path.of(productosDir).resolve(codigoBarras + ext).normalize();
             if (Files.exists(path)) {
                 try {
                     byte[] bytes = Files.readAllBytes(path);
