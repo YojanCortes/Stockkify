@@ -6,47 +6,40 @@ import com.inventario1.Inventario.web.dto.ProductoCrearForm;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 @Controller
 @RequiredArgsConstructor
 @Slf4j
+@RequestMapping("/productos/legacy") // <- prefijo para evitar conflicto con ProductoController
 public class ProductoCrearController {
 
     private final ProductoRepository productoRepository;
 
-    /** Directorio donde se guardan las imágenes (configurable) */
-    @Value("${app.uploads.productos-dir:uploads/productos}")
-    private String productosDir;
-
     /* =========================================================
-       GET: Formulario de creación
+       GET: Formulario de creación (legacy)
        ========================================================= */
-    @GetMapping("/productos/agregar")
+    @GetMapping("/agregar")
     public String agregarForm(Model model) {
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new ProductoCrearForm());
         }
-        // Ajusta el nombre si tu archivo se llama distinto (p. ej. "agregar_prodcuto")
-        return "agregar_producto";
+        return "agregar_producto"; // usa tu mismo HTML
     }
 
     /* =========================================================
-       POST: Crear producto
+       POST: Crear producto (legacy)
        ========================================================= */
-    @PostMapping("/productos/agregar")
+    @PostMapping("/agregar")
     public String crear(@Valid @ModelAttribute("form") ProductoCrearForm form,
                         BindingResult br,
                         RedirectAttributes ra,
@@ -56,9 +49,7 @@ public class ProductoCrearController {
         if (!br.hasErrors() && productoRepository.existsByCodigoBarras(form.getCodigoBarras())) {
             br.rejectValue("codigoBarras", "exists", "Ya existe un producto con ese código de barras.");
         }
-
         if (br.hasErrors()) {
-            // Volver al mismo HTML con mensajes de error
             return "agregar_producto";
         }
 
@@ -76,30 +67,18 @@ public class ProductoCrearController {
         p.setCodigoBarras(form.getCodigoBarras());
         p.setPerecible(Boolean.TRUE.equals(form.getPerecible()));
         p.setRetornable(Boolean.TRUE.equals(form.getRetornable()));
-        p.setActivo(form.getActivo() == null ? true : form.getActivo());
+        p.setActivo(form.getActivo() == null || form.getActivo());
 
-        // Guardar primero (por si necesitas ID u otros defaults)
+        // Guardar primero
         p = productoRepository.save(p);
 
-        // Manejar imagen si viene
+        // Guardar imagen en la entidad (bytes), sin escribir a disco
         if (form.getImagen() != null && !form.getImagen().isEmpty()) {
             try {
-                String ext = detectarExtension(form.getImagen());
-                if (ext == null) ext = ".png";
-
-                Path baseDir = Path.of(productosDir);
-                Files.createDirectories(baseDir);
-
-                String fileName = p.getCodigoBarras() + ext;
-                Path destino = baseDir.resolve(fileName);
-
-                Files.copy(form.getImagen().getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
-
+                p.setImagen(form.getImagen().getBytes());
                 p.setImagenContentType(form.getImagen().getContentType());
                 p.setImagenNombre(form.getImagen().getOriginalFilename());
                 p.setImagenTamano(form.getImagen().getSize());
-                p.setImagenUrl("/uploads/productos/" + fileName); // asegúrate de servir /uploads/**
-
                 productoRepository.save(p);
             } catch (IOException e) {
                 log.warn("No se pudo guardar la imagen del producto {}: {}", p.getCodigoBarras(), e.getMessage());
@@ -107,26 +86,7 @@ public class ProductoCrearController {
             }
         }
 
-        ra.addFlashAttribute("ok", "Producto creado correctamente.");
-        // Redirige a la vista del producto o al buscador, como prefieras:
+        ra.addFlashAttribute("ok", "Producto creado correctamente (legacy).");
         return "redirect:/productos/" + p.getCodigoBarras();
-        // return "redirect:/buscar";
-    }
-
-    /* ========================= Helpers ========================= */
-
-    private String detectarExtension(org.springframework.web.multipart.MultipartFile file) {
-        String ctype = file.getContentType();
-        if (ctype != null) {
-            if ("image/png".equalsIgnoreCase(ctype))  return ".png";
-            if ("image/jpeg".equalsIgnoreCase(ctype)) return ".jpg";
-            if ("image/webp".equalsIgnoreCase(ctype)) return ".webp";
-        }
-        String original = file.getOriginalFilename();
-        if (original != null && original.contains(".")) {
-            String ext = original.substring(original.lastIndexOf('.')).toLowerCase();
-            if (ext.matches("\\.(png|jpg|jpeg|webp)")) return ext.equals(".jpeg") ? ".jpg" : ext;
-        }
-        return null;
     }
 }
