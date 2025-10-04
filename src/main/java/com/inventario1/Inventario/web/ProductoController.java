@@ -22,15 +22,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-@Controller // IMPORTANTE: @Controller (NO @RestController)
+@Controller
 @RequiredArgsConstructor
 @RequestMapping("/productos")
 public class ProductoController {
 
     private final ProductoRepository productoRepository;
 
-    // ====== DETALLE por código de barras ======
-    @GetMapping("/{codigoBarras}")
+    // ====== DETALLE por código de barras (solo dígitos; evita conflicto con /buscar) ======
+    @GetMapping("/{codigoBarras:\\d+}")
     public String verPorCodigo(@PathVariable String codigoBarras, Model model) {
         Producto p = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
@@ -38,7 +38,7 @@ public class ProductoController {
         return "detalles_productos";
     }
 
-    // ====== DETALLE por ID (fallback para alertas que traen id) ======
+    // ====== DETALLE por ID ======
     @GetMapping("/detalles/{id}")
     public String verPorId(@PathVariable Long id, Model model) {
         Producto p = productoRepository.findById(id)
@@ -47,8 +47,7 @@ public class ProductoController {
         return "detalles_productos";
     }
 
-    // ====== IMAGEN del producto (usada por las tarjetas de alertas) ======
-    // ⚠ Si existe otro controller con la MISMA ruta, cámbialo/elimínalo para evitar "Ambiguous mapping".
+    // ====== IMAGEN del producto ======
     @GetMapping("/{codigoBarras}/imagen")
     public ResponseEntity<Resource> imagen(@PathVariable String codigoBarras) {
         Producto p = productoRepository.findByCodigoBarras(codigoBarras)
@@ -69,29 +68,25 @@ public class ProductoController {
                 .body(new ByteArrayResource(bytes));
     }
 
-    // ====== FORM de edición (soporta AMBAS rutas para coincidir con tu HTML) ======
+    // ====== FORM de edición ======
     @GetMapping({"/{codigoBarras}/editar", "/editar/{codigoBarras}"})
     public String editarForm(@PathVariable String codigoBarras, Model model) {
         Producto p = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
         model.addAttribute("producto", p);
-        // Si tu plantilla usa th:object="${form}", descomenta:
-        // model.addAttribute("form", p);
         return "editar_producto";
     }
 
-    // ====== GUARDAR cambios (incluida imagen) ======
+    // ====== GUARDAR CAMBIOS ======
     @PostMapping({"/{codigoBarras}/editar", "/editar/{codigoBarras}"})
     public String actualizar(@PathVariable String codigoBarras,
                              @ModelAttribute("producto") Producto form,
-                             // name="archivoImagen" en el input file
                              @RequestParam(value = "archivoImagen", required = false) MultipartFile archivoImagen,
                              RedirectAttributes ra) {
 
         Producto p = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
 
-        // Copiar campos editables
         p.setNombre(form.getNombre());
         p.setMarca(form.getMarca());
         p.setCategoria(form.getCategoria());
@@ -105,7 +100,6 @@ public class ProductoController {
         p.setFechaVencimiento(form.getFechaVencimiento());
         p.setActivo(form.getActivo());
 
-        // Imagen opcional
         if (archivoImagen != null && !archivoImagen.isEmpty()) {
             try {
                 p.setImagen(archivoImagen.getBytes());
@@ -123,20 +117,55 @@ public class ProductoController {
         return "redirect:/productos/" + codigoBarras;
     }
 
-    // ====== ELIMINAR (coincide con tu formulario del modal) ======
+    // ====== ELIMINAR ======
     @PostMapping("/{codigoBarras}/eliminar")
     public String eliminar(@PathVariable String codigoBarras, RedirectAttributes ra) {
         Producto p = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
         productoRepository.delete(p);
         ra.addFlashAttribute("ok", "Producto eliminado correctamente");
-        return "redirect:/"; // o a la lista: return "redirect:/productos";
+        return "redirect:/";
     }
 
-    // ====== (Opcional) BUSCAR por nombre - fallback sin tocar el repositorio ======
-    // Si tu HTML llega a usar /productos/buscar?nombre=..., redirige a una lista/menú que ya tengas.
+    // ====== API: verificar existencia (para el modal, sin redirigir) ======
+    @GetMapping("/api/existe/{codigoBarras}")
+    @ResponseBody
+    public ResponseEntity<Void> existe(@PathVariable String codigoBarras) {
+        String cb = codigoBarras == null ? "" : codigoBarras.trim();
+        if (cb.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        return productoRepository.existsByCodigoBarras(cb)
+                ? ResponseEntity.ok().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    // ====== BUSCAR PRODUCTO (link directo: redirige a detalles o vuelve con ?error=...) ======
+    // Nota: el modal normalmente usa la API /api/existe y NO este endpoint.
+    @GetMapping(value = "/buscar", params = "q")
+    public String buscarProducto(@RequestParam("q") String q) {
+        String codigo = q == null ? "" : q.trim();
+
+        if (codigo.isEmpty()) {
+            return "redirect:/?error=" + UriUtils.encode("Debe ingresar un código de barras.", StandardCharsets.UTF_8);
+        }
+
+        if (productoRepository.existsByCodigoBarras(codigo)) {
+            return "redirect:/productos/" + codigo;
+        } else {
+            return "redirect:/?error=" + UriUtils.encode("Producto no existe con el código: " + codigo, StandardCharsets.UTF_8);
+        }
+    }
+
+    // (opcional) /productos/buscar sin params -> redirige al home
     @GetMapping("/buscar")
-    public String buscarPorNombre(@RequestParam("nombre") String nombre) {
+    public String buscarSinParametros() {
+        return "redirect:/";
+    }
+
+    // ====== BUSCAR LEGACY por nombre (compatibilidad) ======
+    @GetMapping(value = "/buscar", params = "nombre")
+    public String buscarPorNombreLegacy(@RequestParam("nombre") String nombre) {
         String encoded = UriUtils.encode(nombre, StandardCharsets.UTF_8);
         return "redirect:/menu_productos?nombre=" + encoded;
     }

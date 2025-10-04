@@ -1,6 +1,6 @@
 package com.inventario1.Inventario.controllers;
 
-import com.inventario1.Inventario.services.BulkProductoLoaderService;
+import com.inventario1.Inventario.services.BulkMovimientoLoaderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -12,40 +12,45 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@RequestMapping("/ui/bulk-productos")
+@RequestMapping("/ui/bulk-movimientos")
 @RequiredArgsConstructor
 @Slf4j
-public class BulkProductoController {
+public class BulkMovimientoController {
 
-    private final BulkProductoLoaderService service;
+    private final BulkMovimientoLoaderService service;
 
     @GetMapping
     public String page() {
-        return "carga_productos"; // templates/carga_productos.html
+        // Renderiza templates/carga_movimientos.html
+        return "carga_movimientos";
     }
 
     @PostMapping("/upload")
     public String upload(@RequestParam("file") MultipartFile file,
+                         // 🔴 Por defecto en false (persistirá si no marcas el checkbox)
                          @RequestParam(value = "dryRun", defaultValue = "false") boolean dryRun,
                          RedirectAttributes ra) {
         try {
-            var res = service.procesarDesdeArchivo(file, dryRun);
+            log.info("[BULK MOV] Inicio | dryRun={}", dryRun);
+            var res = service.importar(file, dryRun);
+
             ra.addFlashAttribute("ok", res.getSkippedRows() == 0 ? "true" : "partial");
             ra.addFlashAttribute("msg",
                     "Total: " + res.getTotalRows() +
-                            " | Guardadas: " + res.getPersistedRows() +
-                            " | Saltadas: " + res.getSkippedRows() +
-                            (dryRun ? " (PRUEBA: no se guardó)" : " (✅ Persistido)"));
+                            " | Insertados: " + res.getPersistedRows() +
+                            " | Saltados: " + res.getSkippedRows() +
+                            (dryRun ? " (PRUEBA: no se guardó)" : "")
+            );
             ra.addFlashAttribute("res", res);
-            ra.addFlashAttribute("fmt", "Productos");
-            if (res.getErrors()!=null && !res.getErrors().isEmpty()) {
+            if (res.getErrors() != null && !res.getErrors().isEmpty()) {
                 ra.addFlashAttribute("errores", res.getErrors());
             }
+            ra.addFlashAttribute("fmt", "Movimientos");
         } catch (Exception e) {
-            log.error("[BULK PROD] Error", e);
+            log.error("[BULK MOV] Error", e);
             ra.addFlashAttribute("ok", "false");
             ra.addFlashAttribute("errorMsg", "No se pudo procesar: " + e.getMessage());
         }
-        return "redirect:/ui/bulk-productos";
+        return "redirect:/ui/bulk-movimientos";
     }
 }

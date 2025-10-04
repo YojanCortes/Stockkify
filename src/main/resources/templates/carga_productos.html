@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carga masiva de productos</title>
+    <style>
+        :root{
+          --ok-bg:#0f2e1a; --ok-bd:#1f6d3a; --ok-tx:#a7f3d0;
+          --wr-bg:#2e230f; --wr-bd:#6d5a1f; --wr-tx:#fde68a;
+          --er-bg:#2e0f0f; --er-bd:#6d1f1f; --er-tx:#fecaca;
+          --in-bg:#0f102e; --in-bd:#2a2e6d; --in-tx:#c7d2fe;
+        }
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 24px; background: #0b0b0c; color: #eaeaea; }
+        .card { max-width: 880px; margin: 0 auto; background: #151517; border: 1px solid #2a2a2e; border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        h1 { margin: 0 0 8px; font-size: 22px; }
+        p.muted { color: #9aa0a6; margin-top: 0; }
+        .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+        .input { background: #0f0f12; border: 1px solid #2a2a2e; border-radius: 10px; padding: 10px 12px; color: #eaeaea; }
+        .btn { background: #4f46e5; border: none; color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+        .btn:disabled { opacity: .6; cursor: not-allowed; }
+        .note { font-size: 13px; color: #9aa0a6; }
+        .status { margin-top: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid transparent; }
+        .ok{  background: var(--ok-bg); border-color: var(--ok-bd); color: var(--ok-tx); }
+        .warn{background: var(--wr-bg); border-color: var(--wr-bd); color: var(--wr-tx); }
+        .err{ background: var(--er-bg); border-color: var(--er-bd); color: var(--er-tx); }
+        .info{ background: var(--in-bg); border-color: var(--in-bd); color: var(--in-tx); }
+        details { margin-top: 10px; } summary { cursor: pointer; } ul { margin: 6px 0 0 18px; }
+        code { background: #0f0f12; padding: 2px 6px; border-radius: 6px; }
+        .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #2a2a2e; background:#0f0f12; color:#c7c7d1; }
+        .right { margin-left:auto; }
+        table.small { width:100%; border-collapse: collapse; margin-top:10px; font-size: 13px; }
+        table.small th, table.small td { padding:8px; border-bottom:1px solid #2a2a2e; }
+        table.small th { text-align:left; color:#cfcfe8; }
+        .badge { display:inline-block; padding:2px 8px; border-radius:999px; background:#0f0f12; border:1px solid #2a2a2e; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>📦 Carga masiva de productos</h1>
+    <p class="muted">
+        Selecciona tu archivo <b>CSV</b> o Excel y presiona <b>Cargar</b>. Puedes probar primero en <b>Modo Prueba</b> (no persiste).
+    </p>
+
+    <!-- Info de formato detectado -->
+    <div class="status info" th:if="${fmt}">
+        Formato detectado: <b th:text="${fmt}">Productos</b>
+        <span class="pill right">Tip: si Excel falla, conviértelo a CSV (UTF-8).</span>
+    </div>
+
+    <!-- Aviso Modo Prueba -->
+    <div class="status warn" id="dry-hint" style="display:none">
+        Estás en <b>Modo Prueba</b>: se valida el archivo pero <u>no se guardará</u> nada en la base de datos.
+    </div>
+
+    <!-- Mensajes de cliente -->
+    <div class="status err" id="client-msg" style="display:none"></div>
+
+    <form th:action="@{/ui/bulk-productos/upload}" method="post" enctype="multipart/form-data" class="row" id="form-carga">
+        <!-- CSRF -->
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <input class="input" type="file" name="file" id="file" accept=".xlsx,.xls,.csv" required />
+        <span class="note" id="file-name" style="min-width:200px"></span>
+
+        <label class="row" style="gap:8px;align-items:center">
+            <!-- Déjalo sin checked si quieres persistir por defecto -->
+            <input type="checkbox" name="dryRun" id="dryRun" />
+            <span class="note">Modo Prueba (no persiste)</span>
+        </label>
+
+        <button class="btn" type="submit" id="btn-submit">Cargar</button>
+    </form>
+
+    <!-- Resultado del backend -->
+    <div id="status"
+         th:if="${msg} or ${ok} or ${errorMsg} or ${res != null} or ${missingCols} or ${dupes} or ${warnings} or ${tables} or ${productosInserted} or ${movsInserted} or ${lineasInserted}"
+         class="status"
+         th:classappend=" ${ok}=='true' ? ' ok' : (${ok}=='partial' ? ' warn' : (${ok}=='false' ? ' err' : 'info')) ">
+
+        <!-- Mensaje principal -->
+        <p th:text="${msg} ?: (${errorMsg} ?: 'Resultado de la carga')">Resultado de la carga</p>
+
+        <!-- Resumen general si hay objeto 'res' -->
+        <div th:if="${res != null}">
+            <div style="font-size:14px; opacity:.9">
+                <b>Procesadas:</b> <span th:text="${res.totalRows}">0</span> &nbsp;|&nbsp;
+                <b>Guardadas:</b> <span th:text="${res.persistedRows}">0</span> &nbsp;|&nbsp;
+                <b>Saltadas:</b> <span th:text="${res.skippedRows}">0</span> &nbsp;|&nbsp;
+                <b>Modo:</b> <span class="badge" th:text="${res.dryRun} ? 'Prueba' : 'Real'">Real</span>
+            </div>
+        </div>
+
+        <!-- 🎯 Mensaje de éxito por tabla (si backend envía 'tables' = lista de mapas: {tabla, insertados, actualizados, saltados}) -->
+        <div class="status ok" th:if="${tables} and ${ok}!='false' and ${res == null or !res.dryRun}">
+            <b>✅ Carga realizada</b>
+            <table class="small">
+                <thead>
+                <tr><th>Tabla</th><th>Insertados</th><th>Actualizados</th><th>Saltados</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="t : ${tables}">
+                    <td th:text="${t.tabla}">productos</td>
+                    <td th:text="${t.insertados} ?: 0">0</td>
+                    <td th:text="${t.actualizados} ?: 0">0</td>
+                    <td th:text="${t.saltados} ?: 0">0</td>
+                </tr>
+                </tbody>
+            </table>
+            <!-- Frases tipo “se cargó correctamente a la tabla …” -->
+            <ul style="margin-top:8px">
+                <li th:each="t : ${tables}"
+                    th:text="'Se cargó correctamente ' + (${t.insertados}?:0) + ' registro(s) en la tabla ' + ${t.tabla} + ( (${t.actualizados}?:0) > 0 ? (', y ' + ${t.actualizados} + ' actualizado(s)') : '' ) + '.' ">
+                    Se cargó correctamente…
+                </li>
+            </ul>
+        </div>
+
+        <!-- 🧩 Fallback: si no viene 'tables', usa contadores sueltos -->
+        <div class="status ok" th:if="!${tables} and (${productosInserted} or ${movsInserted} or ${lineasInserted}) and (${res == null or !res.dryRun})">
+            <b>✅ Carga realizada</b>
+            <ul>
+                <li th:if="${productosInserted}" th:text="'Se cargó correctamente ' + ${productosInserted} + ' registro(s) en la tabla productos.'">Se cargó productos…</li>
+                <li th:if="${movsInserted}" th:text="'Se cargó correctamente ' + ${movsInserted} + ' cabecera(s) en movimientos_inventario.'">Se cargó cabeceras…</li>
+                <li th:if="${lineasInserted}" th:text="'Se cargó correctamente ' + ${lineasInserted} + ' línea(s) en movimiento_lineas.'">Se cargó líneas…</li>
+            </ul>
+        </div>
+
+        <!-- Faltantes de columnas -->
+        <div class="status err" th:if="${missingCols}">
+            <b>Faltan columnas obligatorias:</b>
+            <ul><li th:each="c : ${missingCols}" th:text="${c}">columna_x</li></ul>
+            <p class="note">Revisa el encabezado del archivo (alias aceptados: <code>codigo_barras</code>, <code>nombre_producto</code>, etc.).</p>
+        </div>
+
+        <!-- Duplicados/ya existentes -->
+        <div class="status warn" th:if="${dupes}">
+            <b>Registros omitidos por duplicado:</b>
+            <ul><li th:each="d : ${dupes}" th:text="${d}">referencia XYZ…</li></ul>
+        </div>
+
+        <!-- Advertencias no fatales -->
+        <div class="status warn" th:if="${warnings}">
+            <b>Advertencias:</b>
+            <ul><li th:each="w : ${warnings}" th:text="${w}">fila con valores atípicos…</li></ul>
+        </div>
+
+        <!-- Errores por fila -->
+        <details th:if="${errores}">
+            <summary>Ver errores</summary>
+            <ul><li th:each="e : ${errores}" th:text="${e}">Error línea X…</li></ul>
+        </details>
+    </div>
+
+    <!-- Fallback cuando solo llega errorMsg sin ok -->
+    <div th:if="${errorMsg} and !${ok}" class="status err">
+        <span th:text="${errorMsg}">Ocurrió un error al procesar el archivo.</span>
+    </div>
+
+    <!-- Nota de formato -->
+    <p class="note" style="margin-top:16px">
+        Formatos aceptados:<br/>
+        • <b>Productos</b>: <code>codigo_barras</code>, <code>nombre_producto</code>, <code>presentacion?</code>, <code>categoria?</code>, <code>costo_unitario?</code>, <code>precio_venta?</code>, <code>stock_inicial?</code>, <code>fecha_stock_inicial?</code><br/>
+        • <b>Movimientos</b>: <code>fecha</code>, <code>prod_id</code>/<code>codigo_barras</code>, <code>prod_name?</code>, <code>tipo</code> (I/E/ENTRADA/SALIDA), <code>cantidad</code>
+    </p>
+</div>
+
+<script>
+    // Forzar solo CSV si tu backend no tiene POI:
+    const ONLY_CSV = false; // pon true si quieres bloquear Excel
+
+    (function () {
+      const form = document.getElementById('form-carga');
+      const btn  = document.getElementById('btn-submit');
+      const file = document.getElementById('file');
+      const fn   = document.getElementById('file-name');
+      const msg  = document.getElementById('client-msg');
+      const dry  = document.getElementById('dryRun');
+      const dryHint = document.getElementById('dry-hint');
+
+      function showClientError(text){ if(!msg) return; msg.style.display='block'; msg.textContent=text||'Error de validación.'; }
+      function clearClientError(){ if(!msg) return; msg.style.display='none'; msg.textContent=''; }
+
+      file?.addEventListener('change', () => {
+        clearClientError();
+        const f = file.files?.[0];
+        fn.textContent = f ? ('Archivo: ' + f.name) : '';
+        if (!f) return;
+        const ext = (f.name.split('.').pop() || '').toLowerCase();
+        if (ONLY_CSV && ext !== 'csv') {
+          showClientError('Formato no permitido. Este servidor está en modo CSV. Sube un archivo .csv');
+          file.value = ''; fn.textContent = '';
+        }
+      });
+
+      function syncDryHint(){ if(!dryHint) return; dryHint.style.display = dry?.checked ? 'block' : 'none'; }
+      dry?.addEventListener('change', syncDryHint); syncDryHint();
+
+      form?.addEventListener('submit', function (e) {
+        clearClientError();
+        const f = file.files?.[0];
+        if (!f) { e.preventDefault(); showClientError('No se cargó ningún archivo. Selecciona un .csv o Excel.'); return; }
+        const ext = (f.name.split('.').pop() || '').toLowerCase();
+        if (ONLY_CSV && ext !== 'csv') { e.preventDefault(); showClientError('Formato no permitido. Sube un archivo .csv'); return; }
+        if (btn) { btn.disabled = true; btn.dataset.original = btn.textContent; btn.textContent = 'Subiendo…'; }
+      });
+
+      const status = document.getElementById('status');
+      if (status) status.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    })();
+</script>
+</body>
+</html>

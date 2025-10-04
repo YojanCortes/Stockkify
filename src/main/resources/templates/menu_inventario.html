@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
     <title>Menú Inventario</title>
 
     <!-- Estáticos -->
@@ -14,45 +13,57 @@
     <style>
         /* Hero */
         .hero {
-            background: radial-gradient(1200px 600px at 10% -10%, #e9f5ff 0%, transparent 50%) ,
-            radial-gradient(1200px 600px at 110% 10%, #e6fffa 0%, transparent 55%);
-            border-radius: 1rem;
-            padding: 2rem 1.5rem;
-            border: 1px solid rgba(0,0,0,.05);
+          background: radial-gradient(1200px 600px at 10% -10%, #e9f5ff 0%, transparent 50%),
+                      radial-gradient(1200px 600px at 110% 10%, #e6fffa 0%, transparent 55%);
+          border-radius: 1rem;
+          padding: 2rem 1.5rem;
+          border: 1px solid rgba(0,0,0,.05);
         }
         .title-xl { font-size: clamp(1.6rem, 1.2rem + 2vw, 2.2rem); }
         .subtitle { color:#6b7280; }
 
         /* Tarjetas-botón */
         .menu-card {
-            border: 0;
-            border-radius: 1rem;
-            transition: transform .12s ease, box-shadow .12s ease;
-            box-shadow: 0 6px 14px rgba(0,0,0,.06);
-            background: #ffffff;
-            height: 100%;
+          border: 0; border-radius: 1rem;
+          transition: transform .12s ease, box-shadow .12s ease;
+          box-shadow: 0 6px 14px rgba(0,0,0,.06);
+          background: #ffffff; height: 100%;
         }
         .menu-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.08); }
         .menu-card .card-body { display:flex; flex-direction:column; align-items:center; text-align:center; padding:1.6rem; }
         .menu-icon {
-            width: 72px; height:72px;
-            display:grid; place-items:center;
-            border-radius: 18px;
-            margin-bottom: .9rem;
-            background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-            border: 1px solid #eef2ff;
+          width: 72px; height:72px; display:grid; place-items:center; border-radius: 18px; margin-bottom: .9rem;
+          background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%); border: 1px solid #eef2ff;
         }
         .menu-icon i { font-size: 28px; color:#4f46e5; }
         .menu-title { font-weight: 700; color:#111827; }
         .menu-desc  { color:#6b7280; font-size:.925rem; min-height: 2.6em; }
+        .menu-actions a.btn, .menu-actions button.btn { border-radius: .75rem; padding: .6rem 1rem; }
 
-        .menu-actions a.btn {
-            border-radius: .75rem;
-            padding: .6rem 1rem;
+        /* Modal buscar producto – look & feel */
+        .modal-header.is-gradient {
+          background: linear-gradient(90deg, #4f46e5, #06b6d4);
+          color:#fff; border-bottom: 0;
         }
+        .search-hero {
+          display:flex; align-items:center; gap:1rem; margin-bottom: .75rem;
+        }
+        .search-hero .icon {
+          width:56px; height:56px; display:grid; place-items:center; border-radius:16px;
+          background: #eef2ff;
+        }
+        .search-hero .icon i { font-size: 26px; color:#4f46e5; }
+        .search-title { font-weight:800; margin:0; letter-spacing:.2px; }
+        .search-subtitle { margin:0; color:#6b7280; font-size:.95rem; }
 
-        /* Utilidades */
-        .gap-12 { gap: .75rem; }
+        .input-group .input-group-prepend .input-group-text {
+          border-top-left-radius: .8rem; border-bottom-left-radius: .8rem;
+        }
+        #codigoBarras.form-control { border-top-right-radius:.8rem; border-bottom-right-radius:.8rem; }
+        .btn-rounded { border-radius:.8rem; }
+
+        /* Alertas en la página */
+        .alert-region { margin-top: -10px; margin-bottom: 14px; }
     </style>
 </head>
 
@@ -76,6 +87,32 @@
             <!-- Begin Page Content -->
             <div class="container-fluid">
 
+                <!-- 🔔 Mensajes (Thymeleaf o QueryString) -->
+                <div class="alert-region">
+                    <!-- Opción Thymeleaf (si usas flash) -->
+                    <div th:if="${ok}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle mr-1"></i> <span th:text="${ok}">OK</span>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-times-circle mr-1"></i> <span th:text="${error}">Producto no existe.</span>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <!-- Fallback para páginas estáticas o sin flash: ?error=... -->
+                    <div id="alertErrorQS" class="alert alert-danger alert-dismissible fade show d-none" role="alert">
+                        <i class="fas fa-times-circle mr-1"></i>
+                        <span id="alertErrorQSMsg">Error</span>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Hero / Título -->
                 <div class="hero mb-4">
                     <div class="d-flex flex-wrap align-items-center justify-content-between">
@@ -96,9 +133,7 @@
                     <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card menu-card">
                             <div class="card-body">
-                                <div class="menu-icon">
-                                    <i class="fas fa-box-open"></i>
-                                </div>
+                                <div class="menu-icon"><i class="fas fa-box-open"></i></div>
                                 <h5 class="menu-title">Ver productos</h5>
                                 <p class="menu-desc">Busca, filtra y consulta el catálogo completo.</p>
                                 <div class="menu-actions mt-2">
@@ -114,9 +149,7 @@
                     <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card menu-card">
                             <div class="card-body">
-                                <div class="menu-icon">
-                                    <i class="fas fa-plus-circle"></i>
-                                </div>
+                                <div class="menu-icon"><i class="fas fa-plus-circle"></i></div>
                                 <h5 class="menu-title">Agregar productos</h5>
                                 <p class="menu-desc">Crea un nuevo producto con imagen y datos básicos.</p>
                                 <div class="menu-actions mt-2">
@@ -128,13 +161,81 @@
                         </div>
                     </div>
 
-                    <!-- 💥 Nuevo: Agregar varios productos -->
+                    <!-- Buscar producto -->
                     <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card menu-card">
                             <div class="card-body">
-                                <div class="menu-icon">
-                                    <i class="fas fa-layer-group"></i>
+                                <div class="menu-icon"><i class="fas fa-barcode"></i></div>
+                                <h5 class="menu-title">Buscar producto</h5>
+                                <p class="menu-desc">Escanea el código o ingrésalo manualmente.</p>
+                                <div class="menu-actions mt-2">
+                                    <button class="btn btn-primary btn-rounded" data-toggle="modal" data-target="#buscarProductoModal">
+                                        <i class="fas fa-search mr-1"></i> Buscar
+                                    </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal: Buscar producto (mejorado) -->
+                    <div class="modal fade" id="buscarProductoModal" tabindex="-1" role="dialog" aria-labelledby="buscarProductoLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                            <div class="modal-content border-0 shadow-lg">
+                                <div class="modal-header is-gradient">
+                                    <h5 class="modal-title d-flex align-items-center" id="buscarProductoLabel">
+                                        <i class="fas fa-barcode mr-2"></i> <span class="ml-1">Buscar producto</span>
+                                    </h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+
+                                <form id="buscarProductoForm" action="/productos/buscar" method="get">
+                                    <div class="modal-body">
+                                        <div class="search-hero">
+                                            <div class="icon"><i class="fas fa-magnifying-glass"></i></div>
+                                            <div>
+                                                <h3 class="search-title">Encuentra un producto al instante</h3>
+                                                <p class="search-subtitle">Pega o escanea el <strong>código de barras</strong>. Si existe, te llevamos directo al detalle.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group mt-3">
+                                            <label for="codigoBarras" class="font-weight-bold">Código de barras</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                                </div>
+                                                <input type="text" id="codigoBarras" name="q" class="form-control"
+                                                       placeholder="Ej: 7501234567893" required autofocus>
+                                            </div>
+                                            <small class="form-text text-muted">Presiona <b>Enter</b> o clic en <b>Buscar</b>.</small>
+                                        </div>
+
+                                        <!-- Error inline (opcional para UX, lo controlas por JS si quieres) -->
+                                        <div id="buscarError" class="alert alert-danger d-none mt-2 mb-0">
+                                            <i class="fas fa-times-circle mr-1"></i> Producto no existe.
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary btn-rounded" data-dismiss="modal">
+                                            <i class="fas fa-times mr-1"></i> Cerrar
+                                        </button>
+                                        <button type="submit" class="btn btn-primary btn-rounded">
+                                            <i class="fas fa-search mr-1"></i> Buscar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agregar varios productos -->
+                    <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="card menu-card">
+                            <div class="card-body">
+                                <div class="menu-icon"><i class="fas fa-layer-group"></i></div>
                                 <h5 class="menu-title">Agregar varios productos</h5>
                                 <p class="menu-desc">Carga múltiple en tabla dinámica (con o sin imagen).</p>
                                 <div class="menu-actions mt-2">
@@ -146,13 +247,11 @@
                         </div>
                     </div>
 
-                    <!-- Ver movimientos de productos -->
+                    <!-- Movimientos -->
                     <div class="col-xl-4 col-md-6 mb-4">
                         <div class="card menu-card">
                             <div class="card-body">
-                                <div class="menu-icon">
-                                    <i class="fas fa-right-left"></i>
-                                </div>
+                                <div class="menu-icon"><i class="fas fa-right-left"></i></div>
                                 <h5 class="menu-title">Movimientos de productos</h5>
                                 <p class="menu-desc">Entradas, salidas y ajustes con detalle por fecha.</p>
                                 <div class="menu-actions mt-2">
@@ -164,13 +263,11 @@
                         </div>
                     </div>
 
-                    <!-- Productos con bajo stock -->
+                    <!-- Reportes -->
                     <div class="col-xl-6 col-md-6 mb-4">
                         <div class="card menu-card">
                             <div class="card-body">
-                                <div class="menu-icon">
-                                    <i class="fas fa-triangle-exclamation"></i>
-                                </div>
+                                <div class="menu-icon"><i class="fas fa-triangle-exclamation"></i></div>
                                 <h5 class="menu-title">Productos con bajo stock</h5>
                                 <p class="menu-desc">Detecta items por debajo del mínimo y prioriza compras.</p>
                                 <div class="menu-actions mt-2">
@@ -182,13 +279,10 @@
                         </div>
                     </div>
 
-                    <!-- Productos por vencer -->
                     <div class="col-xl-6 col-md-6 mb-4">
                         <div class="card menu-card">
                             <div class="card-body">
-                                <div class="menu-icon">
-                                    <i class="fas fa-hourglass-half"></i>
-                                </div>
+                                <div class="menu-icon"><i class="fas fa-hourglass-half"></i></div>
                                 <h5 class="menu-title">Productos por vencer</h5>
                                 <p class="menu-desc">Control de fechas próximas a vencimiento.</p>
                                 <div class="menu-actions mt-2">
@@ -217,9 +311,7 @@
     </div>
 </div>
 
-<a class="scroll-to-top rounded" href="#page-top">
-    <i class="fas fa-angle-up"></i>
-</a>
+<a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 
 <!-- JS -->
 <script th:src="@{/vendor/jquery/jquery.min.js}"></script>
@@ -227,25 +319,55 @@
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
-<!-- Atajos rápidos (opcional): V, A, G, M, B, X -->
+<!-- Buscar: deja que el backend decida (redirige a detalles o vuelve con ?error=...) -->
 <script>
-    (function () {
-        document.addEventListener('keydown', function (e) {
-            if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
-            const go = (sel) => {
-                const el = document.querySelector(sel);
-                if (el) { window.location.assign(el.getAttribute('href')); }
-            };
-            switch ((e.key || '').toLowerCase()) {
-                case 'v': go('[th\\:href="@{/buscar}"]'); break;                      // Ver productos
-                case 'a': go('[th\\:href="@{/productos/agregar}"]'); break;           // Agregar
-                case 'g': go('[th\\:href="@{/productos/agregar-varios}"]'); break;    // Agregar varios
-                case 'm': go('[th\\:href="@{/movimientos}"]'); break;                 // Movimientos
-                case 'b': go('[th\\:href="@{/reportes/bajo-stock}"]'); break;         // Bajo stock
-                case 'x': go('[th\\:href="@{/reportes/por-vencer}"]'); break;         // Por vencer
-            }
-        });
-    })();
+    document.addEventListener('DOMContentLoaded', function () {
+      const form = document.getElementById('buscarProductoForm');
+      const input = document.getElementById('codigoBarras');
+      const errorBox = document.getElementById('buscarError');
+
+      async function intentarBuscar() {
+        const codigo = (input.value || '').trim();
+        if (!codigo) return;
+
+        try {
+          const resp = await fetch(`/productos/api/existe/${encodeURIComponent(codigo)}`, { method: 'GET' });
+          if (resp.ok) {
+            // Existe → ir directamente al detalle
+            window.location.href = `/productos/${encodeURIComponent(codigo)}`;
+          } else {
+            // No existe → mostrar mensaje en el mismo modal (sin salir)
+            errorBox.classList.remove('d-none');
+            errorBox.innerHTML = `<i class="fas fa-times-circle mr-1"></i> Producto no existe: <b>${codigo}</b>`;
+            input.focus();
+            input.select();
+          }
+        } catch (e) {
+          // Error de red/servidor
+          errorBox.classList.remove('d-none');
+          errorBox.innerHTML = `<i class="fas fa-triangle-exclamation mr-1"></i> Error consultando el producto. Intenta de nuevo.`;
+        }
+      }
+
+      // Submit del formulario
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        errorBox.classList.add('d-none');
+        intentarBuscar();
+      });
+
+      // Enter también dispara el submit
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          errorBox.classList.add('d-none');
+          intentarBuscar();
+        }
+      });
+
+      // Al escribir, oculta el error
+      input.addEventListener('input', () => errorBox.classList.add('d-none'));
+    });
 </script>
 
 </body>
