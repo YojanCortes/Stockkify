@@ -13,6 +13,33 @@
         .sidebar-logout-sep { opacity: .3; }
         .btn-logout-icon { line-height: 1; padding: .5rem .75rem; border-radius: .5rem; }
         .btn-logout-icon:hover { background: rgba(255,255,255,.08); }
+
+        /* 🔧 Elimina borde visual izquierdo del contenido */
+        #content-wrapper {
+            border-left: none !important;
+        }
+
+        /* 🔧 Ajustes menores visuales */
+        hr.sidebar-divider {
+            border-color: rgba(255,255,255,.2);
+            margin: 0.75rem 0;
+        }
+        /* 🔧 Elimina espacio superior antes del hero "Menú Inventario" */
+#content {
+  padding-top: 0 !important;
+}
+
+.container-fluid {
+  margin-top: -1rem !important; /* reduce el espacio arriba del hero */
+}
+
+/* Si aún queda un leve hueco, ajusta también el topbar */
+.topbar {
+  margin-bottom: 0 !important;
+  box-shadow: none !important; /* elimina sombra visual */
+  border-bottom: none !important;
+}
+
     </style>
 </head>
 <body>
@@ -27,8 +54,6 @@
         </div>
         <div class="sidebar-brand-text mx-3">Inventario</div>
     </a>
-
-    <hr class="sidebar-divider my-0">
 
     <!-- Panel -->
     <li class="nav-item">
@@ -81,6 +106,14 @@
             </div>
         </div>
     </li>
+    <!-- Historial de movimientos (nuevo) -->
+    <li class="nav-item">
+        <a class="nav-link" th:href="@{/movimientos}">
+            <i class="fas fa-exchange-alt"></i>
+            <span>Movimientos</span>
+        </a>
+    </li>
+
     <li class="nav-item">
         <a class="nav-link" th:href="@{/ui/bulk-productos}">
             <i class="fas fa-file-upload"></i>
@@ -131,7 +164,7 @@
         </a>
     </li>
 
-    <hr class="sidebar-divider d-none d-md-block">
+    <hr class="sidebar-divider">
 
     <!-- Configuración -->
     <div class="sidebar-heading">Configuración</div>
@@ -157,21 +190,18 @@
         </div>
     </li>
 
-    <!-- Separador suave antes del icono de logout -->
-    <hr class="sidebar-divider my-3 sidebar-logout-sep">
+    <hr class="sidebar-divider sidebar-logout-sep">
 
-    <!-- Cerrar sesión: solo ícono (POST /logout con CSRF) -->
+    <!-- Cerrar sesión -->
     <li class="nav-item text-center mb-3">
         <form th:action="@{/logout}" method="post" class="m-0 p-0 d-inline-block">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <!-- Usa fa-sign-out-alt (FontAwesome 5 usado por SB Admin 2) -->
             <button type="submit" class="btn btn-link text-white-50 btn-logout-icon" title="Cerrar sesión">
                 <i class="fas fa-sign-out-alt fa-lg"></i>
             </button>
         </form>
     </li>
 
-    <hr class="sidebar-divider d-none d-md-block">
     <div class="text-center d-none d-md-inline">
         <button class="rounded-circle border-0" id="sidebarToggle"></button>
     </div>
