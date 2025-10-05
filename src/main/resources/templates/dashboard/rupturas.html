@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>KPI 3 — Nivel de Rupturas de Stock (%)</title>
+    <style>
+        :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --ring:#334155; }
+        *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(15,23,42,.85);backdrop-filter:blur(8px);position:sticky;top:0}
+        .wrap{max-width:1080px;margin:0 auto;padding:22px}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+        .col-6{grid-column:span 6}.col-12{grid-column:span 12}
+        @media(max-width:900px){.col-6{grid-column:span 12}}
+        h1{margin:0;font-size:1.25rem}
+        h2{margin:.25rem 0 1rem;color:var(--muted);font-size:.95rem}
+        .row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+        .pill{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:.9rem}
+        .pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
+        .ring{
+          --p:0; width:160px;height:160px;border-radius:50%;
+          background:conic-gradient(var(--bad) calc(var(--p)*1%), var(--ring) 0);
+          display:grid;place-items:center;border:4px solid #0b1220
+        }
+        .kpi{font-size:2.1rem;font-weight:800}
+        .sub{color:var(--muted);font-size:.9rem}
+        table{width:100%;border-collapse:collapse;margin-top:8px}
+        th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+        th{color:var(--muted);font-weight:600;font-size:.9rem}
+        tr:hover td{background:rgba(255,255,255,.03)}
+        .back{display:inline-block;margin-top:18px;text-decoration:none;color:#93c5fd;border:1px solid rgba(147,197,253,.3);padding:8px 12px;border-radius:10px}
+    </style>
+</head>
+<body>
+<header><div class="wrap"><h1>KPI 3 — Nivel de Rupturas de Stock (%)</h1></div></header>
+<main class="wrap">
+    <section class="grid">
+        <div class="card col-6">
+            <h2>Resumen</h2>
+            <div class="row">
+                <div class="ring" id="ring" style="--p:0">
+                    <div>
+                        <div class="kpi" id="kpiPct">--%</div>
+                        <div class="sub" id="estado">Sin datos</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="pill"><strong id="sinStock">--</strong>&nbsp; sin stock</div>
+                    <div class="pill"><strong id="activos">--</strong>&nbsp; productos activos</div>
+                    <div class="pill" id="bandera">—</div>
+                    <p class="sub" style="margin-top:8px">Fórmula: (# sin stock / total activos) × 100</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card col-6">
+            <h2>Notas</h2>
+            <p class="sub" style="margin:0">
+                Mantén esta métrica &lt; 5% (objetivo). Sugerencias:
+            </p>
+            <ul class="sub" style="margin:.5rem 0 0 1rem">
+                <li>Revisar puntos de pedido y stock de seguridad.</li>
+                <li>Reposición priorizada para top ventas.</li>
+                <li>Alertas automáticas al llegar a stock mínimo.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+        <h2>Productos sin stock (muestra)</h2>
+        <table>
+            <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Stock</th></tr></thead>
+            <tbody id="tbody">
+            <tr><td>—</td><td>—</td><td>—</td><td>0</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <a class="back" href="/dhasboard-pagina">← Volver</a>
+</main>
+
+<script>
+    (async function () {
+      const kpiEl   = document.getElementById('kpiPct');
+      const ringEl  = document.getElementById('ring');
+      const sinEl   = document.getElementById('sinStock');
+      const actEl   = document.getElementById('activos');
+      const estado  = document.getElementById('estado');
+      const bandera = document.getElementById('bandera');
+      const tbody   = document.getElementById('tbody');
+
+      function setEstado(pct){
+        let clase='ok', txt='Baja ruptura';
+        if (pct >= 15){ clase='bad'; txt='ALTA ruptura'; }
+        else if (pct >= 5){ clase='warn'; txt='Ruptura moderada'; }
+        estado.textContent = txt;
+        bandera.textContent = txt;
+        bandera.className = 'pill ' + clase;
+      }
+
+      // UI: loading
+      kpiEl.textContent = '...';
+      estado.textContent = 'Cargando';
+      bandera.textContent = '...';
+      bandera.className = 'pill';
+      tbody.innerHTML = `<tr><td colspan="4" class="sub">Cargando...</td></tr>`;
+
+      try {
+        // 1) Resumen KPI
+        const resKpi = await fetch('/api/dashboard/kpi3', { headers: { 'Accept':'application/json' } });
+        if (!resKpi.ok) throw new Error('HTTP ' + resKpi.status);
+        const kpi = await resKpi.json();
+
+        const activos  = Number(kpi.activos ?? 0);
+        const sinStock = Number(kpi.sinStock ?? 0);
+        const pct      = (typeof kpi.porcentaje === 'number')
+                          ? kpi.porcentaje
+                          : (activos > 0 ? (sinStock/activos*100) : 0);
+
+        kpiEl.textContent = pct.toFixed(1) + '%';
+        ringEl.style.setProperty('--p', pct);
+        sinEl.textContent = sinStock;
+        actEl.textContent = activos;
+        setEstado(pct);
+
+        // 2) Detalle de productos sin stock
+        const resDet = await fetch('/api/dashboard/kpi3/detalle', { headers: { 'Accept':'application/json' } });
+        if (!resDet.ok) throw new Error('HTTP ' + resDet.status);
+        const items = await resDet.json();
+
+        if (!Array.isArray(items) || items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="sub">¡Excelente! No hay productos sin stock.</td></tr>`;
+        } else {
+          tbody.innerHTML = items.map(r => `
+            <tr>
+              <td>${r.codigoBarras ?? '—'}</td>
+              <td>${r.nombre ?? '—'}</td>
+              <td>${r.categoria ?? '—'}</td>
+              <td>${r.stockActual ?? 0}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        console.error(err);
+        kpiEl.textContent = '--%';
+        ringEl.style.setProperty('--p', 0);
+        sinEl.textContent = '--';
+        actEl.textContent = '--';
+        estado.textContent = 'Error al cargar';
+        bandera.textContent = 'Error';
+        bandera.className = 'pill bad';
+        tbody.innerHTML = `<tr><td colspan="4" class="sub">No fue posible cargar los datos. Reintenta más tarde.</td></tr>`;
+      }
+    })();
+</script>
+
+</body>
+</html>

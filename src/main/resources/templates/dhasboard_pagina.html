@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Dashboards — Operación e Inventario (MVP)</title>
+
+    <style>
+        :root{
+          --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
+          --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --primary:#60a5fa; --line:#1f2937;
+        }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
+        .container{max-width:1200px;margin:0 auto;padding:24px}
+        h1{margin:0;font-size:1.4rem}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+        .col-3{grid-column:span 3}
+        @media(max-width:1100px){.col-3{grid-column:span 6}}
+        @media(max-width:700px){.col-3{grid-column:span 12}}
+
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:12px}
+        .card h2{margin:0;font-size:1rem;color:var(--muted);font-weight:700}
+        .kpi{font-size:1.8rem;font-weight:800;letter-spacing:-.3px}
+        .muted{color:var(--muted)}
+        .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .btn:hover{filter:brightness(.95)}
+        .btn-primary{background:#93c5fd}
+        .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);color:#111;background:#e5e7eb}
+
+        /* KPI3 – gauge circular */
+        .gauge{
+          --p:0; /* 0..100 */
+          width:120px;height:120px;border-radius:50%;
+          background:
+            conic-gradient(var(--bad) calc(var(--p)*1%), #273244 0);
+          display:grid;place-items:center;position:relative;isolation:isolate
+        }
+        .gauge.ok{background:conic-gradient(var(--ok) calc(var(--p)*1%), #273244 0)}
+        .gauge.warn{background:conic-gradient(var(--warn) calc(var(--p)*1%), #273244 0)}
+        .gauge::after{
+          content:"";position:absolute;inset:12px;background:var(--card);border-radius:50%;z-index:0
+        }
+        .gauge .val{z-index:1;font-weight:900;font-size:1.1rem}
+
+        /* Barras simples */
+        .bar{height:10px;background:#1f2937;border-radius:6px;overflow:hidden}
+        .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#34d399)}
+
+        /* Lista ranking */
+        .rank{display:flex;flex-direction:column;gap:10px}
+        .rank-row{display:grid;grid-template-columns:1fr 60px;gap:10px;align-items:center}
+        .rank-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .spark{width:100%;height:64px}
+
+        small code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px}
+    </style>
+</head>
+<body>
+<header><div class="container"><h1>Dashboards — Operación e Inventario (MVP)</h1></div></header>
+
+<main class="container">
+    <div class="grid">
+        <!-- === KPI 3: Rupturas de Stock (%) === -->
+        <section class="card col-3" id="card-kpi3">
+            <h2>KPI 3 · Rupturas de Stock (%)</h2>
+            <div class="row" style="justify-content:space-between">
+                <div class="gauge" id="gauge-kpi3"><span class="val" id="gauge-val">--%</span></div>
+                <div>
+                    <div class="kpi" id="kpi3-val">--%</div>
+                    <div class="muted"><b id="kpi3-sin">--</b> sin stock / <b id="kpi3-act">--</b> activos</div>
+                    <div class="muted" id="kpi3-state">—</div>
+                </div>
+            </div>
+            <a class="btn btn-primary" href="/dashboard/rupturas">Revisar</a>
+            <small class="muted">Fórmula: <code>sin_stock / activos × 100</code></small>
+        </section>
+
+        <!-- === KPI 4: Valor Total de Inventario (CLP) === -->
+        <section class="card col-3" id="card-kpi4">
+            <h2>KPI 4 · Valor Total de Inventario (CLP)</h2>
+            <div class="kpi" id="kpi4-total">$ --</div>
+            <div class="muted">Top categorías (muestra)</div>
+            <div class="row" style="flex-direction:column;gap:10px" id="kpi4-cats">
+                <!-- filas dinámicas: nombre + bar -->
+            </div>
+            <a class="btn btn-primary" href="/dashboard/valor-inventario">Revisar</a>
+            <small class="muted">Base: Σ(<code>precio × cantidad</code>)</small>
+        </section>
+
+        <!-- === KPI 7: Top 5 Productos Más Vendidos === -->
+        <section class="card col-3" id="card-kpi7">
+            <h2>KPI 7 · Top 5 Productos Más Vendidos</h2>
+            <div class="rank" id="kpi7-rank"><!-- filas dinámicas --></div>
+            <a class="btn btn-primary" href="/dashboard/top-vendidos">Revisar</a>
+            <small class="muted">Ranking por unidades vendidas</small>
+        </section>
+
+        <!-- === KPI 8: Consumo Estimado Semanal (IA) === -->
+        <section class="card col-3" id="card-kpi8">
+            <h2>KPI 8 · Consumo Estimado Semanal (IA)</h2>
+            <svg class="spark" viewBox="0 0 200 64" id="kpi8-spark" aria-hidden="true"></svg>
+            <div class="row">
+                <span class="badge" id="kpi8-ultimo">Últ. semana: --</span>
+                <span class="badge" id="kpi8-tend">Tendencia: —</span>
+            </div>
+            <a class="btn btn-primary" href="/dashboard/consumo-ia">Revisar</a>
+            <small class="muted">Predicción base simple (placeholder)</small>
+        </section>
+    </div>
+</main>
+
+<script>
+    // Datos DEMO — cámbialos luego por fetch a tus endpoints reales.
+    const demo = {
+      kpi3: { activos: 120, sin: 18 },                                   // Rupturas
+      kpi4: { total: 123456789, cats: [ ['Cervezas',48],['Licores',32],['Refrescos',20] ] }, // %
+      kpi7: [ ['Cerveza Lager 355ml',320],['Whisky 750ml',210],['Cola 2L',185],['Vodka 1L',160],['Pisco 700ml',140] ],
+      kpi8: [ 90,110,105,118,130,120,140,150 ]                           // 8 semanas
+    };
+
+    // === KPI 3 ===
+    (function(){
+      const { activos, sin } = demo.kpi3;
+      const pct = activos > 0 ? (sin/activos*100) : 0;
+      const g = document.getElementById('gauge-kpi3');
+      const gv = document.getElementById('gauge-val');
+      document.getElementById('kpi3-val').textContent = pct.toFixed(1)+'%';
+      document.getElementById('kpi3-sin').textContent = sin;
+      document.getElementById('kpi3-act').textContent = activos;
+
+      g.style.setProperty('--p', pct.toFixed(2));
+      g.classList.remove('ok','warn','bad');
+      const state = pct>=15? 'Crítico' : pct>=5? 'Atención' : 'Saludable';
+      document.getElementById('kpi3-state').textContent = state;
+      g.classList.add(pct>=15? 'bad' : pct>=5? 'warn':'ok');
+      gv.textContent = pct.toFixed(0)+'%';
+    })();
+
+    // === KPI 4 ===
+    (function(){
+      const fmt = v => v.toLocaleString('es-CL', {style:'currency', currency:'CLP', maximumFractionDigits:0});
+      const { total, cats } = demo.kpi4;
+      document.getElementById('kpi4-total').textContent = fmt(total);
+      const wrap = document.getElementById('kpi4-cats');
+      const maxPct = Math.max(...cats.map(c=>c[1]),1);
+      wrap.innerHTML = cats.map(([name,p])=>`
+        <div style="width:100%">
+          <div class="row" style="justify-content:space-between"><span>${name}</span><span class="muted">${p}%</span></div>
+          <div class="bar"><i style="width:${(p/maxPct*100).toFixed(0)}%"></i></div>
+        </div>
+      `).join('');
+    })();
+
+    // === KPI 7 ===
+    (function(){
+      const rows = demo.kpi7;
+      const max = Math.max(...rows.map(r=>r[1]),1);
+      const el = document.getElementById('kpi7-rank');
+      el.innerHTML = rows.map(([name,val])=>`
+        <div class="rank-row">
+          <div class="row" style="gap:10px;align-items:center;width:100%">
+            <div class="rank-name">${name}</div>
+            <div class="bar" style="flex:1"><i style="width:${(val/max*100).toFixed(0)}%"></i></div>
+          </div>
+          <div class="muted" style="text-align:right">${val}</div>
+        </div>
+      `).join('');
+    })();
+
+    // === KPI 8 === (sparkline SVG)
+    (function(){
+      const data = demo.kpi8;
+      const w=200, h=64, p=6;
+      const min = Math.min(...data), max = Math.max(...data);
+      const xr = (i)=> p + i*( (w-2*p)/(data.length-1) );
+      const yr = (v)=> h - p - ( (v-min)/(max-min||1) )*(h-2*p);
+      let d = '';
+      data.forEach((v,i)=> d += (i?'L':'M')+xr(i)+','+yr(v)+' ');
+      const svg = document.getElementById('kpi8-spark');
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#60a5fa" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${d}" fill="none" stroke="#60a5fa" stroke-width="2"/>
+        <path d="${d} L ${w-p},${h-p} L ${p},${h-p} Z" fill="url(#g1)" opacity=".5"/>
+        <rect x="0" y="${h-1}" width="${w}" height="1" fill="${'#1f2937'}"/>
+      `;
+      const ult = data[data.length-1], prev = data[data.length-2]||ult;
+      document.getElementById('kpi8-ultimo').textContent = `Últ. semana: ${ult}`;
+      document.getElementById('kpi8-tend').textContent   = `Tendencia: ${ult>=prev? '↑ alza': '↓ baja'}`;
+    })();
+</script>
+</body>
+</html>

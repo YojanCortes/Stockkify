@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>KPI 8 — Consumo Estimado Semanal (IA)</title>
+    <style>
+        :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; }
+        *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(15,23,42,.85);backdrop-filter:blur(8px);position:sticky;top:0}
+        .wrap{max-width:1080px;margin:0 auto;padding:22px}
+        h1{margin:0;font-size:1.25rem} h2{margin:.25rem 0 1rem;color:var(--muted);font-size:.95rem}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+        .col-7{grid-column:span 7} .col-5{grid-column:span 5} .col-12{grid-column:span 12}
+        @media(max-width:900px){.col-7,.col-5{grid-column:span 12}}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+        .kpi{font-size:2rem;font-weight:800}
+        .sub{color:var(--muted);font-size:.9rem}
+        .back{display:inline-block;margin-top:18px;text-decoration:none;color:#93c5fd;border:1px solid rgba(147,197,253,.3);padding:8px 12px;border-radius:10px}
+        table{width:100%;border-collapse:collapse;margin-top:8px}
+        th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+        th{color:var(--muted);font-weight:600;font-size:.9rem}
+        .legend{display:flex;gap:12px;align-items:center;margin-top:6px}
+        .dot{width:12px;height:12px;border-radius:50%}
+        .dot.h{background:#60a5fa}.dot.f{background:#22c55e}
+        canvas{width:100%;height:260px;display:block;background:#0b1220;border:1px solid rgba(255,255,255,.06);border-radius:12px}
+    </style>
+</head>
+<body>
+<header><div class="wrap"><h1>KPI 8 — Consumo Estimado Semanal (IA)</h1></div></header>
+<main class="wrap">
+    <section class="grid">
+        <div class="card col-7">
+            <h2>Histórico vs. Predicción</h2>
+            <canvas id="chart" width="900" height="260"></canvas>
+            <div class="legend sub">
+                <span class="dot h"></span> Histórico
+                <span class="dot f"></span> Predicción
+            </div>
+        </div>
+
+        <div class="card col-5">
+            <h2>Próxima semana</h2>
+            <div class="kpi" id="kpiNext">— u.</div>
+            <p class="sub" id="kpiTexto" style="margin:.5rem 0 0">
+                —
+            </p>
+            <table>
+                <thead><tr><th>Día</th><th>Predicción (u.)</th></tr></thead>
+                <tbody id="tb"></tbody>
+            </table>
+            <p class="sub" style="margin:.5rem 0 0">
+                * Demo sin IA real aún. En producción: Prophet/ARIMA ajustado por día/seasón y eventos.
+            </p>
+        </div>
+    </section>
+
+    <a class="back" href="/dhasboard-pagina">← Volver</a>
+</main>
+
+<script>
+    // Datos demo: 14 días históricos + 7 días forecast
+    const hist = [95,100,104,98,120,130,110, 105,99,102,97,115,122,108];
+    const fcst = [112,118,121,119,128,133,125];
+    const totalNext = fcst.reduce((a,b)=>a+b,0);
+
+    // KPI texto
+    document.getElementById('kpiNext').textContent = totalNext + ' u.';
+    const promHist = hist.reduce((a,b)=>a+b,0)/hist.length;
+    const promNext = totalNext/7;
+    const diff = ((promNext-promHist)/promHist*100);
+    const dir = diff>=0 ? '↑' : '↓';
+    document.getElementById('kpiTexto').textContent =
+      `Promedio diario proyectado ${dir} ${Math.abs(diff).toFixed(1)}% vs. histórico reciente.`;
+
+    // Tabla por día
+    const dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    document.getElementById('tb').innerHTML = fcst.map((v,i)=>
+      `<tr><td>${dias[i%7]}</td><td>${v}</td></tr>`
+    ).join('');
+
+    // Mini chart 2 series (sin librerías)
+    const cvs = document.getElementById('chart');
+    const ctx = cvs.getContext('2d');
+    const W = cvs.width, H = cvs.height, P=30;
+
+    const all = hist.concat(fcst);
+    const max = Math.max(...all)*1.15, min = Math.min(...all)*0.9;
+    const X = (i,n) => P + i*(W-2*P)/(n-1);
+    const Y = v => H-P - (v-min)/(max-min) * (H-2*P);
+
+    // fondo
+    ctx.fillStyle = '#0b1220'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth=1;
+    for(let g=0; g<4; g++){ const y = P + g*(H-2*P)/3; ctx.beginPath(); ctx.moveTo(P,y); ctx.lineTo(W-P,y); ctx.stroke(); }
+
+    // histórico
+    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth=2; ctx.beginPath();
+    hist.forEach((v,i)=>{ const x=X(i,all.length); const y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+
+    // forecast
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth=2; ctx.beginPath();
+    fcst.forEach((v,i)=>{ const idx=hist.length+i; const x=X(idx,all.length); const y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+
+    // separación
+    ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(255,255,255,.3)';
+    const cutX = X(hist.length-1, all.length);
+    ctx.beginPath(); ctx.moveTo(cutX, P); ctx.lineTo(cutX, H-P); ctx.stroke(); ctx.setLineDash([]);
+</script>
+</body>
+</html>

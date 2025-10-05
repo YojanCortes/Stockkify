@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>KPI 4 — Valor Total de Inventario (CLP)</title>
+    <style>
+        :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; }
+        *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(15,23,42,.85);backdrop-filter:blur(8px);position:sticky;top:0}
+        .wrap{max-width:1080px;margin:0 auto;padding:22px}
+        h1{margin:0;font-size:1.25rem} h2{margin:.25rem 0 1rem;color:var(--muted);font-size:.95rem}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+        .col-4{grid-column:span 4} .col-8{grid-column:span 8} .col-12{grid-column:span 12}
+        @media(max-width:900px){.col-4,.col-8{grid-column:span 12}}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+        .kpi{font-size:2rem;font-weight:800}
+        .sub{color:var(--muted);font-size:.9rem}
+        .pill{display:inline-flex;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:.9rem}
+        table{width:100%;border-collapse:collapse;margin-top:8px}
+        th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+        th{color:var(--muted);font-weight:600;font-size:.9rem}
+        tr:hover td{background:rgba(255,255,255,.03)}
+        .bar{height:10px;background:#334155;border-radius:999px;overflow:hidden}
+        .bar>i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#22c55e)}
+        .back{display:inline-block;margin-top:18px;text-decoration:none;color:#93c5fd;border:1px solid rgba(147,197,253,.3);padding:8px 12px;border-radius:10px}
+    </style>
+</head>
+<body>
+<header><div class="wrap"><h1>KPI 4 — Valor Total de Inventario (CLP)</h1></div></header>
+<main class="wrap">
+    <section class="grid">
+        <div class="card col-4">
+            <h2>Valor total</h2>
+            <div class="kpi" id="kpiValor">CLP —</div>
+            <div class="sub">Σ (precio × cantidad)</div>
+            <div class="pill" id="pillItems">— ítems</div>
+            <div class="pill" id="pillProm">Prom. por ítem: CLP —</div>
+        </div>
+
+        <div class="card col-8">
+            <h2>Valor por categoría</h2>
+            <table>
+                <thead><tr><th>Categoría</th><th>Valor (CLP)</th><th style="width:40%">Distribución</th></tr></thead>
+                <tbody id="tbCat">
+                <tr><td>—</td><td>—</td><td><div class="bar"><i style="width:0%"></i></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+        <h2>Notas</h2>
+        <p class="sub" style="margin:0">
+            Útil para control financiero y toma de decisiones de compra. Revisa mensualmente variaciones relevantes.
+        </p>
+    </section>
+
+    <a class="back" href="/dhasboard-pagina">← Volver</a>
+</main>
+
+<script>
+    // Demo (reemplázalo con fetch a tu API)
+    const items = [
+      {cat:'Cervezas',  precio:1200, qty:350},
+      {cat:'Licores',   precio:9500, qty:120},
+      {cat:'Bebidas',   precio:900,  qty:420},
+      {cat:'Snacks',    precio:700,  qty:280},
+      {cat:'Otros',     precio:1500, qty:60},
+    ];
+
+    const totalValor = items.reduce((a,x)=>a + x.precio*x.qty, 0);
+    const totalItems = items.reduce((a,x)=>a + x.qty, 0);
+    const prom = totalItems>0 ? Math.round(totalValor/totalItems) : 0;
+
+    document.getElementById('kpiValor').textContent = 'CLP ' + totalValor.toLocaleString('es-CL');
+    document.getElementById('pillItems').textContent = totalItems.toLocaleString('es-CL') + ' ítems';
+    document.getElementById('pillProm').textContent  = 'Prom. por ítem: CLP ' + prom.toLocaleString('es-CL');
+
+    // Valor por categoría
+    const byCat = {};
+    items.forEach(x => byCat[x.cat] = (byCat[x.cat]||0) + x.precio*x.qty);
+    const catArr = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+    const max = catArr.length ? catArr[0][1] : 1;
+    document.getElementById('tbCat').innerHTML = catArr.map(([c,v]) =>
+      `<tr>
+        <td>${c}</td>
+        <td>CLP ${v.toLocaleString('es-CL')}</td>
+        <td><div class="bar"><i style="width:${(v/max*100).toFixed(0)}%"></i></div></td>
+      </tr>`
+    ).join('');
+</script>
+</body>
+</html>

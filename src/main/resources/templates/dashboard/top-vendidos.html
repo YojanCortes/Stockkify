@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>KPI 7 — Top 5 Productos Más Vendidos</title>
+    <style>
+        :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; }
+        *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(15,23,42,.85);backdrop-filter:blur(8px);position:sticky;top:0}
+        .wrap{max-width:1080px;margin:0 auto;padding:22px}
+        h1{margin:0;font-size:1.25rem} h2{margin:.25rem 0 1rem;color:var(--muted);font-size:.95rem}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+        .list{display:grid;gap:12px}
+        .row{display:flex;align-items:center;gap:10px}
+        .badge{min-width:28px;height:28px;border-radius:6px;background:#334155;display:grid;place-items:center;font-weight:700}
+        .bar{flex:1;height:12px;background:#334155;border-radius:999px;overflow:hidden}
+        .bar>i{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#a78bfa)}
+        .name{min-width:200px}
+        .sub{color:var(--muted);font-size:.9rem}
+        .back{display:inline-block;margin-top:18px;text-decoration:none;color:#93c5fd;border:1px solid rgba(147,197,253,.3);padding:8px 12px;border-radius:10px}
+        table{width:100%;border-collapse:collapse;margin-top:16px}
+        th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+        th{color:var(--muted);font-weight:600;font-size:.9rem}
+    </style>
+</head>
+<body>
+<header><div class="wrap"><h1>KPI 7 — Top 5 Productos Más Vendidos</h1></div></header>
+<main class="wrap">
+    <section class="card">
+        <h2>Ranking (unidades vendidas)</h2>
+        <div class="list" id="ranking">
+            <!-- filas -->
+        </div>
+        <table>
+            <thead><tr><th>#</th><th>Producto</th><th>Categoría</th><th>Unidades</th></tr></thead>
+            <tbody id="tabla"></tbody>
+        </table>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+        <h2>Notas</h2>
+        <p class="sub" style="margin:0">
+            Úsalo para reposición priorizada, exhibición y campañas. Ideal cruzar con margen para ver rentabilidad.
+        </p>
+    </section>
+
+    <a class="back" href="/dhasboard-pagina">← Volver</a>
+</main>
+
+<script>
+    // Demo (reemplaza con tu API)
+    const top = [
+      {name:'Cerveza Lager 355ml', cat:'Cervezas', units:420},
+      {name:'Refresco Cola 2L',    cat:'Bebidas',  units:360},
+      {name:'Whisky 750ml',        cat:'Licores',  units:220},
+      {name:'Energética 473ml',    cat:'Bebidas',  units:190},
+      {name:'Snacks Papas 180g',   cat:'Snacks',   units:150},
+    ];
+    const max = top[0].units || 1;
+
+    // barras
+    document.getElementById('ranking').innerHTML = top.map((x,i)=>
+      `<div class="row">
+        <div class="badge">${i+1}</div>
+        <div class="name">${x.name}</div>
+        <div class="bar"><i style="width:${(x.units/max*100).toFixed(0)}%"></i></div>
+        <div style="min-width:70px;text-align:right">${x.units}</div>
+      </div>`
+    ).join('');
+
+    // tabla
+    document.getElementById('tabla').innerHTML = top.map((x,i)=>
+      `<tr><td>${i+1}</td><td>${x.name}</td><td>${x.cat}</td><td>${x.units}</td></tr>`
+    ).join('');
+</script>
+</body>
+</html>
