@@ -59,6 +59,11 @@ public class Producto {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    // ===== Precio entero =====
+    @Builder.Default
+    @Column(name = "precio", nullable = false)
+    private Integer precio = 0;
+
     @Column(name = "creado_en", updatable = false)
     private LocalDateTime creadoEn;
 
@@ -68,7 +73,7 @@ public class Producto {
     @Version
     private Long version;
 
-    // --- Imagen en BD (lo que necesita tu controlador) ---
+    // --- Imagen en BD ---
     @Lob
     @Column(name = "imagen", columnDefinition = "LONGBLOB")
     private byte[] imagen;
@@ -82,7 +87,6 @@ public class Producto {
     @Column(name = "imagen_tamano")
     private Long imagenTamano;
 
-    // --- (Opcional) si ya creaste esta columna antes puedes mantenerla, si no, elimínala ---
     @Column(name = "imagen_url", length = 255)
     private String imagenUrl;
 
@@ -93,6 +97,7 @@ public class Producto {
         if (perecible == null) perecible = false;
         if (retornable == null) retornable = false;
         if (activo == null) activo = true;
+        if (precio == null) precio = 0;
         creadoEn = now;
         actualizadoEn = now;
     }
@@ -103,6 +108,7 @@ public class Producto {
         if (perecible == null) perecible = false;
         if (retornable == null) retornable = false;
         if (activo == null) activo = true;
+        if (precio == null) precio = 0;
         actualizadoEn = LocalDateTime.now();
     }
 }

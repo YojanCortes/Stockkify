@@ -4,6 +4,8 @@ import com.inventario1.Inventario.models.Producto;
 import com.inventario1.Inventario.models.TipoMovimiento;
 import com.inventario1.Inventario.repos.ProductoRepository;
 import com.inventario1.Inventario.services.MovimientosService;
+import com.inventario1.Inventario.web.dto.ProductoEditarForm;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -23,6 +25,7 @@ import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -32,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 public class ProductoController {
 
     private final ProductoRepository productoRepository;
-    private final MovimientosService movimientosService; // requiere MovimientosService + MovimientosServiceImpl
+    private final MovimientosService movimientosService;
 
     // ====== VISTA: detalle por CÓDIGO DE BARRAS ======
     @GetMapping("/{codigoBarras:\\d+}")
@@ -85,7 +88,6 @@ public class ProductoController {
     }
 
     // ====== GUARDAR: crear/actualizar desde formulario "Agregar producto" (POST) ======
-    // ⚠️ Si aún tienes otro controlador con @PostMapping("/agregar"), cámbiale la ruta a ese otro para evitar conflicto.
     @PostMapping("/agregar")
     public String crearOActualizarDesdeForm(@ModelAttribute("form") Producto form,
                                             @RequestParam(value = "cantidad", required = false) Integer cantidad,
@@ -99,7 +101,7 @@ public class ProductoController {
             return "redirect:/productos/agregar";
         }
 
-        int cant = (cantidad == null ? 0 : Math.max(Integer.MIN_VALUE, cantidad)); // permitimos negativos por seguridad futura
+        int cant = (cantidad == null ? 0 : Math.max(Integer.MIN_VALUE, cantidad)); // permitir negativos a futuro
 
         Producto existente = productoRepository.findByCodigoBarras(cb).orElse(null);
 
@@ -108,7 +110,6 @@ public class ProductoController {
                 : (imagenAlt != null && !imagenAlt.isEmpty() ? imagenAlt : null);
 
         if (existente != null) {
-            // ====== Actualiza datos del existente ======
             existente.setNombre(form.getNombre());
             existente.setMarca(form.getMarca());
             existente.setCategoria(form.getCategoria());
@@ -120,6 +121,8 @@ public class ProductoController {
             existente.setStockMinimo(form.getStockMinimo());
             existente.setFechaVencimiento(form.getFechaVencimiento());
             existente.setActivo(form.getActivo() != null ? form.getActivo() : Boolean.TRUE);
+            // NUEVO: precio
+            existente.setPrecio(form.getPrecio());
 
             if (archivo != null) {
                 try {
@@ -134,7 +137,7 @@ public class ProductoController {
             }
 
             int antes = existente.getStockActual() == null ? 0 : existente.getStockActual();
-            int despues = antes + Math.max(0, cant); // aquí solo incrementamos con el flujo "agregar"
+            int despues = antes + Math.max(0, cant);
             existente.setStockActual(despues);
             productoRepository.save(existente);
 
@@ -159,7 +162,7 @@ public class ProductoController {
             return "redirect:/productos/" + cb;
         }
 
-        // ====== Crear nuevo ======
+        // Crear nuevo
         Producto nuevo = new Producto();
         nuevo.setCodigoBarras(cb);
         nuevo.setNombre(form.getNombre());
@@ -173,6 +176,8 @@ public class ProductoController {
         nuevo.setStockMinimo(form.getStockMinimo());
         nuevo.setFechaVencimiento(form.getFechaVencimiento());
         nuevo.setActivo(form.getActivo() != null ? form.getActivo() : Boolean.TRUE);
+        // NUEVO: precio
+        nuevo.setPrecio(form.getPrecio());
 
         if (archivo != null) {
             try {
@@ -186,7 +191,7 @@ public class ProductoController {
             }
         }
 
-        int stockInicial = Math.max(0, cant); // en alta solo permitimos entrada
+        int stockInicial = Math.max(0, cant);
         nuevo.setStockActual(stockInicial);
         productoRepository.save(nuevo);
 
@@ -212,58 +217,18 @@ public class ProductoController {
     }
 
     // ====== FORM de edición (GET) ======
+    // La vista espera 'form' (ProductoEditarForm) y opcionalmente 'producto' para el título/fecha
     @GetMapping({"/{codigoBarras}/editar", "/editar/{codigoBarras}"})
     public String editarForm(@PathVariable String codigoBarras, Model model) {
         Producto p = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
         model.addAttribute("producto", p);
+        model.addAttribute("form", toForm(p));
         return "editar_producto";
     }
 
-    // ====== GUARDAR cambios de edición (POST) ======
-    @PostMapping({"/{codigoBarras}/editar", "/editar/{codigoBarras}"})
-    public String actualizar(@PathVariable String codigoBarras,
-                             @ModelAttribute("producto") Producto form,
-                             @RequestParam(value = "archivoImagen", required = false) MultipartFile archivoImagen,
-                             @RequestParam(value = "imagen", required = false) MultipartFile imagenAlt,
-                             RedirectAttributes ra) {
-
-        Producto p = productoRepository.findByCodigoBarras(codigoBarras)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
-
-        p.setNombre(form.getNombre());
-        p.setMarca(form.getMarca());
-        p.setCategoria(form.getCategoria());
-        p.setUnidadBase(form.getUnidadBase());
-        p.setGraduacionAlcoholica(form.getGraduacionAlcoholica());
-        p.setVolumenNominalMl(form.getVolumenNominalMl());
-        p.setPerecible(form.getPerecible());
-        p.setRetornable(form.getRetornable());
-        p.setStockActual(form.getStockActual());
-        p.setStockMinimo(form.getStockMinimo());
-        p.setFechaVencimiento(form.getFechaVencimiento());
-        p.setActivo(form.getActivo());
-
-        MultipartFile archivo = (archivoImagen != null && !archivoImagen.isEmpty())
-                ? archivoImagen
-                : (imagenAlt != null && !imagenAlt.isEmpty() ? imagenAlt : null);
-
-        if (archivo != null) {
-            try {
-                p.setImagen(archivo.getBytes());
-                p.setImagenContentType(archivo.getContentType());
-                p.setImagenNombre(archivo.getOriginalFilename());
-                p.setImagenTamano(archivo.getSize());
-            } catch (IOException e) {
-                ra.addFlashAttribute("error", "No se pudo procesar la imagen: " + e.getMessage());
-                return "redirect:/productos/" + codigoBarras + "/editar";
-            }
-        }
-
-        productoRepository.save(p);
-        ra.addFlashAttribute("ok", "Producto actualizado correctamente");
-        return "redirect:/productos/" + codigoBarras;
-    }
+    // IMPORTANTE: el POST de edición se maneja en ProductoEditarController
+    // para evitar ambigüedad de rutas.
 
     // ====== ACTUALIZAR STOCK rápido (solo suma) ======
     @PostMapping("/actualizar-stock")
@@ -369,10 +334,28 @@ public class ProductoController {
 
     // ====== ELIMINAR ======
     @PostMapping("/{codigoBarras}/eliminar")
-    public String eliminar(@PathVariable String codigoBarras, RedirectAttributes ra) {
+    public Object eliminar(@PathVariable String codigoBarras,
+                           HttpServletRequest request,
+                           RedirectAttributes ra) {
         Producto p = productoRepository.findByCodigoBarras(codigoBarras)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
+
         productoRepository.delete(p);
+
+        // Si es AJAX (modal), devolver JSON para que el front redirija
+        String accept = request.getHeader("Accept");
+        String xrw = request.getHeader("X-Requested-With");
+        boolean wantsJson = (accept != null && accept.contains("application/json")) ||
+                "XMLHttpRequest".equalsIgnoreCase(xrw);
+
+        if (wantsJson) {
+            return ResponseEntity.ok(Map.of(
+                    "ok", true,
+                    "status", 200,
+                    "redirect", "/productos/buscar"
+            ));
+        }
+
         ra.addFlashAttribute("ok", "Producto eliminado correctamente");
         return "redirect:/";
     }
@@ -441,16 +424,17 @@ public class ProductoController {
         public String codigoBarras;
         public String nombre;
         public String marca;
-        public String categoria;     // enum.name()
-        public String unidadBase;    // enum.name()
+        public String categoria;
+        public String unidadBase;
         public Integer volumenNominalMl;
         public Double graduacionAlcoholica;
-        public String fechaVencimiento; // yyyy-MM-dd
+        public String fechaVencimiento;
         public Integer stockActual;
         public Integer stockMinimo;
         public Boolean perecible;
         public Boolean retornable;
         public Boolean activo;
+        public Integer precio; // NUEVO
 
         public static ProductoMiniDTO from(Producto p) {
             ProductoMiniDTO dto = new ProductoMiniDTO();
@@ -468,7 +452,44 @@ public class ProductoController {
             dto.perecible = p.getPerecible();
             dto.retornable = p.getRetornable();
             dto.activo = p.getActivo();
+            dto.precio = p.getPrecio(); // NUEVO
             return dto;
         }
+    }
+
+    // ====== Helpers para edición ======
+    private ProductoEditarForm toForm(Producto p) {
+        ProductoEditarForm f = new ProductoEditarForm();
+        f.setCodigoBarras(p.getCodigoBarras());
+        f.setNombre(p.getNombre());
+        f.setMarca(p.getMarca());
+        f.setCategoria(p.getCategoria());
+        f.setUnidadBase(p.getUnidadBase());
+        f.setVolumenNominalMl(p.getVolumenNominalMl());
+        f.setGraduacionAlcoholica(p.getGraduacionAlcoholica());
+        f.setPerecible(p.getPerecible());
+        f.setRetornable(p.getRetornable());
+        f.setStockActual(p.getStockActual());
+        f.setStockMinimo(p.getStockMinimo());
+        f.setFechaVencimiento(p.getFechaVencimiento());
+        f.setActivo(p.getActivo());
+        f.setPrecio(p.getPrecio()); // NUEVO
+        return f;
+    }
+
+    private void apply(ProductoEditarForm f, Producto p) {
+        p.setNombre(f.getNombre());
+        p.setMarca(f.getMarca());
+        p.setCategoria(f.getCategoria());
+        p.setUnidadBase(f.getUnidadBase());
+        p.setVolumenNominalMl(f.getVolumenNominalMl());
+        p.setGraduacionAlcoholica(f.getGraduacionAlcoholica());
+        p.setPerecible(Boolean.TRUE.equals(f.getPerecible()));
+        p.setRetornable(Boolean.TRUE.equals(f.getRetornable()));
+        p.setStockActual(f.getStockActual());
+        p.setStockMinimo(f.getStockMinimo());
+        p.setFechaVencimiento(f.getFechaVencimiento());
+        p.setActivo(Boolean.TRUE.equals(f.getActivo()));
+        p.setPrecio(f.getPrecio()); // NUEVO
     }
 }

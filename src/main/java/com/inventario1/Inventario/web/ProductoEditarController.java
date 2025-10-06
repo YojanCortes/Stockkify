@@ -12,17 +12,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 
 @Controller
 @RequestMapping("/productos/editar")
@@ -36,35 +39,30 @@ public class ProductoEditarController {
     private String productosDir;
 
     /* ---------- Datos comunes para combos ---------- */
-
     @ModelAttribute("categorias")
     public Categoria[] categorias() { return Categoria.values(); }
 
     @ModelAttribute("unidadesBase")
     public UnidadBase[] unidadesBase() { return UnidadBase.values(); }
 
-    /* ----------------------------- GET ------------------------------ */
-
-    @GetMapping("/{codigoBarras}")
-    public String editarForm(@PathVariable String codigoBarras, Model model) {
-        log.info("GET editarForm - código barras: {}", codigoBarras);
-
-        Producto producto = productoRepository.findByCodigoBarras(codigoBarras)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
-
-        ProductoEditarForm form = toForm(producto);
-        model.addAttribute("form", form);
-        return "editar_producto";
+    /* ---------- (Opcional) aceptar coma decimal en BigDecimal ---------- */
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        DecimalFormatSymbols s = new DecimalFormatSymbols();
+        s.setDecimalSeparator(',');
+        s.setGroupingSeparator('.');
+        DecimalFormat df = new DecimalFormat("#,##0.##", s);
+        df.setParseBigDecimal(true);
+        // Permite 12 enteros y 2 decimales aprox.; el @Valid del DTO valida exactamente.
+        binder.registerCustomEditor(BigDecimal.class, new org.springframework.beans.propertyeditors.CustomNumberEditor(BigDecimal.class, df, true));
     }
 
     /* ----------------------------- POST ----------------------------- */
-
     @PostMapping(value = "/{codigoBarras}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public String actualizar(@PathVariable String codigoBarras,
                              @Valid @ModelAttribute("form") ProductoEditarForm form,
                              BindingResult binding,
-                             RedirectAttributes ra,
-                             Model model) {
+                             RedirectAttributes ra) {
 
         log.info("POST actualizar - código barras: {}", codigoBarras);
 
@@ -76,7 +74,7 @@ public class ProductoEditarController {
             return "editar_producto";
         }
 
-        // Aplicar cambios del form
+        // Aplicar cambios del form (incluye precio)
         apply(form, existente);
 
         // Guardar cambios base
@@ -88,10 +86,10 @@ public class ProductoEditarController {
         try {
             ImageMeta meta = storeImageIfPresent(existente.getCodigoBarras(), form.getImagen());
             if (meta != null) {
-                existente.setImagenUrl("/productos/" + existente.getCodigoBarras() + "/imagen"); // o tu URL preferida
+                existente.setImagenUrl("/productos/" + existente.getCodigoBarras() + "/imagen");
                 existente.setImagenContentType(meta.contentType());
                 existente.setImagenNombre(meta.nombre());
-                existente.setImagenTamano(meta.tamano()); // <-- Long
+                existente.setImagenTamano(meta.tamano()); // Long
                 productoRepository.save(existente);
             }
         } catch (IOException e) {
@@ -106,25 +104,6 @@ public class ProductoEditarController {
     }
 
     /* --------------------------- Helpers ---------------------------- */
-
-    private ProductoEditarForm toForm(Producto p) {
-        ProductoEditarForm f = new ProductoEditarForm();
-        f.setCodigoBarras(p.getCodigoBarras());
-        f.setNombre(p.getNombre());
-        f.setMarca(p.getMarca());
-        f.setCategoria(p.getCategoria());
-        f.setUnidadBase(p.getUnidadBase());
-        f.setVolumenNominalMl(p.getVolumenNominalMl());
-        f.setGraduacionAlcoholica(p.getGraduacionAlcoholica());
-        f.setPerecible(p.getPerecible());
-        f.setRetornable(p.getRetornable());
-        f.setStockActual(p.getStockActual());
-        f.setStockMinimo(p.getStockMinimo());
-        f.setFechaVencimiento(p.getFechaVencimiento());
-        f.setActivo(p.getActivo());
-        return f;
-    }
-
     private void apply(ProductoEditarForm f, Producto p) {
         p.setNombre(f.getNombre());
         p.setMarca(f.getMarca());
@@ -138,6 +117,8 @@ public class ProductoEditarController {
         p.setStockMinimo(f.getStockMinimo());
         p.setFechaVencimiento(f.getFechaVencimiento());
         p.setActivo(Boolean.TRUE.equals(f.getActivo()));
+        // === NUEVO: precio ===
+        p.setPrecio(f.getPrecio()); // requiere get/setPrecio() en la entidad Producto
     }
 
     /** Guarda la imagen (si viene) y retorna metadatos para persistir en la entidad. */

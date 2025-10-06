@@ -22,6 +22,12 @@
         table{width:100%;border-collapse:collapse;margin-top:16px}
         th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
         th{color:var(--muted);font-weight:600;font-size:.9rem}
+        .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+        .filters input, .filters button{
+            background:#0b1220;border:1px solid rgba(255,255,255,.12);color:var(--text);
+            padding:6px 10px;border-radius:8px
+        }
+        .filters button{cursor:pointer}
     </style>
 </head>
 <body>
@@ -29,12 +35,25 @@
 <main class="wrap">
     <section class="card">
         <h2>Ranking (unidades vendidas)</h2>
+
+        <!-- Filtros de fecha (opcional; toman valores del querystring si existen) -->
+        <div class="filters">
+            <label class="sub">Desde <input type="date" id="desde"></label>
+            <label class="sub">Hasta <input type="date" id="hasta"></label>
+            <button id="btnAplicar">Aplicar</button>
+            <button id="btn7d">Últimos 7 días</button>
+            <button id="btn30d">Últimos 30 días</button>
+            <span class="sub" id="estado">Cargando…</span>
+        </div>
+
         <div class="list" id="ranking">
             <!-- filas -->
         </div>
         <table>
             <thead><tr><th>#</th><th>Producto</th><th>Categoría</th><th>Unidades</th></tr></thead>
-            <tbody id="tabla"></tbody>
+            <tbody id="tabla">
+            <tr><td colspan="4" class="sub">Cargando…</td></tr>
+            </tbody>
         </table>
     </section>
 
@@ -49,30 +68,122 @@
 </main>
 
 <script>
-    // Demo (reemplaza con tu API)
-    const top = [
-      {name:'Cerveza Lager 355ml', cat:'Cervezas', units:420},
-      {name:'Refresco Cola 2L',    cat:'Bebidas',  units:360},
-      {name:'Whisky 750ml',        cat:'Licores',  units:220},
-      {name:'Energética 473ml',    cat:'Bebidas',  units:190},
-      {name:'Snacks Papas 180g',   cat:'Snacks',   units:150},
-    ];
-    const max = top[0].units || 1;
+    (function () {
+      const rankingEl = document.getElementById('ranking');
+      const tablaEl   = document.getElementById('tabla');
+      const estadoEl  = document.getElementById('estado');
+      const inpDesde  = document.getElementById('desde');
+      const inpHasta  = document.getElementById('hasta');
+      const btnAplicar= document.getElementById('btnAplicar');
+      const btn7d     = document.getElementById('btn7d');
+      const btn30d    = document.getElementById('btn30d');
 
-    // barras
-    document.getElementById('ranking').innerHTML = top.map((x,i)=>
-      `<div class="row">
-        <div class="badge">${i+1}</div>
-        <div class="name">${x.name}</div>
-        <div class="bar"><i style="width:${(x.units/max*100).toFixed(0)}%"></i></div>
-        <div style="min-width:70px;text-align:right">${x.units}</div>
-      </div>`
-    ).join('');
+      function fmtDate(d){ return d.toISOString().slice(0,10); }
 
-    // tabla
-    document.getElementById('tabla').innerHTML = top.map((x,i)=>
-      `<tr><td>${i+1}</td><td>${x.name}</td><td>${x.cat}</td><td>${x.units}</td></tr>`
-    ).join('');
+      // Inicializar fechas desde querystring o últimos 30 días
+      const qs = new URLSearchParams(window.location.search);
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+      const porDefHasta = fmtDate(hoy);
+      const porDefDesde = fmtDate(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()-30));
+
+      inpDesde.value = qs.get('desde') || porDefDesde;
+      inpHasta.value = qs.get('hasta') || porDefHasta;
+
+      function setEstado(msg){ estadoEl.textContent = msg; }
+
+      async function cargar() {
+        setEstado('Cargando…');
+        rankingEl.innerHTML = '';
+        tablaEl.innerHTML = `<tr><td colspan="4" class="sub">Cargando…</td></tr>`;
+
+        const desde = inpDesde.value || porDefDesde;
+        const hasta = inpHasta.value || porDefHasta;
+
+        try {
+          const url = new URL('/api/dashboard/kpi7', window.location.origin);
+          url.searchParams.set('desde', desde);
+          url.searchParams.set('hasta', hasta);
+
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+
+          // Soportar respuesta como {items:[...]} o directamente [...]
+          const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
+
+          if (items.length === 0) {
+            rankingEl.innerHTML = '';
+            tablaEl.innerHTML = `<tr><td colspan="4" class="sub">No hay ventas en el período seleccionado.</td></tr>`;
+            setEstado('Sin datos');
+            return;
+          }
+
+          // Normalizar campos
+          const rows = items.map(x => ({
+            nombre: x.nombre ?? x.name ?? '—',
+            categoria: x.categoria ?? x.cat ?? '—',
+            unidades: Number(x.unidades ?? x.units ?? 0)
+          })).sort((a,b) => b.unidades - a.unidades).slice(0,5);
+
+          const max = Math.max(1, rows[0]?.unidades ?? 1);
+
+          // Barras (ranking visual)
+          rankingEl.innerHTML = rows.map((x,i)=>`
+            <div class="row">
+              <div class="badge">${i+1}</div>
+              <div class="name">${x.nombre}</div>
+              <div class="bar"><i style="width:${Math.round(x.unidades/max*100)}%"></i></div>
+              <div style="min-width:70px;text-align:right">${x.unidades.toLocaleString('es-CL')}</div>
+            </div>
+          `).join('');
+
+          // Tabla
+          tablaEl.innerHTML = rows.map((x,i)=>`
+            <tr>
+              <td>${i+1}</td>
+              <td>${x.nombre}</td>
+              <td>${x.categoria}</td>
+              <td>${x.unidades.toLocaleString('es-CL')}</td>
+            </tr>
+          `).join('');
+
+          setEstado(`Período: ${desde} a ${hasta}`);
+        } catch (err) {
+          console.error(err);
+          rankingEl.innerHTML = '';
+          tablaEl.innerHTML = `<tr><td colspan="4" class="sub">Error al cargar datos. Reintenta más tarde.</td></tr>`;
+          setEstado('Error');
+        }
+      }
+
+      // Botones de rango rápido
+      btn7d.addEventListener('click', () => {
+        const hasta = new Date(); hasta.setHours(0,0,0,0);
+        const desde = new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate()-7);
+        inpDesde.value = fmtDate(desde);
+        inpHasta.value = fmtDate(hasta);
+        cargar();
+      });
+
+      btn30d.addEventListener('click', () => {
+        const hasta = new Date(); hasta.setHours(0,0,0,0);
+        const desde = new Date(hasta.getFullYear(), hasta.getMonth(), hasta.getDate()-30);
+        inpDesde.value = fmtDate(desde);
+        inpHasta.value = fmtDate(hasta);
+        cargar();
+      });
+
+      btnAplicar.addEventListener('click', () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('desde', inpDesde.value);
+        url.searchParams.set('hasta', inpHasta.value);
+        window.history.replaceState({}, '', url);
+        cargar();
+      });
+
+      // Primera carga
+      cargar();
+    })();
 </script>
 </body>
 </html>

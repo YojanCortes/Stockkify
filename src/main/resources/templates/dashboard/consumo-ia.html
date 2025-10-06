@@ -5,109 +5,172 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>KPI 8 — Consumo Estimado Semanal (IA)</title>
     <style>
-        :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; }
-        *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --blue:#60a5fa; --green:#22c55e; }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
         header{padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(15,23,42,.85);backdrop-filter:blur(8px);position:sticky;top:0}
         .wrap{max-width:1080px;margin:0 auto;padding:22px}
-        h1{margin:0;font-size:1.25rem} h2{margin:.25rem 0 1rem;color:var(--muted);font-size:.95rem}
+        h1{margin:0;font-size:1.25rem}
+        h2{margin:.25rem 0 1rem;color:var(--muted);font-size:.95rem}
         .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
         .col-7{grid-column:span 7} .col-5{grid-column:span 5} .col-12{grid-column:span 12}
         @media(max-width:900px){.col-7,.col-5{grid-column:span 12}}
         .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
         .kpi{font-size:2rem;font-weight:800}
         .sub{color:var(--muted);font-size:.9rem}
+        .legend{display:flex;gap:12px;align-items:center;margin-top:6px}
+        .dot{width:12px;height:12px;border-radius:50%}
+        .dot.h{background:var(--blue)} .dot.f{background:var(--green)}
         .back{display:inline-block;margin-top:18px;text-decoration:none;color:#93c5fd;border:1px solid rgba(147,197,253,.3);padding:8px 12px;border-radius:10px}
         table{width:100%;border-collapse:collapse;margin-top:8px}
         th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
         th{color:var(--muted);font-weight:600;font-size:.9rem}
-        .legend{display:flex;gap:12px;align-items:center;margin-top:6px}
-        .dot{width:12px;height:12px;border-radius:50%}
-        .dot.h{background:#60a5fa}.dot.f{background:#22c55e}
         canvas{width:100%;height:260px;display:block;background:#0b1220;border:1px solid rgba(255,255,255,.06);border-radius:12px}
+        .muted{color:var(--muted)}
     </style>
 </head>
 <body>
 <header><div class="wrap"><h1>KPI 8 — Consumo Estimado Semanal (IA)</h1></div></header>
+
 <main class="wrap">
     <section class="grid">
         <div class="card col-7">
-            <h2>Histórico vs. Predicción</h2>
-            <canvas id="chart" width="900" height="260"></canvas>
+            <h2>Histórico vs. Predicción (semanas)</h2>
+            <canvas id="chart" width="900" height="260" aria-label="Gráfico histórico vs. pronóstico"></canvas>
             <div class="legend sub">
                 <span class="dot h"></span> Histórico
-                <span class="dot f"></span> Predicción
+                <span class="dot f"></span> Pronóstico
             </div>
+            <p id="msg" class="sub muted" style="margin-top:8px"></p>
         </div>
 
         <div class="card col-5">
             <h2>Próxima semana</h2>
             <div class="kpi" id="kpiNext">— u.</div>
-            <p class="sub" id="kpiTexto" style="margin:.5rem 0 0">
-                —
-            </p>
+            <p class="sub" id="kpiTexto" style="margin:.5rem 0 0">—</p>
             <table>
                 <thead><tr><th>Día</th><th>Predicción (u.)</th></tr></thead>
                 <tbody id="tb"></tbody>
             </table>
             <p class="sub" style="margin:.5rem 0 0">
-                * Demo sin IA real aún. En producción: Prophet/ARIMA ajustado por día/seasón y eventos.
+                Pronóstico semanal con modelo ligero (Holt amortiguado). La distribución por día es una aproximación uniforme.
             </p>
         </div>
     </section>
 
-    <a class="back" href="/dhasboard-pagina">← Volver</a>
+    <a class="back" href="/dashboard">← Volver</a>
 </main>
 
 <script>
-    // Datos demo: 14 días históricos + 7 días forecast
-    const hist = [95,100,104,98,120,130,110, 105,99,102,97,115,122,108];
-    const fcst = [112,118,121,119,128,133,125];
-    const totalNext = fcst.reduce((a,b)=>a+b,0);
+    (async function main(){
+      const API = new URL('/api/dashboard/kpi8', window.location.origin);
+      API.searchParams.set('semanas','52');
+      API.searchParams.set('h','8');
 
-    // KPI texto
-    document.getElementById('kpiNext').textContent = totalNext + ' u.';
-    const promHist = hist.reduce((a,b)=>a+b,0)/hist.length;
-    const promNext = totalNext/7;
-    const diff = ((promNext-promHist)/promHist*100);
-    const dir = diff>=0 ? '↑' : '↓';
-    document.getElementById('kpiTexto').textContent =
-      `Promedio diario proyectado ${dir} ${Math.abs(diff).toFixed(1)}% vs. histórico reciente.`;
+      const cvs = document.getElementById('chart');
+      const ctx = cvs.getContext('2d');
+      const msg = document.getElementById('msg');
+      const elNext = document.getElementById('kpiNext');
+      const elTxt  = document.getElementById('kpiTexto');
+      const elTb   = document.getElementById('tb');
 
-    // Tabla por día
-    const dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-    document.getElementById('tb').innerHTML = fcst.map((v,i)=>
-      `<tr><td>${dias[i%7]}</td><td>${v}</td></tr>`
-    ).join('');
+      try{
+        const res = await fetch(API, { headers: { 'Accept': 'application/json' } });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
 
-    // Mini chart 2 series (sin librerías)
-    const cvs = document.getElementById('chart');
-    const ctx = cvs.getContext('2d');
-    const W = cvs.width, H = cvs.height, P=30;
+        // ⬇⬇ Fallback de nombres: forecast | pronostico
+        const hist = Array.isArray(data.historico) ? data.historico : [];
+        const pred = Array.isArray(data.forecast)  ? data.forecast
+                   : Array.isArray(data.pronostico)? data.pronostico : [];
 
-    const all = hist.concat(fcst);
-    const max = Math.max(...all)*1.15, min = Math.min(...all)*0.9;
-    const X = (i,n) => P + i*(W-2*P)/(n-1);
-    const Y = v => H-P - (v-min)/(max-min) * (H-2*P);
+        const histVals = hist.map(p => Number(p.unidades||0));
+        const predVals = pred.map(p => Number(p.unidades||0));
 
-    // fondo
-    ctx.fillStyle = '#0b1220'; ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth=1;
-    for(let g=0; g<4; g++){ const y = P + g*(H-2*P)/3; ctx.beginPath(); ctx.moveTo(P,y); ctx.lineTo(W-P,y); ctx.stroke(); }
+        drawChart(ctx, histVals, predVals);
 
-    // histórico
-    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth=2; ctx.beginPath();
-    hist.forEach((v,i)=>{ const x=X(i,all.length); const y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
-    ctx.stroke();
+        const next = pred.length ? Number(pred[0].unidades||0) : null;
 
-    // forecast
-    ctx.strokeStyle = '#22c55e'; ctx.lineWidth=2; ctx.beginPath();
-    fcst.forEach((v,i)=>{ const idx=hist.length+i; const x=X(idx,all.length); const y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
-    ctx.stroke();
+        if(next==null){
+          elNext.textContent = '— u.';
+          elTxt.textContent  = 'Sin datos suficientes para pronóstico.';
+          elTb.innerHTML = '<tr><td colspan="2" class="muted">—</td></tr>';
+          msg.textContent = histVals.length
+            ? `Serie: ${histVals.length} semanas históricas, 0 de pronóstico.`
+            : 'No hay suficientes semanas históricas o no existen salidas registradas.';
+          return;
+        }
 
-    // separación
-    ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(255,255,255,.3)';
-    const cutX = X(hist.length-1, all.length);
-    ctx.beginPath(); ctx.moveTo(cutX, P); ctx.lineTo(cutX, H-P); ctx.stroke(); ctx.setLineDash([]);
+        elNext.textContent = next.toLocaleString('es-CL') + ' u.';
+
+        const promHist = histVals.length ? (histVals.reduce((a,b)=>a+b,0)/histVals.length) : 0;
+        const diffPct = promHist>0 ? ((next - promHist)/promHist*100) : 0;
+        const dir = diffPct>=0 ? '↑' : '↓';
+        elTxt.textContent = `Proyección ${dir} ${Math.abs(diffPct).toFixed(1)}% vs. promedio histórico semanal (${Math.round(promHist).toLocaleString('es-CL')} u.).`;
+
+        // distribución diaria uniforme redondeada
+        const dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+        const base = Math.floor(next/7);
+        let rest = next - base*7;
+        const diarios = dias.map(()=> base + (rest-- > 0 ? 1 : 0));
+        elTb.innerHTML = diarios.map((v,i)=>`<tr><td>${dias[i]}</td><td>${v.toLocaleString('es-CL')}</td></tr>`).join('');
+
+        msg.textContent = `Serie: ${histVals.length} semanas históricas, ${predVals.length} semanas de pronóstico.`;
+
+      }catch(err){
+        console.error(err);
+        msg.textContent = 'Error al cargar datos. Reintenta más tarde.';
+        drawChart(ctx, [], []);
+        elNext.textContent = '— u.';
+        elTxt.textContent  = '—';
+        elTb.innerHTML = '<tr><td colspan="2" class="muted">—</td></tr>';
+      }
+
+      function drawChart(ctx, hist, fcst){
+        const W = ctx.canvas.width, H = ctx.canvas.height, P = 30;
+        ctx.clearRect(0,0,W,H);
+        // grid
+        ctx.fillStyle = '#0b1220'; ctx.fillRect(0,0,W,H);
+        ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1;
+        for(let g=0; g<4; g++){ const y = P + g*(H-2*P)/3; ctx.beginPath(); ctx.moveTo(P,y); ctx.lineTo(W-P,y); ctx.stroke(); }
+
+        const all = hist.concat(fcst);
+        if(!all.length){
+          ctx.fillStyle = '#9ca3af';
+          ctx.textAlign = 'center'; ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto';
+          ctx.fillText('Sin datos', W/2, H/2);
+          return;
+        }
+        const max = Math.max(1, Math.max(...all))*1.15;
+        const min = 0;
+        const n = hist.length + fcst.length;
+        const X = (i) => P + i*(W-2*P)/Math.max(1,n-1);
+        const Y = (v) => H-P - (v-min)/(max-min) * (H-2*P);
+
+        // histórico (azul)
+        if(hist.length){
+          ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2; ctx.beginPath();
+          hist.forEach((v,i)=>{ const x=X(i), y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+          ctx.stroke();
+        }
+        // forecast (verde, punteado) a partir del último punto histórico
+        if(fcst.length){
+          const off = Math.max(0, hist.length-1);
+          ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2; ctx.setLineDash([6,6]); ctx.beginPath();
+          fcst.forEach((v,i)=>{ const x=X(off+i), y=Y(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+          ctx.stroke(); ctx.setLineDash([]);
+        }
+        // separación
+        if(hist.length){
+          ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(255,255,255,.35)';
+          const cutX = X(hist.length-1);
+          ctx.beginPath(); ctx.moveTo(cutX, P); ctx.lineTo(cutX, H-P); ctx.stroke(); ctx.setLineDash([]);
+        }
+        // etiqueta Y máx
+        ctx.fillStyle='#9ca3af'; ctx.textAlign='left'; ctx.font='12px system-ui, -apple-system, Segoe UI, Roboto';
+        ctx.fillText(Math.round(max/1.15).toLocaleString('es-CL'), P, P-8);
+      }
+    })();
 </script>
 </body>
 </html>

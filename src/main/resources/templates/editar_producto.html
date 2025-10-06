@@ -119,36 +119,36 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <script>
+                                (function () {
+                                    const input   = document.getElementById('imagen');
+                                    const label   = document.getElementById('imagenLabel');
+                                    const current = document.getElementById('fotoActual');
+                                    const preview = document.getElementById('fotoPreview');
+
+                                    input.addEventListener('change', () => {
+                                        const file = input.files && input.files[0];
+                                        if (file) {
+                                            label.textContent = file.name;
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                                preview.src = e.target.result;
+                                                preview.classList.remove('d-none');
+                                                current.classList.add('d-none');
+                                            };
+                                            reader.readAsDataURL(file);
+                                        } else {
+                                            label.textContent = 'Elegir imagen…';
+                                            preview.classList.add('d-none');
+                                            current.classList.remove('d-none');
+                                        }
+                                    });
+                                })();
+                            </script>
+
                         </div>
-
-                        <script>
-                            (function () {
-                                const input   = document.getElementById('imagen');
-                                const label   = document.getElementById('imagenLabel');
-                                const current = document.getElementById('fotoActual');
-                                const preview = document.getElementById('fotoPreview');
-
-                                input.addEventListener('change', () => {
-                                    const file = input.files && input.files[0];
-                                    if (file) {
-                                        label.textContent = file.name;
-                                        const reader = new FileReader();
-                                        reader.onload = (e) => {
-                                            preview.src = e.target.result;
-                                            preview.classList.remove('d-none');
-                                            current.classList.add('d-none');
-                                        };
-                                        reader.readAsDataURL(file);
-                                    } else {
-                                        label.textContent = 'Elegir imagen…';
-                                        preview.classList.add('d-none');
-                                        current.classList.remove('d-none');
-                                    }
-                                });
-                            })();
-                        </script>
-
-                    </div>
 
                         <!-- Columna derecha: datos -->
                         <div class="col-lg-8">
@@ -254,8 +254,25 @@
                                         </div>
                                     </div>
 
+                                    <!-- === FILA ACTUALIZADA: incluye PRECIO (entero) === -->
                                     <div class="form-row">
-                                        <div class="form-group col-md-4">
+                                        <div class="form-group col-md-3">
+                                            <label for="precio">Precio (entero)</label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                                <input id="precio" type="number" min="0" step="1"
+                                                       th:field="*{precio}" class="form-control"
+                                                       placeholder="Ej: 1990"
+                                                       th:classappend="${#fields.hasErrors('precio')} ? ' is-invalid'">
+                                            </div>
+                                            <div class="invalid-feedback d-block" th:errors="*{precio}">
+                                                Revisa el precio.
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group col-md-3">
                                             <label for="stockActual">Stock actual</label>
                                             <input id="stockActual" type="number" min="0" step="1"
                                                    th:field="*{stockActual}" class="form-control"
@@ -265,7 +282,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="form-group col-md-4">
+                                        <div class="form-group col-md-3">
                                             <label for="stockMinimo">Stock mínimo</label>
                                             <input id="stockMinimo" type="number" min="0" step="1"
                                                    th:field="*{stockMinimo}" class="form-control"
@@ -275,7 +292,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="form-group col-md-4">
+                                        <div class="form-group col-md-3">
                                             <label for="codigoBarras">Código de barras</label>
                                             <input id="codigoBarras" type="text" th:field="*{codigoBarras}"
                                                    class="form-control" readonly>

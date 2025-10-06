@@ -37,6 +37,11 @@ public class ProductoEditarForm {
     @DecimalMax(value = "100.0")
     private Double graduacionAlcoholica; // 0–100%
 
+    /** Precio entero (por ejemplo, en pesos) */
+    @NotNull
+    @Min(0)
+    private Integer precio = 0;
+
     // Inventario
     @NotNull
     @Min(0)

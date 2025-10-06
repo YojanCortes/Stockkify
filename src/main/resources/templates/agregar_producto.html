@@ -213,6 +213,31 @@
                                         </div>
                                     </div>
 
+                                    <!-- Precio (CLP) - SEGURO (sin th:field para no romper si el bean no tiene 'precio') -->
+                                    <div class="form-row">
+                                        <div class="form-group col-md-4">
+                                            <label for="precio">Precio (CLP) <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                                <input id="precio"
+                                                       name="precio"
+                                                       type="number"
+                                                       inputmode="numeric"
+                                                       min="0"
+                                                       step="1"
+                                                       class="form-control"
+                                                       placeholder="Ej: 1200"
+                                                       required>
+                                                <div class="invalid-feedback">
+                                                    Ingresa un precio válido.
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Solo números, en pesos chilenos.</small>
+                                        </div>
+                                    </div>
+
                                     <!-- Categoría + Unidad -->
                                     <div class="form-row">
                                         <div class="form-group col-md-6">
@@ -248,7 +273,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- Stock mínimo (¡restituido!) -->
+                                    <!-- Stock mínimo -->
                                     <div class="form-row">
                                         <div class="form-group col-md-4">
                                             <label for="stockMinimo">Stock mínimo <span class="text-danger">*</span></label>
@@ -332,7 +357,7 @@
                                         <i class="fas fa-times mr-1"></i> Cancelar
                                     </a>
 
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex">
                                         <button type="reset" class="btn btn-warning mr-2">
                                             <i class="fas fa-broom mr-1"></i> Limpiar
                                         </button>
@@ -374,19 +399,7 @@
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
 <script>
-    (function () {
-      const hid = document.getElementById('idemp');
-      if (!hid) return;
-      if (!hid.value) {
-        const gen = (crypto && crypto.randomUUID) ? crypto.randomUUID()
-                  : (Date.now().toString(36) + Math.random().toString(36).slice(2));
-        hid.value = gen;
-      }
-    })();
-</script>
-
-<script>
-    // Bootstrap client-side validation
+    // Validación Bootstrap (arreglado el IIFE)
     (function () {
         'use strict';
         const forms = document.getElementsByClassName('needs-validation');
@@ -410,7 +423,7 @@
         });
     })();
 
-    // Autocompletar + cambio de modo (CREAR vs ACTUALIZAR_STOCK)
+    // Lógica CREAR/ACTUALIZAR + fetch por código + Precio seguro
     (function () {
         const form = document.getElementById('productoForm');
         const cb = document.getElementById('codigoBarras');
@@ -426,6 +439,8 @@
         const stockHid = document.getElementById('stockActualHidden');
         const stockMin = document.getElementById('stockMinimo');
         const cantidad = document.getElementById('cantidad');
+
+        const precio  = document.getElementById('precio'); // <— NUEVO
 
         const modo = document.getElementById('modo');
         const btnSubmit = document.getElementById('btnSubmit');
@@ -453,16 +468,17 @@
             modo.value = 'CREAR';
             form.setAttribute('action', '/productos/agregar');
             if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar';
-            if (modeBadge) modeBadge.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-1"></i> Modo creación';
-            if (modeBadge) modeBadge.className = 'badge badge-info badge-creating ml-2';
+            if (modeBadge) {
+                modeBadge.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-1"></i> Modo creación';
+                modeBadge.className = 'badge badge-info badge-creating ml-2';
+            }
 
-            // Requeridos en crear
             setRequired(nombre, true);
             setRequired(categoria, true);
             setRequired(unidad, true);
             setRequired(stockMin, true);
+            setRequired(precio, true); // <— precio requerido al CREAR
 
-            // Habilitar edición
             setReadonly(nombre, false);
             setReadonly(marca, false);
             setDisabled(categoria, false);
@@ -471,22 +487,24 @@
             setReadonly(grad, false);
             setReadonly(fec, false);
             setDisabled(stockMin, false);
+            setReadonly(precio, false); // <— precio editable al CREAR
         }
 
         function setActualizarStockUI() {
             modo.value = 'ACTUALIZAR_STOCK';
             form.setAttribute('action', '/productos/actualizar-stock');
             if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-plus-circle mr-1"></i> Actualizar stock';
-            if (modeBadge) modeBadge.innerHTML = '<i class="fas fa-boxes mr-1"></i> Modo actualizar stock';
-            if (modeBadge) modeBadge.className = 'badge badge-success ml-2';
+            if (modeBadge) {
+                modeBadge.innerHTML = '<i class="fas fa-boxes mr-1"></i> Modo actualizar stock';
+                modeBadge.className = 'badge badge-success ml-2';
+            }
 
-            // No requeridos cuando solo actualizas stock
             setRequired(nombre, false);
             setRequired(categoria, false);
             setRequired(unidad, false);
             setRequired(stockMin, false);
+            setRequired(precio, false); // <— precio no obligatorio al actualizar stock
 
-            // Bloquear edición de detalles
             setReadonly(nombre, true);
             setReadonly(marca, true);
             setDisabled(categoria, true);
@@ -495,6 +513,7 @@
             setReadonly(grad, true);
             setReadonly(fec, true);
             setDisabled(stockMin, true);
+            setReadonly(precio, true); // <— precio solo lectura al actualizar
         }
 
         async function fetchProducto(cod) {
@@ -512,33 +531,39 @@
             const data = await fetchProducto(cod);
             if (!data) {
                 // NO existe → limpiar y modo CREAR
-                if (nombre) nombre.value = '';
-                if (marca)  marca.value  = '';
-                if (categoria) categoria.value = '';
-                if (unidad)   unidad.value   = '';
-                if (vol)    vol.value    = '';
-                if (grad)   grad.value   = '';
-                if (fec)    fec.value    = '';
-                if (stockTxt) stockTxt.textContent = '0';
-                if (stockHid) stockHid.value = 0;
-                if (stockMin) stockMin.value = '';
+                nombre && (nombre.value = '');
+                marca  && (marca.value  = '');
+                categoria && (categoria.value = '');
+                unidad   && (unidad.value   = '');
+                vol && (vol.value = '');
+                grad && (grad.value = '');
+                fec && (fec.value = '');
+                stockTxt && (stockTxt.textContent = '0');
+                stockHid && (stockHid.value = 0);
+                stockMin && (stockMin.value = '');
+                precio && (precio.value = ''); // <— limpiar precio
                 setCrearUI();
                 return;
             }
 
             // EXISTE → autocompletar y modo ACTUALIZAR
-            if (nombre) nombre.value = data.nombre || '';
-            if (marca)  marca.value  = data.marca || '';
-            if (categoria && data.categoria) categoria.value = data.categoria;
-            if (unidad && data.unidadBase)   unidad.value    = data.unidadBase;
-            if (vol)   vol.value   = (data.volumenNominalMl ?? '');
-            if (grad)  grad.value  = (data.graduacionAlcoholica ?? '');
-            if (fec)   fec.value   = (data.fechaVencimiento ?? '');
-            if (stockMin) stockMin.value = (data.stockMinimo ?? '');
+            nombre && (nombre.value = data.nombre || '');
+            marca  && (marca.value  = data.marca || '');
+            categoria && data.categoria && (categoria.value = data.categoria);
+            unidad    && data.unidadBase && (unidad.value = data.unidadBase);
+            vol && (vol.value = data.volumenNominalMl ?? '');
+            grad && (grad.value = data.graduacionAlcoholica ?? '');
+            fec && (fec.value = data.fechaVencimiento ?? '');
+            stockMin && (stockMin.value = data.stockMinimo ?? '');
 
             const st = Number(data.stockActual || 0);
-            if (stockTxt) stockTxt.textContent = String(st);
-            if (stockHid) stockHid.value = st;
+            stockTxt && (stockTxt.textContent = String(st));
+            stockHid && (stockHid.value = st);
+
+            // si tu API devuelve precio, lo mostramos; si no, dejamos tal cual
+            if (precio && typeof data.precio !== 'undefined' && data.precio !== null) {
+                precio.value = String(data.precio);
+            }
 
             setActualizarStockUI();
             if (cantidad) { cantidad.focus(); cantidad.select?.(); }
@@ -561,19 +586,20 @@
                 if (modo.value === 'CREAR' && stockHid) {
                     const v = parseInt(cantidad.value || '0', 10);
                     stockHid.value = isNaN(v) ? 0 : v;
-                    if (stockTxt) stockTxt.textContent = stockHid.value;
+                    stockTxt && (stockTxt.textContent = stockHid.value);
                 }
             });
         }
 
-        // Antes de enviar, asegura que el modo correcto esté aplicado
-        form.addEventListener('submit', (e) => {
-            const cod = (cb.value || '').trim();
-            if (!cod) return; // validación normal seguirá
-            // Si el action ya es actualizar-stock, no exigimos los otros required (ya se desactivaron).
-            // Si es crear, required siguen activos.
-        });
+        // Precio: solo enteros positivos
+        if (precio) {
+            precio.addEventListener('input', () => {
+                const v = (precio.value || '').replace(/[^\d]/g, '');
+                precio.value = v;
+            });
+        }
     })();
 </script>
+
 </body>
 </html>
