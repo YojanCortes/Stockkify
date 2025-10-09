@@ -1,0 +1,60 @@
+<!-- src/main/resources/templates/dashboard/rotacion.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Rotación de Inventario (mensual)</title>
+    <style>
+        :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af}
+        *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
+        .wrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;gap:10px;flex-direction:column}
+        .muted{color:var(--muted)} .kpi{font-size:1.9rem;font-weight:900}
+        .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+        .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);color:#111;background:#e5e7eb}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.col-12{grid-column:span 12}
+    </style>
+</head>
+<body>
+<header><div class="wrap"><h1>Dashboard · Rotación de Inventario (mensual)</h1><a class="btn" href="/index.html">Volver</a></div></header>
+
+<main class="container">
+    <section class="card col-12">
+        <div class="kpi" id="rot">-- x</div>
+        <div class="muted">Ventas netas: <b id="ventas">--</b> · Inventario promedio: <b id="inv">--</b></div>
+        <div class="row">
+            <span class="badge" id="mes">Mes actual</span>
+            <span class="badge" id="var">—</span>
+        </div>
+        <small class="muted">Fórmula: <code>ventas_netas / inventario_promedio</code></small>
+        <div class="muted" id="err" style="color:#fda4af;display:none"></div>
+    </section>
+</main>
+
+<script>
+    const $=s=>document.querySelector(s);
+    const fmtCLP=v=>(v??0).toLocaleString('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
+    (async function(){
+      try{
+        const r=await fetch('/api/dashboard/kpi1',{headers:{'Accept':'application/json'}});
+        if(!r.ok) throw 0;
+        const d=await r.json();
+        const ventas=d.ventasNetas??0, inv=d.inventarioPromedio??0;
+        const rot=typeof d.rotacion==='number'?d.rotacion:(inv>0?(ventas/inv):0);
+        $('#rot').textContent=(rot||0).toFixed(2)+' x';
+        $('#ventas').textContent=fmtCLP(ventas);
+        $('#inv').textContent=fmtCLP(inv);
+        $('#mes').textContent=d.mesActual||'Mes actual';
+        const prev=d.rotacionPrev;
+        $('#var').textContent=(typeof prev==='number')
+          ? ((rot-prev)>=0?'↑ ':'↓ ')+Math.abs((prev===0?100:((rot-prev)/prev*100))).toFixed(1)+'% vs '+(d.mesPrevio||'previo')
+          : '—';
+      }catch(e){ const er=$('#err'); er.style.display='block'; er.textContent='No se pudo cargar.'; }
+    })();
+</script>
+</body>
+</html>

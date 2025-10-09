@@ -101,6 +101,98 @@
             <a class="btn btn-primary" href="/dashboard/top-vendidos">Revisar</a>
             <small class="muted">Ranking por unidades vendidas</small>
         </section>
+        <!-- === KPI 1: Rotación de Inventario (mensual) === -->
+        <section class="card col-3" id="card-kpi1">
+            <h2>KPI 1 · Rotación de Inventario (mensual)</h2>
+            <div class="kpi" id="kpi1-rot">-- x</div>
+            <div class="muted">Ventas netas: <b id="kpi1-ventas">--</b> · Inv. prom: <b id="kpi1-inv">--</b></div>
+            <div class="row">
+                <span class="badge" id="kpi1-mes"></span>
+                <span class="badge" id="kpi1-var">—</span>
+            </div>
+            <div class="error" id="kpi1-err" style="display:none"></div>
+            <a class="btn btn-primary" href="/dashboard/rotacion">Revisar</a>
+            <small class="muted">Fórmula: <code>ventas_netas / inventario_promedio</code></small>
+        </section>
+
+        <!-- === KPI 2: Stock de Seguridad (%) === -->
+        <section class="card col-3" id="card-kpi2">
+            <h2>KPI 2 · Stock de Seguridad (%)</h2>
+            <div class="row" style="justify-content:space-between">
+                <div class="gauge" id="gauge-kpi2"><span class="val" id="gauge2-val">--%</span></div>
+                <div>
+                    <div class="kpi" id="kpi2-pct">--%</div>
+                    <div class="muted">Actual: <b id="kpi2-actual">--</b> · Mín: <b id="kpi2-min">--</b></div>
+                    <div class="muted" id="kpi2-state">Cargando…</div>
+                    <div class="error" id="kpi2-err" style="display:none"></div>
+                </div>
+            </div>
+            <a class="btn btn-primary" href="/dashboard/stock-seguridad">Revisar</a>
+            <small class="muted">Fórmula: <code>(stock_actual / stock_minimo) × 100</code></small>
+        </section>
+
+        <!-- === KPI 5: Productos de Baja Rotación === -->
+        <section class="card col-3" id="card-kpi5">
+            <h2>KPI 5 · Productos de Baja Rotación</h2>
+            <div class="kpi"><span id="kpi5-cant">--</span> ítems</div>
+            <div class="muted">Umbral: <b id="kpi5-x">X</b> unidades/mes</div>
+            <div id="kpi5-list" class="rank" style="margin-top:6px">
+                <div class="loading">Cargando…</div>
+            </div>
+            <div class="error" id="kpi5-err" style="display:none"></div>
+            <a class="btn btn-primary" href="/dashboard/baja-rotacion">Revisar</a>
+            <small class="muted">Regla: <code>ventas_mensuales &lt; X</code></small>
+        </section>
+
+        <!-- === KPI 6: % Stock Obsoleto (>60 días sin venta) === -->
+        <section class="card col-3" id="card-kpi6">
+            <h2>KPI 6 · Stock Obsoleto (%)</h2>
+            <div class="kpi" id="kpi6-pct">--%</div>
+            <div class="muted"><b id="kpi6-obs">--</b> obsoletos / <b id="kpi6-total">--</b> productos</div>
+            <div id="kpi6-cats" style="margin-top:8px">
+                <div class="loading">Cargando…</div>
+            </div>
+            <div class="error" id="kpi6-err" style="display:none"></div>
+            <a class="btn btn-primary" href="/dashboard/stock-obsoleto">Revisar</a>
+            <small class="muted">Criterio: sin venta &gt; 60 días</small>
+        </section>
+
+        <!-- === KPI 9: Stock Alerts Automáticas === -->
+        <section class="card col-3" id="card-kpi9">
+            <h2>KPI 9 · Stock Alerts Automáticas</h2>
+            <div class="kpi"><span id="kpi9-act">--</span> alertas activas</div>
+            <div class="muted">Últimas señales</div>
+            <div id="kpi9-list" class="rank" style="margin-top:6px">
+                <div class="loading">Cargando…</div>
+            </div>
+            <div class="error" id="kpi9-err" style="display:none"></div>
+            <a class="btn btn-primary" href="/dashboard/alertas-stock">Revisar</a>
+            <small class="muted">Se activa al llegar a stock mínimo</small>
+        </section>
+
+        <!-- === KPI 10: Dashboard de Rentabilidad === -->
+        <section class="card col-3" id="card-kpi10">
+            <h2>KPI 10 · Rentabilidad (margen unitario)</h2>
+            <div class="kpi" id="kpi10-prom">--%</div>
+            <div class="muted">Promedio ponderado del período</div>
+            <div class="row" style="gap:12px;margin-top:6px">
+                <div style="flex:1">
+                    <div class="muted" style="margin-bottom:4px">Top margen</div>
+                    <div id="kpi10-top" class="rank">
+                        <div class="loading">Cargando…</div>
+                    </div>
+                </div>
+                <div style="flex:1">
+                    <div class="muted" style="margin-bottom:4px">Margen bajo</div>
+                    <div id="kpi10-low" class="rank">
+                        <div class="loading">Cargando…</div>
+                    </div>
+                </div>
+            </div>
+            <div class="error" id="kpi10-err" style="display:none"></div>
+            <a class="btn btn-primary" href="/dashboard/rentabilidad">Revisar</a>
+            <small class="muted">Margen: <code>(precio_venta - costo) / precio_venta</code></small>
+        </section>
 
         <!-- === KPI 8: Consumo Estimado Semanal (IA) === -->
         <section class="card col-3" id="card-kpi8">
@@ -116,6 +208,213 @@
         </section>
     </div>
 </main>
+
+<script>
+    // =============================
+    // KPI 1 — Rotación de inventario (mensual)
+    // Esperado: { ventasNetas, inventarioPromedio, rotacion, mesActual, mesPrevio, rotacionPrev }
+    // =============================
+    (async function loadKpi1(){
+      try{
+        const d = await fetchJSON(`${API}/kpi1`);
+        const ventas = d.ventasNetas ?? 0;
+        const inv    = d.inventarioPromedio ?? 0;
+        const rot    = (typeof d.rotacion === 'number') ? d.rotacion : (inv>0?(ventas/inv):0);
+        const rotPrev= (typeof d.rotacionPrev === 'number') ? d.rotacionPrev : null;
+
+        $('#kpi1-rot').textContent = (rot || 0).toFixed(2) + ' x';
+        $('#kpi1-ventas').textContent = fmtCLP(ventas);
+        $('#kpi1-inv').textContent = fmtCLP(inv);
+        $('#kpi1-mes').textContent = (d.mesActual || 'Mes actual');
+
+        let varTxt = '—';
+        if (rotPrev !== null){
+          const varPct = rotPrev===0 ? 100 : ((rot - rotPrev) / (rotPrev||1)) * 100;
+          varTxt = (varPct>=0?'↑ ':'↓ ') + Math.abs(varPct).toFixed(1) + '% vs ' + (d.mesPrevio || 'previo');
+        }
+        $('#kpi1-var').textContent = varTxt;
+      }catch(err){
+        console.error('KPI1 error', err);
+        const e = $('#kpi1-err'); e.style.display='block'; e.textContent='Error al cargar KPI 1.';
+      }
+    })();
+
+    // =============================
+    // KPI 2 — Stock de seguridad (%)
+    // Esperado: { stockActual, stockMinimo, porcentaje }
+    // Estado: Bueno si >=100%, Atención si 80-99%, Crítico <80%
+    // =============================
+    (async function loadKpi2(){
+      try{
+        const d = await fetchJSON(`${API}/kpi2`);
+        const actual = d.stockActual ?? 0;
+        const minimo = d.stockMinimo ?? 0;
+        const pct    = (typeof d.porcentaje === 'number') ? d.porcentaje : (minimo>0?(actual/minimo*100):0);
+
+        $('#kpi2-pct').textContent = pct.toFixed(1) + '%';
+        $('#kpi2-actual').textContent = actual;
+        $('#kpi2-min').textContent = minimo;
+
+        const g = $('#gauge-kpi2');
+        g.style.setProperty('--p', Math.max(0, Math.min(100, pct)).toFixed(2));
+        g.classList.remove('ok','warn','bad');
+
+        let state = '—', cls='ok';
+        if (pct >= 100){ state='Saludable'; cls='ok'; }
+        else if (pct >= 80){ state='Atención'; cls='warn'; }
+        else { state='Crítico'; cls='bad'; }
+        $('#kpi2-state').textContent = state;
+        g.classList.add(cls);
+        $('#gauge2-val').textContent = Math.round(pct) + '%';
+      }catch(err){
+        console.error('KPI2 error', err);
+        const e = $('#kpi2-err'); e.style.display='block'; e.textContent='Error al cargar KPI 2.';
+      }
+    })();
+
+    // =============================
+    // KPI 5 — Baja rotación
+    // Esperado: { umbral, total, muestra: [{nombre, ventasMensuales}] }
+    // =============================
+    (async function loadKpi5(){
+      try{
+        const d = await fetchJSON(`${API}/kpi5`);
+        const umbral = d.umbral ?? 5;
+        const total  = d.total ?? 0;
+        const arr    = Array.isArray(d.muestra)? d.muestra : [];
+
+        $('#kpi5-x').textContent = umbral;
+        $('#kpi5-cant').textContent = total;
+
+        const el = $('#kpi5-list');
+        if (arr.length===0){ el.innerHTML = '<div class="muted">Sin ítems bajo el umbral.</div>'; return; }
+
+        const max = Math.max(...arr.map(x => x.ventasMensuales||0), 1);
+        el.innerHTML = arr.slice(0,5).map(x => `
+          <div class="rank-row">
+            <div class="row" style="gap:10px;align-items:center;width:100%">
+              <div class="rank-name" title="${(x.nombre||'-').replace(/"/g,'&quot;')}">${x.nombre||'-'}</div>
+              <div class="bar" style="flex:1"><i style="width:${((x.ventasMensuales||0)/max*100).toFixed(0)}%"></i></div>
+            </div>
+            <div class="muted" style="text-align:right">${x.ventasMensuales||0}</div>
+          </div>
+        `).join('');
+      }catch(err){
+        console.error('KPI5 error', err);
+        const e = $('#kpi5-err'); e.style.display='block'; e.textContent='Error al cargar KPI 5.';
+        $('#kpi5-list').innerHTML='';
+      }
+    })();
+
+    // =============================
+    // KPI 6 — % Stock obsoleto (>60d sin venta)
+    // Esperado: { obsoletos, total, porcentaje, categorias: [{nombre, pct}] }
+    // =============================
+    (async function loadKpi6(){
+      try{
+        const d = await fetchJSON(`${API}/kpi6`);
+        const obs = d.obsoletos ?? 0;
+        const tot = d.total ?? 0;
+        const pct = (typeof d.porcentaje==='number') ? d.porcentaje : (tot>0?(obs/tot*100):0);
+
+        $('#kpi6-pct').textContent = pct.toFixed(1) + '%';
+        $('#kpi6-obs').textContent = obs;
+        $('#kpi6-total').textContent = tot;
+
+        const cats = Array.isArray(d.categorias)? d.categorias : [];
+        const wrap = $('#kpi6-cats');
+        if (cats.length===0){ wrap.innerHTML = '<div class="muted">Sin concentración por categoría.</div>'; return; }
+
+        const top = cats.slice().sort((a,b)=>(b.pct||0)-(a.pct||0)).slice(0,3);
+        const max = Math.max(...top.map(x => x.pct||0),1);
+
+        wrap.innerHTML = top.map(c => `
+          <div style="width:100%">
+            <div class="row" style="justify-content:space-between">
+              <span>${c.nombre||'-'}</span>
+              <span class="muted">${(c.pct||0).toFixed(0)}%</span>
+            </div>
+            <div class="bar"><i style="width:${(((c.pct||0)/max)*100).toFixed(0)}%"></i></div>
+          </div>
+        `).join('');
+      }catch(err){
+        console.error('KPI6 error', err);
+        const e = $('#kpi6-err'); e.style.display='block'; e.textContent='Error al cargar KPI 6.';
+        $('#kpi6-cats').innerHTML='';
+      }
+    })();
+
+    // =============================
+    // KPI 9 — Alertas de stock
+    // Esperado: { activas, ultimas: [{producto, nivel, estado}] }
+    // estado puede ser 'minimo','critico','recuperado'
+    // =============================
+    (async function loadKpi9(){
+      try{
+        const d = await fetchJSON(`${API}/kpi9`);
+        const act = d.activas ?? 0;
+        const arr = Array.isArray(d.ultimas)? d.ultimas : [];
+
+        $('#kpi9-act').textContent = act;
+
+        const el = $('#kpi9-list');
+        if (arr.length===0){ el.innerHTML = '<div class="muted">Sin señales recientes.</div>'; return; }
+
+        el.innerHTML = arr.slice(0,5).map(x=>{
+          const estado = (x.estado||'').toLowerCase();
+          const chip = estado==='recuperado' ? 'badge' : (estado==='critico' ? 'badge' : 'badge');
+          const estadoTxt = estado==='critico'?'Crítico':estado==='minimo'?'Mínimo':'Recuperado';
+          return `
+            <div class="rank-row">
+              <div class="rank-name" title="${(x.producto||'-').replace(/"/g,'&quot;')}">${x.producto||'-'}</div>
+              <div style="text-align:right">
+                <span class="${chip}">${estadoTxt}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }catch(err){
+        console.error('KPI9 error', err);
+        const e = $('#kpi9-err'); e.style.display='block'; e.textContent='Error al cargar KPI 9.';
+        $('#kpi9-list').innerHTML='';
+      }
+    })();
+
+    // =============================
+    // KPI 10 — Rentabilidad (margen)
+    // Esperado: { margenPromedioPct, top: [{nombre, margenPct}], low: [{nombre, margenPct}] }
+    // =============================
+    (async function loadKpi10(){
+      try{
+        const d = await fetchJSON(`${API}/kpi10`);
+        const prom = d.margenPromedioPct ?? 0;
+        $('#kpi10-prom').textContent = (prom).toFixed(1) + '%';
+
+        const top = Array.isArray(d.top)? d.top.slice(0,5) : [];
+        const low = Array.isArray(d.low)? d.low.slice(0,5) : [];
+
+        const maxTop = Math.max(...top.map(x=>Math.abs(x.margenPct||0)), 1);
+        const maxLow = Math.max(...low.map(x=>Math.abs(x.margenPct||0)), 1);
+
+        const toRow = (x, max) => `
+          <div class="rank-row">
+            <div class="row" style="gap:10px;align-items:center;width:100%">
+              <div class="rank-name" title="${(x.nombre||'-').replace(/"/g,'&quot;')}">${x.nombre||'-'}</div>
+              <div class="bar" style="flex:1"><i style="width:${(Math.abs(x.margenPct||0)/max*100).toFixed(0)}%"></i></div>
+            </div>
+            <div class="muted" style="text-align:right">${(x.margenPct||0).toFixed(1)}%</div>
+          </div>
+        `;
+
+        $('#kpi10-top').innerHTML = top.length? top.map(x=>toRow(x,maxTop)).join('') : '<div class="muted">—</div>';
+        $('#kpi10-low').innerHTML = low.length? low.map(x=>toRow(x,maxLow)).join('') : '<div class="muted">—</div>';
+      }catch(err){
+        console.error('KPI10 error', err);
+        const e = $('#kpi10-err'); e.style.display='block'; e.textContent='Error al cargar KPI 10.';
+        $('#kpi10-top').innerHTML=''; $('#kpi10-low').innerHTML='';
+      }
+    })();
+</script>
 
 <script>
     // =============================

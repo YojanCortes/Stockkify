@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Baja Rotación — Dashboard Operación</title>
+    <style>
+        :root{
+          --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
+          --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --primary:#60a5fa; --line:#1f2937;
+        }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
+        header .wrap{max-width:1200px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+        header h1{margin:0;font-size:1.2rem}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+        .col-4{grid-column:span 4}
+        .col-8{grid-column:span 8}
+        .col-12{grid-column:span 12}
+        @media(max-width:1100px){.col-4{grid-column:span 12}.col-8{grid-column:span 12}}
+
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:12px}
+        .card h2{margin:0;font-size:1rem;color:var(--muted);font-weight:800}
+        .kpi{font-size:1.6rem;font-weight:900;letter-spacing:-.2px}
+        .muted{color:var(--muted)}
+        .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);color:#111;background:#e5e7eb}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .btn:hover{filter:brightness(.95)}
+        .btn-primary{background:#93c5fd}
+
+        .inputs{display:flex;gap:10px;flex-wrap:wrap}
+        .input{display:flex;flex-direction:column;gap:6px}
+        .input label{font-size:.85rem;color:var(--muted)}
+        .input input,.input select{height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:var(--text);padding:0 10px;min-width:160px}
+
+        table{width:100%;border-collapse:collapse;border-spacing:0}
+        thead th{font-size:.85rem;color:var(--muted);font-weight:700;text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+        tbody td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+        tbody tr:hover{background:#0f1525}
+        .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);font-size:.8rem}
+
+        .bar{height:10px;background:#1f2937;border-radius:6px;overflow:hidden}
+        .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#34d399)}
+
+        .pagination{display:flex;gap:8px;align-items:center}
+        .pagination button{height:36px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:var(--text)}
+        .pagination button[disabled]{opacity:.5}
+
+        .error{color:#fda4af;font-size:.9rem}
+        .loading{color:var(--muted);font-size:.9rem}
+        small code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px}
+    </style>
+</head>
+<body>
+<header>
+    <div class="wrap">
+        <h1>Dashboard · Productos de Baja Rotación</h1>
+        <a class="btn" href="/index.html">Volver al tablero</a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="grid">
+        <!-- Resumen -->
+        <section class="card col-4">
+            <h2>Resumen</h2>
+            <div class="kpi"><span id="kpi5-total">--</span> ítems bajo el umbral</div>
+            <div class="row">
+                <span class="badge">Umbral: <b id="kpi5-umbral">X</b> u./mes</span>
+                <span class="badge">Período: <b id="kpi5-periodo">últimos 30 días</b></span>
+            </div>
+            <div class="muted">Regla: <code>ventas_mensuales &lt;= umbral</code></div>
+            <div class="error" id="err-summary" style="display:none"></div>
+        </section>
+
+        <!-- Filtros -->
+        <section class="card col-8">
+            <h2>Filtros</h2>
+            <div class="inputs">
+                <div class="input">
+                    <label for="f-umbral">Umbral (unidades/mes)</label>
+                    <input id="f-umbral" type="number" min="0" step="1" value="5" />
+                </div>
+                <div class="input">
+                    <label for="f-desde">Desde</label>
+                    <input id="f-desde" type="date" />
+                </div>
+                <div class="input">
+                    <label for="f-hasta">Hasta</label>
+                    <input id="f-hasta" type="date" />
+                </div>
+                <div class="input">
+                    <label for="f-cat">Categoría</label>
+                    <select id="f-cat">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="input" style="align-self:flex-end">
+                    <button class="btn btn-primary" id="btn-aplicar">Aplicar</button>
+                </div>
+                <div class="input" style="align-self:flex-end">
+                    <button class="btn" id="btn-export">Exportar CSV</button>
+                </div>
+            </div>
+            <small class="muted">Endpoint: <code>/api/dashboard/baja-rotacion?umbral=&lt;n&gt;&amp;desde=YYYY-MM-DD&amp;hasta=YYYY-MM-DD&amp;categoria=&lt;id|nombre&gt;&amp;page=&lt;n&gt;&amp;size=50</code></small>
+        </section>
+
+        <!-- Tabla -->
+        <section class="card col-12">
+            <h2>Listado de productos</h2>
+            <div id="tbl-wrap">
+                <div class="loading">Cargando…</div>
+            </div>
+            <div class="row" style="justify-content:space-between;margin-top:8px">
+                <div class="muted" id="tbl-count">—</div>
+                <div class="pagination">
+                    <button id="p-prev" disabled>◀</button>
+                    <span class="muted" id="p-info">Página 1</span>
+                    <button id="p-next" disabled>▶</button>
+                </div>
+            </div>
+            <div class="error" id="err-table" style="display:none"></div>
+        </section>
+
+        <!-- Concentración por categoría -->
+        <section class="card col-12">
+            <h2>Concentración por Categoría (muestra)</h2>
+            <div id="cats-wrap">
+                <div class="loading">Cargando…</div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    const API = '/api/dashboard';
+    const $ = s => document.querySelector(s);
+    const fmtCLP = v => (v ?? 0).toLocaleString('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
+
+    // Estado de página
+    const state = {
+      page: 1,
+      size: 50,
+      totalPages: 1,
+      lastData: [], // cache para exportar
+      categorias: []
+    };
+
+    function params() {
+      const umbral = parseInt($('#f-umbral').value || '5', 10);
+      const desde = $('#f-desde').value || '';
+      const hasta = $('#f-hasta').value || '';
+      const categoria = $('#f-cat').value || '';
+      return { umbral, desde, hasta, categoria, page: state.page, size: state.size };
+    }
+
+    function toQuery(obj){
+      return Object.entries(obj)
+        .filter(([k,v]) => v !== undefined && v !== null && v !== '')
+        .map(([k,v]) => encodeURIComponent(k)+'='+encodeURIComponent(v))
+        .join('&');
+    }
+
+    async function fetchJSON(url){
+      const r = await fetch(url, { headers: { 'Accept':'application/json' }});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }
+
+    function renderTable(items){
+      if(!Array.isArray(items) || items.length===0){
+        $('#tbl-wrap').innerHTML = '<div class="muted">Sin resultados para los filtros seleccionados.</div>';
+        $('#tbl-count').textContent = '0 resultados';
+        return;
+      }
+      const maxVtas = Math.max(...items.map(x => x.ventasMensuales||0), 1);
+      const rows = items.map(x => {
+        const nombre = x.nombre || '-';
+        const categoria = x.categoria || '-';
+        const stock = x.stock ?? '—';
+        const dias = x.diasSinVenta ?? '—';
+        const vtas = x.ventasMensuales || 0;
+        const costo = (typeof x.costoTotal === 'number') ? fmtCLP(x.costoTotal) : (x.costoTotal || '—');
+        return `
+          <tr>
+            <td>${nombre}</td>
+            <td>${categoria}</td>
+            <td style="min-width:120px">
+              <div class="bar"><i style="width:${(vtas/maxVtas*100).toFixed(0)}%"></i></div>
+            </td>
+            <td style="text-align:right">${vtas}</td>
+            <td style="text-align:right">${stock}</td>
+            <td style="text-align:right">${dias}</td>
+            <td style="text-align:right">${costo}</td>
+          </tr>
+        `;
+      }).join('');
+
+      $('#tbl-wrap').innerHTML = `
+        <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th style="min-width:140px">Ventas mensuales</th>
+              <th style="text-align:right">Unid.</th>
+              <th style="text-align:right">Stock</th>
+              <th style="text-align:right">Días s/venta</th>
+              <th style="text-align:right">Costo total</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        </div>
+      `;
+      $('#tbl-count').textContent = items.length + ' resultados en esta página';
+    }
+
+    function renderCategorias(cats){
+      const wrap = $('#cats-wrap');
+      if(!Array.isArray(cats) || cats.length===0){
+        wrap.innerHTML = '<div class="muted">Sin concentración por categoría.</div>';
+        return;
+      }
+      const top = cats.slice().sort((a,b)=>(b.pct||0)-(a.pct||0)).slice(0,6);
+      const max = Math.max(...top.map(x=>x.pct||0), 1);
+      wrap.innerHTML = top.map(c => `
+        <div style="margin:8px 0">
+          <div class="row" style="justify-content:space-between">
+            <span>${c.nombre||'-'}</span>
+            <span class="muted">${(c.pct||0).toFixed(0)}%</span>
+          </div>
+          <div class="bar"><i style="width:${(((c.pct||0)/max)*100).toFixed(0)}%"></i></div>
+        </div>
+      `).join('');
+    }
+
+    function fillCategoriasSelect(list){
+      const sel = $('#f-cat');
+      const opts = ['<option value="">Todas</option>'].concat(
+        (list||[]).map(c => `<option value="${String(c.id ?? c.nombre)}">${c.nombre}</option>`)
+      );
+      sel.innerHTML = opts.join('');
+    }
+
+    async function load(){
+      try{
+        $('#err-summary').style.display='none';
+        $('#err-table').style.display='none';
+
+        const q = params();
+        const base = `${API}/baja-rotacion?${toQuery(q)}`;
+        const dto = await fetchJSON(base);
+
+        // Estructura esperada flexible
+        // {
+        //   umbral, total, productos:[{ nombre, categoria, ventasMensuales, stock, diasSinVenta, costoTotal }],
+        //   categorias:[{ nombre, pct }], totalPages, page,
+        //   catalogoCategorias:[{id, nombre}]
+        // }
+
+        const umbral = dto.umbral ?? q.umbral;
+        const total  = dto.total ?? (dto.productos?.length || 0);
+        const items  = Array.isArray(dto.productos) ? dto.productos : (Array.isArray(dto.muestra)? dto.muestra : []);
+
+        $('#kpi5-umbral').textContent = umbral;
+        $('#kpi5-total').textContent  = total;
+        $('#kpi5-periodo').textContent = (q.desde && q.hasta) ? `${q.desde} a ${q.hasta}` : 'últimos 30 días';
+
+        state.lastData = items.slice();
+        state.totalPages = dto.totalPages || 1;
+        state.page = dto.page || q.page || 1;
+        renderTable(items);
+        renderCategorias(Array.isArray(dto.categorias)? dto.categorias : []);
+
+        if(Array.isArray(dto.catalogoCategorias)){
+          state.categorias = dto.catalogoCategorias;
+          fillCategoriasSelect(state.categorias);
+          if(q.categoria){ $('#f-cat').value = q.categoria; }
+        }
+
+        // Paginación
+        $('#p-info').textContent = `Página ${state.page} de ${state.totalPages}`;
+        $('#p-prev').disabled = state.page <= 1;
+        $('#p-next').disabled = state.page >= state.totalPages;
+      }catch(err){
+        console.error('Load error', err);
+        $('#err-summary').style.display='block';
+        $('#err-summary').textContent = 'No se pudo cargar el resumen.';
+        $('#err-table').style.display='block';
+        $('#err-table').textContent = 'No se pudo cargar el listado.';
+        $('#tbl-wrap').innerHTML = '';
+        $('#cats-wrap').innerHTML = '';
+      }
+    }
+
+    // Export CSV del resultado actual
+    function exportCSV(){
+      if(!state.lastData || !state.lastData.length){ return; }
+      const cols = ['nombre','categoria','ventasMensuales','stock','diasSinVenta','costoTotal'];
+      const header = cols.join(',');
+      const rows = state.lastData.map(x => cols.map(k => {
+        const v = x[k];
+        if(v === undefined || v === null) return '';
+        const s = String(v).replace(/"/g,'""');
+        return s.includes(',') ? '"'+s+'"' : s;
+      }).join(','));
+      const csv = [header].concat(rows).join('\n');
+      const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'baja-rotacion.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Inicialización: fechas por defecto (últimos 30 días)
+    (function initDates(){
+      const today = new Date();
+      const d30 = new Date(today.getTime() - 29*86400000);
+      const fmt = d => d.toISOString().slice(0,10);
+      $('#f-hasta').value = fmt(today);
+      $('#f-desde').value = fmt(d30);
+    })();
+
+    // Eventos
+    $('#btn-aplicar').addEventListener('click', ()=>{ state.page = 1; load(); });
+    $('#p-prev').addEventListener('click', ()=>{ if(state.page>1){ state.page--; load(); }});
+    $('#p-next').addEventListener('click', ()=>{ if(state.page<state.totalPages){ state.page++; load(); }});
+    $('#btn-export').addEventListener('click', exportCSV);
+
+    // Cargar al entrar
+    load();
+</script>
+</body>
+</html>

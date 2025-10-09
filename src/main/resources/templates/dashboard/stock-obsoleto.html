@@ -1,0 +1,78 @@
+<!-- src/main/resources/templates/dashboard/stock-obsoleto.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Stock Obsoleto (>60 días sin venta)</title>
+    <style>
+        :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--line:#1f2937}
+        *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
+        .wrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+        .col-4{grid-column:span 4}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+        @media(max-width:1100px){.col-4,.col-8{grid-column:span 12}}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:12px}
+        .card h2{margin:0;font-size:1rem;color:var(--muted);font-weight:800}
+        .kpi{font-size:1.8rem;font-weight:900}
+        .muted{color:var(--muted)}
+        .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+        .bar{height:10px;background:#1f2937;border-radius:6px;overflow:hidden}
+        .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#34d399)}
+        .error{color:#fda4af;font-size:.9rem}
+    </style>
+</head>
+<body>
+<header><div class="wrap"><h1>Dashboard · Stock Obsoleto (%)</h1><a class="btn" href="/index.html">Volver</a></div></header>
+
+<main class="container">
+    <div class="grid">
+        <section class="card col-4">
+            <h2>Resumen</h2>
+            <div class="kpi" id="pct">--%</div>
+            <div class="muted"><b id="obs">--</b> obsoletos / <b id="tot">--</b> productos</div>
+            <small class="muted">Criterio: sin venta &gt; 60 días</small>
+            <div class="error" id="err" style="display:none"></div>
+        </section>
+
+        <section class="card col-8">
+            <h2>Concentración por categoría</h2>
+            <div id="cats"><span class="muted">Cargando…</span></div>
+        </section>
+
+        <section class="card col-12">
+            <h2>Notas</h2>
+            <div class="muted">Usa <code>/api/dashboard/kpi6</code> → { obsoletos, total, porcentaje, categorias:[{nombre,pct}] }.</div>
+        </section>
+    </div>
+</main>
+
+<script>
+    const $=s=>document.querySelector(s);
+    async function load(){
+      try{
+        const r=await fetch('/api/dashboard/kpi6',{headers:{'Accept':'application/json'}});
+        if(!r.ok) throw 0;
+        const d=await r.json();
+        const obs=d.obsoletos??0, tot=d.total??0, p=(typeof d.porcentaje==='number')?d.porcentaje:(tot>0?(obs/tot*100):0);
+        $('#pct').textContent=p.toFixed(1)+'%'; $('#obs').textContent=obs; $('#tot').textContent=tot;
+
+        const cats=Array.isArray(d.categorias)?d.categorias:[];
+        if(!cats.length){ $('#cats').innerHTML='<span class="muted">Sin concentración por categoría.</span>'; return; }
+        const max=Math.max(...cats.map(c=>c.pct||0),1);
+        $('#cats').innerHTML = cats.map(c=>`
+          <div class="row" style="justify-content:space-between"><span>${c.nombre||'-'}</span><span class="muted">${(c.pct||0).toFixed(0)}%</span></div>
+          <div class="bar"><i style="width:${(((c.pct||0)/max)*100).toFixed(0)}%"></i></div>
+        `).join('');
+      }catch(e){
+        const er=$('#err'); er.style.display='block'; er.textContent='No se pudo cargar.';
+        $('#cats').innerHTML='';
+      }
+    }
+    load();
+</script>
+</body>
+</html>

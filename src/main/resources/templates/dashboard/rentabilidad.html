@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Rentabilidad — Dashboard Operación</title>
+    <style>
+        :root{
+          --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
+          --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --primary:#60a5fa; --line:#1f2937;
+        }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
+        header .wrap{max-width:1200px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+        header h1{margin:0;font-size:1.2rem}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+        .col-4{grid-column:span 4}
+        .col-8{grid-column:span 8}
+        .col-6{grid-column:span 6}
+        .col-12{grid-column:span 12}
+        @media(max-width:1100px){.col-4,.col-6,.col-8{grid-column:span 12}}
+
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:12px}
+        .card h2{margin:0;font-size:1rem;color:var(--muted);font-weight:800}
+        .kpi{font-size:1.8rem;font-weight:900;letter-spacing:-.2px}
+        .muted{color:var(--muted)}
+        .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);color:#111;background:#e5e7eb}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .btn:hover{filter:brightness(.95)}
+
+        .rank{display:flex;flex-direction:column;gap:10px}
+        .rank-row{display:grid;grid-template-columns:1fr 60px;gap:10px;align-items:center}
+        .rank-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .bar{height:10px;background:#1f2937;border-radius:6px;overflow:hidden}
+        .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#34d399)}
+
+        .error{color:#fda4af;font-size:.9rem}
+        .loading{color:var(--muted);font-size:.9rem}
+        small code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px}
+    </style>
+</head>
+<body>
+<header>
+    <div class="wrap">
+        <h1>Dashboard · Rentabilidad</h1>
+        <a class="btn" href="/index.html">Volver</a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="grid">
+        <section class="card col-4">
+            <h2>Resumen</h2>
+            <div class="kpi" id="margen-prom">--%</div>
+            <div class="row">
+                <span class="badge" id="cnt-top">Top: --</span>
+                <span class="badge" id="cnt-low">Bajo: --</span>
+            </div>
+            <small class="muted">Margen: <code>(precio_venta - costo) / precio_venta</code></small>
+            <div class="error" id="err-sum" style="display:none"></div>
+        </section>
+
+        <section class="card col-8">
+            <h2>Notas</h2>
+            <div class="muted">Valores en porcentaje. Puede haber márgenes negativos si el costo supera el precio de venta.</div>
+        </section>
+
+        <section class="card col-6">
+            <h2>Top margen</h2>
+            <div id="list-top" class="rank">
+                <div class="loading">Cargando…</div>
+            </div>
+            <div class="error" id="err-top" style="display:none"></div>
+        </section>
+
+        <section class="card col-6">
+            <h2>Margen bajo</h2>
+            <div id="list-low" class="rank">
+                <div class="loading">Cargando…</div>
+            </div>
+            <div class="error" id="err-low" style="display:none"></div>
+        </section>
+    </div>
+</main>
+
+<script>
+    const API = '/api/dashboard';
+    const $ = s => document.querySelector(s);
+
+    async function fetchJSON(u){
+      const r = await fetch(u, {headers:{'Accept':'application/json'}});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }
+
+    function toRow(x, maxAbs){
+      const pct = Number(x.margenPct || 0);
+      const width = Math.max(0, Math.min(100, Math.round(Math.abs(pct) / (maxAbs || 1) * 100)));
+      const nombre = (x.nombre || '-').replace(/"/g,'&quot;');
+      return `
+        <div class="rank-row">
+          <div class="row" style="gap:10px;align-items:center;width:100%">
+            <div class="rank-name" title="${nombre}">${nombre}</div>
+            <div class="bar" style="flex:1"><i style="width:${width}%"></i></div>
+          </div>
+          <div class="muted" style="text-align:right">${pct.toFixed(1)}%</div>
+        </div>
+      `;
+    }
+
+    (async function load(){
+      try{
+        const d = await fetchJSON(`${API}/kpi10`);
+        const prom = Number(d.margenPromedioPct || 0);
+        $('#margen-prom').textContent = prom.toFixed(1) + '%';
+
+        const top = Array.isArray(d.top) ? d.top : [];
+        const low = Array.isArray(d.low) ? d.low : [];
+
+        $('#cnt-top').textContent = `Top: ${top.length}`;
+        $('#cnt-low').textContent = `Bajo: ${low.length}`;
+
+        const maxTop = Math.max(...top.map(i => Math.abs(i.margenPct||0)), 1);
+        const maxLow = Math.max(...low.map(i => Math.abs(i.margenPct||0)), 1);
+
+        $('#list-top').innerHTML = top.length ? top.map(i => toRow(i,maxTop)).join('') : '<div class="muted">—</div>';
+        $('#list-low').innerHTML = low.length ? low.map(i => toRow(i,maxLow)).join('') : '<div class="muted">—</div>';
+      }catch(e){
+        console.error(e);
+        $('#err-sum').style.display='block'; $('#err-sum').textContent='No se pudo cargar.';
+        $('#err-top').style.display='block'; $('#err-top').textContent='No se pudo cargar.';
+        $('#err-low').style.display='block'; $('#err-low').textContent='No se pudo cargar.';
+        $('#list-top').innerHTML=''; $('#list-low').innerHTML='';
+      }
+    })();
+</script>
+</body>
+</html>

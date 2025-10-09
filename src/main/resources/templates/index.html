@@ -1,111 +1,82 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
     <title>Inventario — Panel</title>
 
     <!-- Estáticos -->
-    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet" />
-    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet" />
+    <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet"/>
+    <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet"/>
 
+    <!-- ====== ESTILOS ALERTAS ====== -->
     <style>
-        /* Ventana emergente de alertas */
-        #alertPopup {
-            display: none;
-            position: absolute;
-            top: 60px;
-            right: 20px;
-            width: 320px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 1050;
+        #alertPopup{
+          display:none; position:fixed; top:var(--topbar-h,64px); right:16px; width:360px;
+          background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+          box-shadow:0 16px 40px rgba(0,0,0,.25); z-index:2000; overflow:hidden;
         }
-        #alertPopup .header {
-            background: #f8f9fc;
-            padding: 10px 12px;
-            font-weight: bold;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        #alertPopup .item {
-            padding: 10px 12px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-        }
-        #alertPopup .item:last-child { border-bottom: none; }
-        #alertPopup .icon { margin-right: 10px; }
-        #alertPopup .footer { padding: 10px 12px; text-align: center; }
-        .alert-link { cursor: pointer; }
-    </style>
-    <style>
-        /* ===== POPUP ===== */
-        #alertPopup {
-          display: none; position: absolute; top: 60px; right: 20px; width: 360px;
-          background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,.15); z-index: 1050; overflow: hidden;
-        }
-        #alertPopup .header {
-          background: #f8f9fc; padding: 10px 14px; font-weight: 700;
-          border-bottom: 1px solid #e9ecef;
-        }
-        .alert-list { max-height: 320px; overflow-y: auto; }
-        .alert-row {
-          display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-          border-bottom: 1px solid #f1f3f5; text-decoration: none !important;
-        }
-        .alert-row:last-child { border-bottom: none; }
-        .alert-row:hover { background: #f8fafc; }
-
-        .alert-avatar {
-          width: 46px; height: 46px; border-radius: 8px; background: #f1f3f5;
-          display: grid; place-items: center; flex: 0 0 auto; overflow: hidden;
-          border: 1px solid #e9ecef;
-        }
-        .alert-avatar img {
-          width: 100%; height: 100%; object-fit: contain; /* no recorta */
-        }
-        .alert-avatar .placeholder {
-          color: #9aa0a6; font-size: 1.15rem;
-        }
-
-        .alert-info { min-width: 0; flex: 1 1 auto; }
-        .alert-name {
-          font-weight: 700; font-size: .95rem; color: #111827;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        .qty-badge {
-          display: inline-flex; align-items: center; gap: 6px;
-          min-width: 48px; justify-content: center;
-          font-weight: 800; font-size: .95rem; padding: 6px 10px;
-          border-radius: 999px; color: #111; border: 1px solid transparent;
-        }
-        /* Colores del estado (reutiliza tus clases bg-warning / bg-danger) */
-        .qty-badge.bg-warning { background: #fff3cd; color: #664d03; border-color: #ffec9f; }
-        .qty-badge.bg-danger  { background: #f8d7da; color: #842029; border-color: #f1aeb5; }
-
-        .popup-footer {
-          display: flex; justify-content: center; padding: 10px; background: #fafbff;
-          border-top: 1px solid #eef1f4;
-        }
-        .popup-footer a { font-weight: 700; }
+        #alertPopup .header{ background:#f8f9fc; padding:10px 14px; font-weight:700; border-bottom:1px solid #e9ecef; }
+        .alert-list{ max-height:320px; overflow-y:auto; }
+        .alert-row{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-bottom:1px solid #f1f3f5; text-decoration:none!important; }
+        .alert-row:last-child{ border-bottom:none; }
+        .alert-row:hover{ background:#f8fafc; }
+        .alert-avatar{ width:46px; height:46px; border-radius:8px; background:#f1f3f5; display:grid; place-items:center; overflow:hidden; border:1px solid #e9ecef; }
+        .alert-avatar img{ width:100%; height:100%; object-fit:contain; }
+        .alert-avatar .placeholder{ color:#9aa0a6; font-size:1.15rem; }
+        .alert-info{ min-width:0; flex:1 1 auto; }
+        .alert-name{ font-weight:700; font-size:.95rem; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .qty-badge{ display:inline-flex; align-items:center; gap:6px; min-width:48px; justify-content:center; font-weight:800; font-size:.95rem; padding:6px 10px; border-radius:999px; color:#111; border:1px solid transparent; }
+        .qty-badge.bg-warning{ background:#fff3cd; color:#664d03; border-color:#ffec9f; }
+        .qty-badge.bg-danger{  background:#f8d7da; color:#842029; border-color:#f1aeb5; }
+        .popup-footer{ display:flex; justify-content:center; padding:10px; background:#fafbff; border-top:1px solid #eef1f4; }
+        .popup-footer a{ font-weight:700; }
     </style>
 
+    <!-- ====== ESTILOS DEL NUEVO DASHBOARD (4 KPIs) ====== -->
+    <style>
+        :root{
+          --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
+          --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --primary:#60a5fa;
+        }
+        .mvp-dark{ background:linear-gradient(180deg,#0b1220,#0f172a); color:var(--text); }
+        .mvp-dark *{ box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial; }
+        .mvp-header{ padding:20px; border-bottom:1px solid rgba(255,255,255,.06); position:sticky; top:0; background:rgba(15,23,42,.85); backdrop-filter:blur(8px); z-index:10; }
+        .mvp-container{ max-width:1200px; margin:0 auto; padding:24px; }
+        .mvp-grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:18px; }
+        .mvp-col-3{ grid-column:span 3; }
+        @media(max-width:1100px){ .mvp-col-3{ grid-column:span 6; } }
+        @media(max-width:700px){ .mvp-col-3{ grid-column:span 12; } }
+        .mvp-card{ background:var(--card); border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:18px; box-shadow:0 12px 30px rgba(0,0,0,.25); display:flex; flex-direction:column; gap:12px; }
+        .mvp-card h2{ margin:0; font-size:1rem; color:var(--muted); font-weight:700; }
+        .row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .kpi{ font-size:1.8rem; font-weight:800; letter-spacing:-.3px; }
+        .muted{ color:var(--muted); }
+        .btn-mvp{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.1); text-decoration:none; color:#0b1020; background:#e5e7eb; font-weight:700; }
+        .btn-primary-mvp{ background:#93c5fd; }
+        .badge{ font-size:.8rem; padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.1); color:#111; background:#e5e7eb; }
+        .gauge{ --p:0; width:120px; height:120px; border-radius:50%; background:conic-gradient(var(--bad) calc(var(--p)*1%), #273244 0); display:grid; place-items:center; position:relative; isolation:isolate; }
+        .gauge.ok{ background:conic-gradient(var(--ok) calc(var(--p)*1%), #273244 0); }
+        .gauge.warn{ background:conic-gradient(var(--warn) calc(var(--p)*1%), #273244 0); }
+        .gauge::after{ content:""; position:absolute; inset:12px; background:#111827; border-radius:50%; z-index:0; }
+        .gauge .val{ z-index:1; font-weight:900; font-size:1.1rem; }
+        .bar{ height:10px; background:#1f2937; border-radius:6px; overflow:hidden; }
+        .bar>i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#60a5fa,#34d399); }
+        .rank{ display:flex; flex-direction:column; gap:10px; }
+        .rank-row{ display:grid; grid-template-columns:1fr 60px; gap:10px; align-items:center; }
+        .rank-name{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .spark{ width:100%; height:64px; }
+        .error{ color:#fda4af; font-size:.9rem; }
+        .loading{ color:var(--muted); font-size:.9rem; }
+        small code{ background:rgba(255,255,255,.06); padding:2px 6px; border-radius:6px; }
+    </style>
 </head>
 
 <body id="page-top">
-<!-- Page Wrapper -->
 <div id="wrapper">
 
-    <!-- Sidebar (fragmento) -->
+    <!-- Sidebar -->
     <div th:replace="~{menugeneral :: sidebar}"></div>
 
     <!-- Content Wrapper -->
@@ -118,11 +89,9 @@
                     <i class="fa fa-bars"></i>
                 </button>
 
-                <!-- Buscador -->
                 <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                     <div class="input-group">
-                        <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar..."
-                               aria-label="Buscar" aria-describedby="btn-buscar">
+                        <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar..." aria-label="Buscar" aria-describedby="btn-buscar">
                         <div class="input-group-append">
                             <button class="btn btn-primary" type="button" id="btn-buscar">
                                 <i class="fas fa-search fa-sm"></i>
@@ -131,315 +100,282 @@
                     </div>
                 </form>
 
-                <!-- Notificaciones -->
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="javascript:void(0)" id="alertToggle">
+                        <a class="nav-link position-relative" href="javascript:void(0)" id="alertToggle" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-bell fa-fw"></i>
-                            <!-- Contador dinámico totalAlertas -->
-                            <span class="badge badge-danger badge-counter"
-                                  th:text="${totalAlertas != null ? totalAlertas : 0}">0</span>
+                            <span class="badge badge-danger badge-counter" th:text="${totalAlertas != null ? totalAlertas : 0}">0</span>
                         </a>
                     </li>
                 </ul>
             </nav>
             <!-- /Topbar -->
 
-            <!-- Ventana emergente de alertas -->
-            <!-- Ventana emergente de alertas -->
-            <div id="alertPopup">
-                <div class="header">Alertas de Inventario</div>
+            <!-- ====== UNIFICACIÓN DASHBOARD + NOTIFICACIONES ====== -->
+            <div class="mvp-dark">
 
-                <!-- Sin alertas -->
-                <div th:if="${totalAlertas == 0}" class="alert-list">
-                    <div class="alert-row">
-                        <div class="alert-avatar"><i class="fas fa-check placeholder"></i></div>
-                        <div class="alert-info">
-                            <div class="alert-name">Todo OK</div>
-                            <small class="text-muted">No hay productos críticos</small>
+                <!-- ====== POPUP DE ALERTAS ====== -->
+                <div id="alertPopup" role="dialog" aria-label="Alertas de Inventario">
+                    <div class="header">Alertas de Inventario</div>
+
+                    <!-- Sin alertas -->
+                    <div class="alert-list" th:if="${totalAlertas == null || totalAlertas == 0}">
+                        <div class="alert-row">
+                            <div class="alert-avatar"><i class="fas fa-check placeholder"></i></div>
+                            <div class="alert-info">
+                                <div class="alert-name">Todo OK</div>
+                                <small class="text-muted">No hay productos críticos</small>
+                            </div>
+                            <span class="qty-badge bg-warning">0</span>
                         </div>
-                        <span class="qty-badge bg-warning">0</span>
+                    </div>
+
+                    <!-- Top 3 -->
+                    <div class="alert-list" th:if="${totalAlertas != null && totalAlertas > 0}">
+                        <a th:each="a : ${alertasTop3}" th:href="@{/alertas}" class="alert-row">
+                            <div class="alert-avatar">
+                                <img th:if="${a.imagenUrl != null}" th:src="${a.imagenUrl}" alt="img">
+                                <i th:if="${a.imagenUrl == null}" class="fas fa-image placeholder" title="Sin imagen"></i>
+                            </div>
+                            <div class="alert-info">
+                                <div class="alert-name" th:text="${a.nombreProducto}">Producto</div>
+                                <small class="text-muted">Stock actual</small>
+                            </div>
+                            <span class="qty-badge" th:classappend="${' ' + a.color}">
+                <i class="fas fa-boxes"></i>
+                <span th:text="${a.stock}">0</span>
+              </span>
+                        </a>
+                    </div>
+
+                    <div class="popup-footer">
+                        <a th:href="@{/alertas}" class="small">Ver todas las alertas</a>
+                    </div>
+                </div>
+                <!-- ====== FIN POPUP ====== -->
+
+                <!-- ====== DASHBOARD (KPIs) ====== -->
+                <div class="mvp-header">
+                    <div class="mvp-container">
+                        <h1 style="margin:0;font-size:1.4rem">Dashboards — Operación e Inventario (MVP)</h1>
                     </div>
                 </div>
 
-                <!-- Top 3 con imagen, nombre y badge de color -->
-                <div class="alert-list" th:if="${totalAlertas > 0}">
-                    <a th:each="a : ${alertasTop3}" th:href="@{/alertas}" class="alert-row">
-                        <div class="alert-avatar">
-                            <img th:if="${a.imagenUrl != null}" th:src="${a.imagenUrl}" alt="img">
-                            <i th:if="${a.imagenUrl == null}" class="fas fa-image placeholder" title="Sin imagen"></i>
-                        </div>
-                        <div class="alert-info">
-                            <div class="alert-name" th:text="${a.nombreProducto}">Producto</div>
-                            <small class="text-muted">Stock actual</small>
-                        </div>
-                        <span class="qty-badge" th:classappend="${' ' + a.color}">
-        <i class="fas fa-boxes"></i>
-        <span th:text="${a.stock}">0</span>
-      </span>
-                    </a>
-                </div>
+                <main class="mvp-container">
+                    <div class="mvp-grid">
 
-                <!-- Ver todas -->
-                <div class="popup-footer">
-                    <a th:href="@{/alertas}" class="small">Ver todas las alertas</a>
-                </div>
+                        <!-- KPI 3 -->
+                        <section class="mvp-card mvp-col-3" id="card-kpi3">
+                            <h2>KPI 3 · Rupturas de Stock (%)</h2>
+                            <div class="row" style="justify-content:space-between">
+                                <div class="gauge" id="gauge-kpi3"><span class="val" id="gauge-val">--%</span></div>
+                                <div>
+                                    <div class="kpi" id="kpi3-val">--%</div>
+                                    <div class="muted"><b id="kpi3-sin">--</b> sin stock / <b id="kpi3-act">--</b> activos</div>
+                                    <div class="muted" id="kpi3-state">Cargando…</div>
+                                    <div class="error" id="kpi3-err" style="display:none"></div>
+                                </div>
+                            </div>
+                            <a class="btn-mvp btn-primary-mvp" th:href="@{/dashboard/rupturas}">Revisar</a>
+                            <small class="muted">Fórmula: <code>sin_stock / activos × 100</code></small>
+                        </section>
+
+                        <!-- KPI 4 -->
+                        <section class="mvp-card mvp-col-3" id="card-kpi4">
+                            <h2>KPI 4 · Valor Total de Inventario (CLP)</h2>
+                            <div class="kpi" id="kpi4-total">$ --</div>
+                            <div class="muted">Top categorías (muestra)</div>
+                            <div class="row" style="flex-direction:column;gap:10px" id="kpi4-cats">
+                                <div class="loading">Cargando…</div>
+                            </div>
+                            <div class="error" id="kpi4-err" style="display:none"></div>
+                            <a class="btn-mvp btn-primary-mvp" th:href="@{/dashboard/valor-inventario}">Revisar</a>
+                            <small class="muted">Base: Σ(<code>precio × cantidad</code>)</small>
+                        </section>
+
+                        <!-- KPI 7 -->
+                        <section class="mvp-card mvp-col-3" id="card-kpi7">
+                            <h2>KPI 7 · Top 5 Productos Más Vendidos</h2>
+                            <div class="rank" id="kpi7-rank">
+                                <div class="loading">Cargando…</div>
+                            </div>
+                            <div class="error" id="kpi7-err" style="display:none"></div>
+                            <a class="btn-mvp btn-primary-mvp" th:href="@{/dashboard/top-vendidos}">Revisar</a>
+                            <small class="muted">Ranking por unidades vendidas</small>
+                        </section>
+
+                        <!-- KPI 8 -->
+                        <section class="mvp-card mvp-col-3" id="card-kpi8">
+                            <h2>KPI 8 · Consumo Estimado Semanal (IA)</h2>
+                            <svg class="spark" viewBox="0 0 200 64" id="kpi8-spark" aria-hidden="true"></svg>
+                            <div class="row">
+                                <span class="badge" id="kpi8-ultimo">Últ. semana: --</span>
+                                <span class="badge" id="kpi8-tend">Tendencia: —</span>
+                            </div>
+                            <div class="error" id="kpi8-err" style="display:none"></div>
+                            <a class="btn-mvp btn-primary-mvp" th:href="@{/dashboard/consumo-ia}">Revisar</a>
+                            <small class="muted">Pronóstico base (Holt amortiguado)</small>
+                        </section>
+
+                    </div>
+                </main>
             </div>
+            <!-- ====== FIN UNIFICADO ====== -->
 
-
-            <!-- Begin Page Content -->
-            <div class="container-fluid">
-                <h1 class="h3 mb-4 text-gray-800">Dashboard</h1>
-
-                <!-- === KPI CARDS === -->
-                <div class="row">
-                    <!-- Productos -->
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-primary shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Productos</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">1,245</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-box-open fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Stock total -->
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-success shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Stock total</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">8,940</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-cubes fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bajo mínimo -->
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-warning shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Bajo mínimo</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">27</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Vencidos -->
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-danger shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Vencidos</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">5</div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="fas fa-skull-crossbones fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- === GRÁFICAS === -->
-                <div class="row">
-                    <!-- Área -->
-                    <div class="col-xl-6">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">Movimientos últimos 30 días</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="chart-area"><canvas id="myAreaChart"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Barra -->
-                    <div class="col-xl-6">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">Stock por categoría</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="chart-bar"><canvas id="myBarChart"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- === PIE === -->
-                <div class="row">
-                    <div class="col-xl-6">
-                        <div class="card shadow mb-4">
-                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">Top categorías</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="chart-pie pt-4 pb-2"><canvas id="myPieChart"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- === TABLA MOVIMIENTOS === -->
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Movimientos recientes</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered" width="100%" cellspacing="0">
-                                <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Tipo</th>
-                                    <th>Producto</th>
-                                    <th>Cantidad</th>
-                                    <th>Usuario</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td>2025-09-01 10:23</td>
-                                    <td>SALIDA</td>
-                                    <td>Cerveza Lager 355ml</td>
-                                    <td>12</td>
-                                    <td>jlopez</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-09-01 09:11</td>
-                                    <td>ENTRADA</td>
-                                    <td>Whisky 750ml</td>
-                                    <td>6</td>
-                                    <td>mramirez</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-08-31 18:45</td>
-                                    <td>AJUSTE</td>
-                                    <td>Refresco Cola 2L</td>
-                                    <td>-2</td>
-                                    <td>encargado1</td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <!-- /.container-fluid -->
         </div>
-
-        <!-- Footer -->
-        <footer class="sticky-footer bg-white">
-            <div class="container my-auto">
-                <div class="copyright text-center my-auto">
-                    <span>&copy; Inventario 2025</span>
-                </div>
-            </div>
-        </footer>
     </div>
 </div>
 
-<a class="scroll-to-top rounded" href="#page-top">
-    <i class="fas fa-angle-up"></i>
-</a>
+<a class="scroll-to-top rounded" href="#page-top"><i class="fas fa-angle-up"></i></a>
 
 <!-- JS -->
 <script th:src="@{/vendor/jquery/jquery.min.js}"></script>
 <script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
-<script th:src="@{/vendor/chart.js/Chart.min.js}"></script>
 
+<!-- ====== ALERTAS: cálculo topbar y toggle ====== -->
 <script>
-    // Toggle ventana emergente y click en items -> /alertas
-    document.addEventListener('DOMContentLoaded', function () {
-        const toggle = document.getElementById('alertToggle');
-        const popup  = document.getElementById('alertPopup');
+    function setTopbarHeightVar(){
+      const tb = document.querySelector('.navbar.topbar, .topbar, nav.navbar');
+      const h  = tb ? tb.getBoundingClientRect().height : 64;
+      document.documentElement.style.setProperty('--topbar-h', h + 'px');
+    }
+    window.addEventListener('resize', setTopbarHeightVar);
+    document.addEventListener('DOMContentLoaded', function(){
+      setTopbarHeightVar();
 
-        if (toggle && popup) {
-            toggle.addEventListener('click', function (e) {
-                e.stopPropagation();
-                popup.style.display = (popup.style.display === 'block') ? 'none' : 'block';
-            });
-            document.addEventListener('click', function (e) {
-                if (popup.style.display === 'block' &&
-                    !popup.contains(e.target) &&
-                    !toggle.contains(e.target)) {
-                    popup.style.display = 'none';
-                }
-            });
+      const toggle = document.getElementById('alertToggle');
+      const popup  = document.getElementById('alertPopup');
+      if (!toggle || !popup) return;
+
+      toggle.addEventListener('click', function(e){
+        e.stopPropagation();
+        const open = popup.style.display === 'block';
+        popup.style.display = open ? 'none' : 'block';
+        toggle.setAttribute('aria-expanded', (!open).toString());
+      });
+
+      document.addEventListener('click', function(e){
+        if (popup.style.display === 'block' && !popup.contains(e.target) && !toggle.contains(e.target)) {
+          popup.style.display = 'none';
+          toggle.setAttribute('aria-expanded', 'false');
         }
+      });
+
+      document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape' && popup.style.display === 'block') {
+          popup.style.display = 'none';
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
     });
 </script>
 
+<!-- ====== Lógica de los 4 KPIs ====== -->
 <script>
-    // Chart.js demo seguro
-    document.addEventListener('DOMContentLoaded', function () {
-        if (!window.Chart) return;
+    const API    = '/api/dashboard';
+    const $      = (sel) => document.querySelector(sel);
+    const fmtCLP = v => (v ?? 0).toLocaleString('es-CL', { style:'currency', currency:'CLP', maximumFractionDigits:0 });
+    async function fetchJSON(url){
+      const r = await fetch(url, { headers:{ 'Accept':'application/json' }});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }
 
-        // Área
-        const areaEl = document.getElementById('myAreaChart');
-        if (areaEl) {
-            new Chart(areaEl, {
-                type: 'line',
-                data: {
-                    labels: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
-                    datasets: [{ label: 'Movimientos', data: [5, 9, 7, 12, 10, 4, 6], fill: true }]
-                },
-                options: { maintainAspectRatio: false }
-            });
-        }
+    // KPI 3 — Rupturas
+    (async function(){
+      try{
+        const d = await fetchJSON(`${API}/kpi3`);
+        const activos = d.activos ?? d.totalActivos ?? 0;
+        const sin = d.sinStock ?? d.sin ?? 0;
+        const pct = (typeof d.porcentaje==='number') ? d.porcentaje : (activos>0 ? sin/activos*100 : 0);
+        $('#kpi3-val').textContent = pct.toFixed(1)+'%';
+        $('#kpi3-sin').textContent = sin; $('#kpi3-act').textContent = activos;
+        const g = $('#gauge-kpi3'); g.style.setProperty('--p', pct.toFixed(2)); g.classList.remove('ok','warn','bad');
+        const state = pct>=15?'Crítico': pct>=5?'Atención':'Saludable';
+        $('#kpi3-state').textContent = state; g.classList.add(pct>=15?'bad': pct>=5?'warn':'ok');
+        $('#gauge-val').textContent = Math.round(pct)+'%';
+      }catch(e){
+        const el=$('#kpi3-err'); el.style.display='block'; el.textContent='Error al cargar KPI 3.'; $('#kpi3-state').textContent='—';
+      }
+    })();
 
-        // Barra
-        const barEl = document.getElementById('myBarChart');
-        if (barEl) {
-            new Chart(barEl, {
-                type: 'bar',
-                data: {
-                    labels: ['Cervezas', 'Snacks', 'Licores', 'Refrescos', 'Otros'],
-                    datasets: [{ label: 'Stock', data: [120, 80, 60, 90, 30] }]
-                },
-                options: { maintainAspectRatio: false }
-            });
-        }
+    // KPI 4 — Valor Inventario
+    (async function(){
+      try{
+        const d = await fetchJSON(`${API}/kpi4`);
+        const total = (typeof d.totalValor==='number') ? d.totalValor : (d.totalValorCLP ?? 0);
+        $('#kpi4-total').textContent = fmtCLP(total);
+        const catsRaw = Array.isArray(d.categorias) ? d.categorias : [];
+        const cats = catsRaw.map(c => ({ nombre: c.categoria || 'Sin categoría', valor: (typeof c.valor==='number')? c.valor : (c.valorCLP ?? 0)}));
+        const wrap = $('#kpi4-cats');
+        if(cats.length===0 || total<=0){ wrap.innerHTML = '<div class="muted">Sin categorías con valor.</div>'; return; }
+        const top = cats.slice().sort((a,b)=>b.valor-a.valor).slice(0,3);
+        const rows = top.map(c => ({ nombre:c.nombre, pct: Math.max(0, Math.round(c.valor*100/total)) }));
+        const maxPct = Math.max(...rows.map(x=>x.pct),1);
+        wrap.innerHTML = rows.map(({nombre,pct}) => `
+          <div style="width:100%">
+            <div class="row" style="justify-content:space-between"><span>${nombre}</span><span class="muted">${pct}%</span></div>
+            <div class="bar"><i style="width:${(pct/maxPct*100).toFixed(0)}%"></i></div>
+          </div>`).join('');
+      }catch(e){
+        const el=$('#kpi4-err'); el.style.display='block'; el.textContent='Error al cargar KPI 4.'; $('#kpi4-cats').innerHTML='';
+      }
+    })();
 
-        // Pie
-        const pieEl = document.getElementById('myPieChart');
-        if (pieEl) {
-            new Chart(pieEl, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Cervezas', 'Licores', 'Refrescos'],
-                    datasets: [{ data: [55, 25, 20] }]
-                },
-                options: { maintainAspectRatio: false }
-            });
-        }
-    });
+    // KPI 7 — Top vendidos
+    (async function(){
+      try{
+        const arr = await fetchJSON(`${API}/kpi7`);
+        const el = $('#kpi7-rank');
+        if(!Array.isArray(arr) || arr.length===0){ el.innerHTML='<div class="muted">Sin datos en el período.</div>'; return; }
+        const max = Math.max(...arr.map(x=>x.unidades||0),1);
+        el.innerHTML = arr.slice(0,5).map(x => `
+          <div class="rank-row">
+            <div class="row" style="gap:10px;align-items:center;width:100%">
+              <div class="rank-name" title="${(x.nombre||'').replace(/"/g,'&quot;')}">${x.nombre||'-'}</div>
+              <div class="bar" style="flex:1"><i style="width:${((x.unidades||0)/max*100).toFixed(0)}%"></i></div>
+            </div>
+            <div class="muted" style="text-align:right">${x.unidades||0}</div>
+          </div>`).join('');
+      }catch(e){
+        const el=$('#kpi7-err'); el.style.display='block'; el.textContent='Error al cargar KPI 7.'; $('#kpi7-rank').innerHTML='';
+      }
+    })();
+
+    // KPI 8 — Consumo semanal (sparkline)
+    function drawSpark(hist, fcst){
+      const svg = $('#kpi8-spark'); const w=200,h=64,p=6;
+      const serieH = hist.map(x=>x.unidades||0), serieF = fcst.map(x=>x.unidades||0), data = serieH.concat(serieF);
+      if(data.length<2){ svg.innerHTML=''; return; }
+      const min=Math.min(...data), max=Math.max(...data),
+            xr=i=>p+i*((w-2*p)/(data.length-1)),
+            yr=v=>h-p-((v-min)/(max-min||1))*(h-2*p);
+      let dH='', dF=''; serieH.forEach((v,i)=> dH+=(i?'L':'M')+xr(i)+','+yr(v)+' ');
+      serieF.forEach((v,i)=>{ const idx=serieH.length-1+i; dF+=(i?'L':'M')+xr(idx)+','+yr(v)+' '; });
+      svg.innerHTML = `
+        <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#60a5fa" stop-opacity="0.35"/><stop offset="100%" stop-color="#60a5fa" stop-opacity="0"/></linearGradient></defs>
+        <path d="${dH}" fill="none" stroke="#60a5fa" stroke-width="2"/>
+        <path d="${dH} L ${w-p},${h-p} L ${p},${h-p} Z" fill="url(#g1)" opacity=".4"/>
+        ${dF?`<path d="${dF}" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="4 3"/>`:''}
+        <rect x="0" y="${h-1}" width="${w}" height="1" fill="#1f2937"/>`;
+    }
+    (async function(){
+      try{
+        const dto = await fetchJSON(`${API}/kpi8?semanas=12&h=4`);
+        const hist = Array.isArray(dto.historico)? dto.historico: []; const fcst = Array.isArray(dto.forecast)? dto.forecast: [];
+        drawSpark(hist, fcst);
+        const lastHist = hist.length? (hist[hist.length-1].unidades||0): 0;
+        let tendencia = '—';
+        if(fcst.length && typeof fcst[0].unidades==='number'){ tendencia = (fcst[0].unidades>=lastHist)? '↑ alza':'↓ baja'; }
+        else if(hist.length>=2){ const prev = hist[hist.length-2].unidades||0; tendencia = (lastHist>=prev)? '↑ alza':'↓ baja'; }
+        $('#kpi8-ultimo').textContent = `Últ. semana: ${lastHist}`;
+        $('#kpi8-tend').textContent   = `Tendencia: ${tendencia}`;
+      }catch(e){
+        const el=$('#kpi8-err'); el.style.display='block'; el.textContent='Error al cargar KPI 8.'; $('#kpi8-spark').innerHTML=''; $('#kpi8-ultimo').textContent='Últ. semana: —'; $('#kpi8-tend').textContent='Tendencia: —';
+      }
+    })();
 </script>
 </body>
 </html>

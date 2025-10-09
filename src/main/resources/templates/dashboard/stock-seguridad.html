@@ -1,0 +1,66 @@
+<!-- src/main/resources/templates/dashboard/stock-seguridad.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Stock de Seguridad</title>
+    <style>
+        :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+        *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
+        .wrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .container{max-width:1200px;margin:0 auto;padding:20px}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;gap:12px}
+        .muted{color:var(--muted)} .kpi{font-size:1.8rem;font-weight:900}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.col-6{grid-column:span 6}.col-12{grid-column:span 12}
+        @media(max-width:1100px){.col-6{grid-column:span 12}}
+        .gauge{--p:0;width:140px;height:140px;border-radius:50%;background:conic-gradient(var(--bad) calc(var(--p)*1%),#273244 0);display:grid;place-items:center;position:relative}
+        .gauge.ok{background:conic-gradient(var(--ok) calc(var(--p)*1%),#273244 0)}
+        .gauge.warn{background:conic-gradient(var(--warn) calc(var(--p)*1%),#273244 0)}
+        .gauge::after{content:\"\";position:absolute;inset:14px;background:var(--card);border-radius:50%}
+        .gauge .val{z-index:1;font-weight:900}
+        .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    </style>
+</head>
+<body>
+<header><div class="wrap"><h1>Dashboard · Stock de Seguridad (%)</h1><a class="btn" href="/index.html">Volver</a></div></header>
+
+<main class="container">
+    <div class="grid">
+        <section class="card col-6">
+            <div class="gauge" id="g"><span class="val" id="gval">--%</span></div>
+            <div>
+                <div class="kpi" id="pct">--%</div>
+                <div class="muted">Actual: <b id="act">--</b> · Mínimo: <b id="min">--</b></div>
+                <div class="muted" id="state">Cargando…</div>
+                <small class="muted">Fórmula: (stock_actual / stock_minimo) × 100</small>
+                <div class="muted" id="err" style="color:#fda4af;display:none"></div>
+            </div>
+        </section>
+
+        <section class="card col-6">
+            <div class="muted">Interpretación:<br/> ≥100% Saludable · 80–99% Atención · &lt;80% Crítico</div>
+        </section>
+    </div>
+</main>
+
+<script>
+    const API='/api/dashboard/kpi2'; const $=s=>document.querySelector(s);
+    async function load(){
+      try{
+        const r=await fetch(API,{headers:{'Accept':'application/json'}}); if(!r.ok) throw 0;
+        const d=await r.json();
+        const a=d.stockActual??0,m=d.stockMinimo??0,p=typeof d.porcentaje==='number'?d.porcentaje:(m>0?(a/m*100):0);
+        $('#pct').textContent=p.toFixed(1)+'%'; $('#act').textContent=a; $('#min').textContent=m;
+        const g=$('#g'); g.style.setProperty('--p',Math.max(0,Math.min(100,p)).toFixed(2));
+        g.classList.remove('ok','warn','bad'); let st='—',cls='ok';
+        if(p>=100){st='Saludable';cls='ok'} else if(p>=80){st='Atención';cls='warn'} else {st='Crítico';cls='bad'}
+        $('#state').textContent=st; g.classList.add(cls); $('#gval').textContent=Math.round(p)+'%';
+      }catch(e){ const er=$('#err'); er.style.display='block'; er.textContent='No se pudo cargar.'; }
+    }
+    load();
+</script>
+</body>
+</html>
