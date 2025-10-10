@@ -14,4 +14,9 @@ public class DashboardPageController {
         // Debe coincidir EXACTO con el nombre del template (sin .html)
         return "dhasboard_pagina";
     }
+    @GetMapping("/dashboard/rotacion")
+    String rotacionPage() {
+        return "dashboard/rotacion"; // resuelve templates/dashboard/rotacion.html
+    }
+
 }

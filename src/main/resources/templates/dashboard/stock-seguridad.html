@@ -6,61 +6,324 @@
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <title>Stock de Seguridad</title>
     <style>
-        :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
-        *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        :root{
+          --bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;
+          --ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;--ring:#0b1220
+        }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
         header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
-        .wrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+        .wrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
         .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
         .container{max-width:1200px;margin:0 auto;padding:20px}
-        .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;gap:12px}
-        .muted{color:var(--muted)} .kpi{font-size:1.8rem;font-weight:900}
-        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.col-6{grid-column:span 6}.col-12{grid-column:span 12}
-        @media(max-width:1100px){.col-6{grid-column:span 12}}
-        .gauge{--p:0;width:140px;height:140px;border-radius:50%;background:conic-gradient(var(--bad) calc(var(--p)*1%),#273244 0);display:grid;place-items:center;position:relative}
-        .gauge.ok{background:conic-gradient(var(--ok) calc(var(--p)*1%),#273244 0)}
-        .gauge.warn{background:conic-gradient(var(--warn) calc(var(--p)*1%),#273244 0)}
-        .gauge::after{content:\"\";position:absolute;inset:14px;background:var(--card);border-radius:50%}
-        .gauge .val{z-index:1;font-weight:900}
-        .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+        .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+        .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+        .col-12{grid-column:span 12}.col-7{grid-column:span 7}.col-5{grid-column:span 5}
+        @media (max-width:1000px){.col-7,.col-5{grid-column:span 12}}
+        .muted{color:var(--muted)}
+        .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+        .h1{font-weight:900;font-size:1.1rem;margin:0}
+        /* filtros */
+        .filters{display:flex;gap:10px;flex-wrap:wrap}
+        .input{display:flex;flex-direction:column;gap:6px}
+        .input label{font-size:.85rem;color:var(--muted)}
+        select,input[type="number"],input[type="text"]{height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:var(--text);padding:0 10px;min-width:160px}
+        .btn-sm{height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#e5e7eb;color:#0b1020;font-weight:700;padding:0 12px}
+        /* donut de 3 segmentos */
+        .donut{
+          --a:120deg;--b:260deg; /* marcadores */
+          width:200px;height:200px;border-radius:50%;
+          background:
+            conic-gradient(var(--ok) 0 var(--a),
+                           var(--warn) var(--a) var(--b),
+                           var(--bad) var(--b) 360deg);
+          position:relative;border:6px solid var(--ring)
+        }
+        .donut::after{content:"";position:absolute;inset:20px;background:var(--card);border-radius:50%;border:1px solid rgba(255,255,255,.06)}
+        .sideKpi{min-width:220px}
+        .sideKpi .title{font-weight:800;font-size:.95rem}
+        .sideKpi .big{font-weight:900;font-size:2.2rem;letter-spacing:-.02em}
+        .chip{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 10px;cursor:pointer;background:rgba(255,255,255,.04)}
+        .chip small{opacity:.9}
+        .chip .dot{width:10px;height:10px;border-radius:50%}
+        .chip.ok  .dot{background:var(--ok)}
+        .chip.warn .dot{background:var(--warn)}
+        .chip.bad  .dot{background:var(--bad)}
+        .chip.active{outline:2px solid rgba(147,197,253,.35)}
+        .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+        .kpiBox{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px}
+        .kpiBox b{font-size:1.1rem}
+        /* tabla */
+        table{width:100%;border-collapse:collapse}
+        th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left}
+        th{color:var(--muted);font-weight:700;font-size:.9rem}
+        tr:hover td{background:rgba(255,255,255,.03)}
+        .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);font-size:.8rem}
+        .tag.ok{color:var(--ok);border-color:rgba(34,197,94,.35)}
+        .tag.warn{color:var(--warn);border-color:rgba(245,158,11,.35)}
+        .tag.bad{color:var(--bad);border-color:rgba(239,68,68,.35)}
+        .err{color:#fda4af}
     </style>
 </head>
 <body>
-<header><div class="wrap"><h1>Dashboard · Stock de Seguridad (%)</h1><a class="btn" href="/index.html">Volver</a></div></header>
+<header>
+    <div class="wrap">
+        <h1 class="h1">Dashboard · Stock de Seguridad</h1>
+        <a class="btn" href="/index.html">Volver</a>
+    </div>
+</header>
 
 <main class="container">
-    <div class="grid">
-        <section class="card col-6">
-            <div class="gauge" id="g"><span class="val" id="gval">--%</span></div>
-            <div>
-                <div class="kpi" id="pct">--%</div>
-                <div class="muted">Actual: <b id="act">--</b> · Mínimo: <b id="min">--</b></div>
-                <div class="muted" id="state">Cargando…</div>
-                <small class="muted">Fórmula: (stock_actual / stock_minimo) × 100</small>
-                <div class="muted" id="err" style="color:#fda4af;display:none"></div>
+    <!-- FILTROS -->
+    <section class="card">
+        <div class="filters">
+            <div class="input">
+                <label for="mes">Mes</label>
+                <select id="mes">
+                    <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+                    <option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option>
+                    <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+                    <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+                </select>
             </div>
-        </section>
+            <div class="input">
+                <label for="anio">Año</label>
+                <input id="anio" type="number" min="2000" max="2100" step="1"/>
+            </div>
+            <div class="input" style="align-self:flex-end">
+                <button id="aplicar" class="btn-sm">Aplicar</button>
+            </div>
+            <div class="input" style="margin-left:auto">
+                <label for="q">Buscar (código/nombre)</label>
+                <input id="q" type="text" placeholder="Escribe para filtrar..."/>
+            </div>
+        </div>
+        <small class="muted">Endpoint: <code>/api/dashboard/kpi2?mes=YYYY-MM</code> y <code>/api/dashboard/kpi2/detalle?mes=YYYY-MM</code></small>
+    </section>
 
-        <section class="card col-6">
-            <div class="muted">Interpretación:<br/> ≥100% Saludable · 80–99% Atención · &lt;80% Crítico</div>
-        </section>
-    </div>
+    <!-- RESUMEN + DONUT + KPI GLOBAL (FIJO) -->
+    <section class="card">
+        <div class="grid">
+            <div class="col-7">
+                <div class="row" style="gap:18px;align-items:center">
+                    <div class="donut" id="donut" title="Distribución por estado"></div>
+
+                    <!-- KPI fijo a un costado (0..100%) -->
+                    <div class="sideKpi">
+                        <div class="title">Cumplimiento global</div>
+                        <div class="big" id="kpiGlobal">--%</div>
+                        <div class="muted" id="mesTitulo">—</div>
+                        <div class="row" style="margin-top:8px">
+                            <div class="chip ok"   id="chip-ok"><span class="dot"></span><span>Saludables</span> <small id="cnt-ok">0</small></div>
+                            <div class="chip warn" id="chip-warn"><span class="dot"></span><span>Atención</span>   <small id="cnt-warn">0</small></div>
+                            <div class="chip bad"  id="chip-bad"><span class="dot"></span><span>Críticos</span>    <small id="cnt-bad">0</small></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-5">
+                <div class="kpis">
+                    <div class="kpiBox">
+                        <div class="muted">Actuales</div>
+                        <b id="sum-act">--</b>
+                    </div>
+                    <div class="kpiBox">
+                        <div class="muted">Mínimos</div>
+                        <b id="sum-min">--</b>
+                    </div>
+                    <div class="kpiBox">
+                        <div class="muted">Brecha</div>
+                        <b id="sum-gap">--</b>
+                    </div>
+                </div>
+                <p class="muted" style="margin:.8rem 0 0">Fórmula global (cap 100%): <code>saludables / total_productos × 100</code>.
+                    Fórmula por producto: <code>actual / mínimo × 100</code> (puede exceder 100%).</p>
+                <div class="err" id="err-resumen" style="display:none;margin-top:8px">No se pudo cargar el resumen.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TABLA -->
+    <section class="card">
+        <div class="row" style="justify-content:space-between">
+            <strong>Productos (detalle)</strong>
+            <div class="row"><span class="muted" id="totalRows">0 ítems</span></div>
+        </div>
+        <div style="overflow:auto;margin-top:8px">
+            <table>
+                <thead>
+                <tr>
+                    <th>Código</th><th>Nombre</th><th>Categoría</th>
+                    <th>Actual</th><th>Mínimo</th><th>%</th><th>Brecha</th><th>Estado</th>
+                </tr>
+                </thead>
+                <tbody id="tbody">
+                <tr><td colspan="8" class="muted">Cargando…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </main>
 
 <script>
-    const API='/api/dashboard/kpi2'; const $=s=>document.querySelector(s);
-    async function load(){
-      try{
-        const r=await fetch(API,{headers:{'Accept':'application/json'}}); if(!r.ok) throw 0;
-        const d=await r.json();
-        const a=d.stockActual??0,m=d.stockMinimo??0,p=typeof d.porcentaje==='number'?d.porcentaje:(m>0?(a/m*100):0);
-        $('#pct').textContent=p.toFixed(1)+'%'; $('#act').textContent=a; $('#min').textContent=m;
-        const g=$('#g'); g.style.setProperty('--p',Math.max(0,Math.min(100,p)).toFixed(2));
-        g.classList.remove('ok','warn','bad'); let st='—',cls='ok';
-        if(p>=100){st='Saludable';cls='ok'} else if(p>=80){st='Atención';cls='warn'} else {st='Crítico';cls='bad'}
-        $('#state').textContent=st; g.classList.add(cls); $('#gval').textContent=Math.round(p)+'%';
-      }catch(e){ const er=$('#err'); er.style.display='block'; er.textContent='No se pudo cargar.'; }
+    const $ = s => document.querySelector(s);
+    const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    let DATA = [];     // detalle crudo
+    let FILTER = 'all';// all|ok|warn|bad
+    let QUERY = '';    // texto búsqueda
+
+    function ymParam(){
+      const m = Number($('#mes').value);
+      const y = Number($('#anio').value);
+      return `${y}-${String(m+1).padStart(2,'0')}`;
     }
-    load();
+    function setDonutSegments(ok, warn, bad){
+      const total = Math.max(0, ok+warn+bad);
+      let a = 0, b = 0;
+      if(total > 0){
+        const okDeg   = (ok/total)   * 360;
+        const warnDeg = (warn/total) * 360;
+        a = okDeg;
+        b = okDeg + warnDeg;
+      }
+      const donut = $('#donut');
+      donut.style.setProperty('--a', `${a}deg`);
+      donut.style.setProperty('--b', `${b}deg`);
+    }
+    function classify(item){
+      const min = Number(item.minimo)||0;
+      const act = Number(item.actual)||0;
+      const pct = min>0 ? (act/min*100) : (act>0 ? 100 : 0); // defensivo
+      if (pct >= 100) return {cls:'ok',   pct, gap: act-min};
+      if (pct >= 80)  return {cls:'warn', pct, gap: act-min};
+      return              {cls:'bad',  pct, gap: act-min};
+    }
+    function fmtInt(n){ return (Number(n)||0).toLocaleString('es-CL'); }
+    function renderTable(){
+      const tbody = $('#tbody');
+      const rows = DATA
+        .filter(x=>{
+          if(FILTER !== 'all' && classify(x).cls !== FILTER) return false;
+          if(QUERY){
+            const q = QUERY.toLowerCase();
+            return (String(x.codigo||'').toLowerCase().includes(q) ||
+                    String(x.nombre||'').toLowerCase().includes(q));
+          }
+          return true;
+        })
+        .map(x=>{
+          const {cls,pct,gap} = classify(x);
+          const pctShow = Math.round(pct); // puede pasar 100 en detalle
+          const tag = cls==='ok'?'Saludable':(cls==='warn'?'Atención':'Crítico');
+          return `<tr>
+            <td>${x.codigo??'—'}</td>
+            <td>${x.nombre??'—'}</td>
+            <td>${x.categoria??'—'}</td>
+            <td>${fmtInt(x.actual)}</td>
+            <td>${fmtInt(x.minimo)}</td>
+            <td>${pctShow}%</td>
+            <td>${gap>0?'+':''}${fmtInt(gap)}</td>
+            <td><span class="tag ${cls}">${tag}</span></td>
+          </tr>`;
+        });
+      $('#totalRows').textContent = `${rows.length} ítems`;
+      tbody.innerHTML = rows.length? rows.join('') : `<tr><td colspan="8" class="muted">Sin datos.</td></tr>`;
+    }
+    function setActiveChip(){
+      $('#chip-ok').classList.toggle('active',  FILTER==='ok');
+      $('#chip-warn').classList.toggle('active',FILTER==='warn');
+      $('#chip-bad').classList.toggle('active', FILTER==='bad');
+    }
+
+    async function cargar(){
+      $('#tbody').innerHTML = `<tr><td colspan="8" class="muted">Cargando…</td></tr>`;
+      $('#err-resumen').style.display='none';
+
+      const mesLabel = `${MONTHS[Number($('#mes').value)]} ${$('#anio').value}`;
+      $('#mesTitulo').textContent = mesLabel;
+
+      const ym = ymParam();
+
+      try{
+        let resumen;
+        try{
+          const r1 = await fetch(`/api/dashboard/kpi2?mes=${encodeURIComponent(ym)}`, {headers:{'Accept':'application/json'}});
+          if(!r1.ok) throw 0;
+          resumen = await r1.json();
+        }catch(_){ resumen = null; }
+
+        const r2 = await fetch(`/api/dashboard/kpi2/detalle?mes=${encodeURIComponent(ym)}`, {headers:{'Accept':'application/json'}});
+        if(!r2.ok) throw 0;
+        const detalle = await r2.json();
+
+        DATA = Array.isArray(detalle)? detalle.map(d=>({
+          codigo: d.codigo ?? d.codigoBarras ?? d.cod ?? null,
+          nombre: d.nombre ?? null,
+          categoria: d.categoria ?? 'GENERAL',
+          actual: Number(d.actual ?? d.stockActual ?? 0),
+          minimo: Number(d.minimo ?? d.stockMinimo ?? 0)
+        })) : [];
+
+        let ok=0,warn=0,bad=0, sumAct=0, sumMin=0;
+        for(const it of DATA){
+          const {cls} = classify(it);
+          if(cls==='ok') ok++; else if(cls==='warn') warn++; else bad++;
+          sumAct += Number(it.actual)||0;
+          sumMin += Number(it.minimo)||0;
+        }
+
+        const totalAct = (resumen && typeof resumen.actualTotal!=='undefined') ? Number(resumen.actualTotal) : sumAct;
+        const totalMin = (resumen && typeof resumen.minimoTotal!=='undefined') ? Number(resumen.minimoTotal) : sumMin;
+        const totalGap = totalAct - totalMin;
+
+        $('#sum-act').textContent = fmtInt(totalAct);
+        $('#sum-min').textContent = fmtInt(totalMin);
+        $('#sum-gap').textContent = (totalGap>0?'+':'') + fmtInt(totalGap);
+
+        if(resumen && typeof resumen.saludables==='number' && typeof resumen.atencion==='number' && typeof resumen.criticos==='number'){
+          ok = resumen.saludables; warn = resumen.atencion; bad = resumen.criticos;
+        }
+        $('#cnt-ok').textContent = ok;
+        $('#cnt-warn').textContent = warn;
+        $('#cnt-bad').textContent = bad;
+
+        setDonutSegments(ok,warn,bad);
+
+        const totalProd = ok+warn+bad;
+        const kpi = totalProd>0 ? (ok/totalProd*100) : 0;
+        const kpiShow = Math.max(0, Math.min(100, kpi));
+        $('#kpiGlobal').textContent = `${kpiShow.toFixed(0)}%`;
+
+        renderTable();
+        setActiveChip();
+
+      }catch(e){
+        console.error(e);
+        $('#err-resumen').style.display='block';
+        DATA = [];
+        renderTable();
+        setDonutSegments(0,0,0);
+        $('#kpiGlobal').textContent='--%';
+        $('#cnt-ok').textContent='0'; $('#cnt-warn').textContent='0'; $('#cnt-bad').textContent='0';
+        $('#sum-act').textContent='--'; $('#sum-min').textContent='--'; $('#sum-gap').textContent='--';
+      }
+    }
+
+    $('#aplicar').addEventListener('click', ()=>{ QUERY=''; $('#q').value=''; FILTER='all'; setActiveChip(); cargar(); });
+    $('#q').addEventListener('input', (e)=>{ QUERY = e.target.value.trim(); renderTable(); });
+
+    $('#chip-ok').addEventListener('click', ()=>{ FILTER = (FILTER==='ok'?'all':'ok'); setActiveChip(); renderTable(); });
+    $('#chip-warn').addEventListener('click', ()=>{ FILTER = (FILTER==='warn'?'all':'warn'); setActiveChip(); renderTable(); });
+    $('#chip-bad').addEventListener('click', ()=>{ FILTER = (FILTER==='bad'?'all':'bad'); setActiveChip(); renderTable(); });
+
+    (function init(){
+      const now = new Date();
+      $('#mes').value = String(now.getMonth());
+      $('#anio').value = String(now.getFullYear());
+      cargar();
+    })();
 </script>
 </body>
 </html>

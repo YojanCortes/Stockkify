@@ -19,7 +19,4 @@ public class ViewController {
     @GetMapping("/dashboard/stock-obsoleto")
     public String stockObsoleto() { return "dashboard/stock-obsoleto"; }
 
-    // agregar a tu ViewController existente
-    @GetMapping("/dashboard/rotacion")
-    public String rotacion() { return "dashboard/rotacion"; }
 }

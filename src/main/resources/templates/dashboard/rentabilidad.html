@@ -1,3 +1,4 @@
+<!-- src/main/resources/templates/dashboard/rentabilidad.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,37 +7,60 @@
     <title>Rentabilidad — Dashboard Operación</title>
     <style>
         :root{
-          --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af;
-          --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --primary:#60a5fa; --line:#1f2937;
+          --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --line:#203045;
+          --ok:#22c55e; --mid:#84cc16; --warn:#f59e0b; --bad:#ef4444; --primary:#60a5fa;
         }
         *{box-sizing:border-box}
-        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
-        header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
-        header .wrap{max-width:1200px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
-        header h1{margin:0;font-size:1.2rem}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px);z-index:5}
+        .wrap{max-width:1200px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+        h1{margin:0;font-size:1.2rem}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .btn:hover{filter:brightness(.95)}
         .container{max-width:1200px;margin:0 auto;padding:20px}
 
         .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
-        .col-4{grid-column:span 4}
-        .col-8{grid-column:span 8}
-        .col-6{grid-column:span 6}
-        .col-12{grid-column:span 12}
-        @media(max-width:1100px){.col-4,.col-6,.col-8{grid-column:span 12}}
+        .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-5{grid-column:span 5}.col-6{grid-column:span 6}.col-7{grid-column:span 7}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+        @media(max-width:1100px){.col-3,.col-4,.col-5,.col-6,.col-7,.col-8{grid-column:span 12}}
 
         .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:12px}
         .card h2{margin:0;font-size:1rem;color:var(--muted);font-weight:800}
-        .kpi{font-size:1.8rem;font-weight:900;letter-spacing:-.2px}
         .muted{color:var(--muted)}
-        .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-        .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);color:#111;background:#e5e7eb}
-        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
-        .btn:hover{filter:brightness(.95)}
+        .kpi-lg{font-size:2.2rem;font-weight:900;letter-spacing:-.2px}
+        .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+        .inputs{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+        .input{display:flex;flex-direction:column;gap:6px}
+        .input label{font-size:.8rem;color:var(--muted)}
+        .input input{height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:var(--text);padding:0 10px;min-width:220px}
+        .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#0b1220}
+        .badge.ok{color:#052e16;background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.2)}
+        .badge.mid{color:#122c09;background:rgba(132,204,22,.15);border-color:rgba(132,204,22,.2)}
+        .badge.warn{color:#451a03;background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.2)}
+        .badge.bad{color:#450a0a;background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.2)}
 
+        /* Ring promedio */
+        .ring{--p:0; --c: var(--ok); width:160px;height:160px;border-radius:50%;
+          background:conic-gradient(var(--c) calc(var(--p)*1%), #263244 0);
+          display:grid;place-items:center;position:relative;border:4px solid #0b1220}
+        .ring::after{content:"";position:absolute;inset:16px;background:var(--card);border-radius:50%}
+        .ring .val{z-index:1;font-weight:900;font-size:1.6rem}
+        .ring .lbl{z-index:1;color:var(--muted);font-size:.75rem;margin-top:2px}
+
+        /* Listas ranking */
         .rank{display:flex;flex-direction:column;gap:10px}
-        .rank-row{display:grid;grid-template-columns:1fr 60px;gap:10px;align-items:center}
-        .rank-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .bar{height:10px;background:#1f2937;border-radius:6px;overflow:hidden}
-        .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#34d399)}
+        .rank-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#0b1220}
+        .rank-name{min-width:0}
+        .rank-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+        .rank-sub{font-size:.8rem;color:var(--muted)}
+        .pct{font-variant-numeric:tabular-nums}
+        .bar{width:160px;height:10px;background:#1f2937;border-radius:6px;overflow:hidden}
+        .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--bad),var(--warn),var(--mid),var(--ok))}
+        .tag{font-size:.7rem;padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08)}
+        .tag.ok{background:rgba(34,197,94,.12)} .tag.mid{background:rgba(132,204,22,.12)}
+        .tag.warn{background:rgba(245,158,11,.12)} .tag.bad{background:rgba(239,68,68,.12)}
+
+        .btn-sm{height:32px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:var(--text);text-decoration:none;display:inline-grid;place-items:center}
+        .btn-sm:hover{filter:brightness(1.1)}
 
         .error{color:#fda4af;font-size:.9rem}
         .loading{color:var(--muted);font-size:.9rem}
@@ -52,89 +76,170 @@
 </header>
 
 <main class="container">
+    <!-- Filtros livianos (búsqueda local en las listas) -->
+    <section class="card">
+        <div class="inputs">
+            <div class="input">
+                <label for="q">Buscar producto (código o nombre)</label>
+                <input id="q" type="search" placeholder="Ej: 78000… o 'Cerveza IPA'"/>
+            </div>
+            <span class="badge">Fórmula: <code>(precio_venta - costo) / precio_venta</code></span>
+            <span class="badge ok">≥ 40% Alto</span>
+            <span class="badge mid">20–39% Medio</span>
+            <span class="badge warn">1–19% Bajo</span>
+            <span class="badge bad">≤ 0% Negativo</span>
+        </div>
+    </section>
+
     <div class="grid">
+        <!-- Resumen con ring del promedio -->
         <section class="card col-4">
             <h2>Resumen</h2>
-            <div class="kpi" id="margen-prom">--%</div>
-            <div class="row">
-                <span class="badge" id="cnt-top">Top: --</span>
-                <span class="badge" id="cnt-low">Bajo: --</span>
+            <div class="row" style="gap:18px;align-items:center">
+                <div class="ring" id="ring" style="--p:0;--c:var(--ok)">
+                    <div class="val" id="prom">--%</div>
+                    <div class="lbl">Margen promedio</div>
+                </div>
+                <div>
+                    <div class="kpi-lg" id="promText">--%</div>
+                    <div class="muted">Clasificación: <b id="promClass">—</b></div>
+                    <div class="row" style="margin-top:6px">
+                        <span class="badge" id="cntTop">Top: --</span>
+                        <span class="badge" id="cntLow">Bajo: --</span>
+                    </div>
+                </div>
             </div>
-            <small class="muted">Margen: <code>(precio_venta - costo) / precio_venta</code></small>
-            <div class="error" id="err-sum" style="display:none"></div>
+            <div class="error" id="errSum" style="display:none"></div>
         </section>
 
+        <!-- Notas cortas -->
         <section class="card col-8">
-            <h2>Notas</h2>
-            <div class="muted">Valores en porcentaje. Puede haber márgenes negativos si el costo supera el precio de venta.</div>
+            <h2>Interpretación</h2>
+            <div class="muted">
+                El margen unitario mide la rentabilidad por producto. Puede ser negativo si el costo supera el precio de venta.
+                Revisa periódicamente costos de compra y precios para mantener la contribución positiva.
+            </div>
         </section>
 
+        <!-- Top margen -->
         <section class="card col-6">
             <h2>Top margen</h2>
-            <div id="list-top" class="rank">
+            <div id="listTop" class="rank">
                 <div class="loading">Cargando…</div>
             </div>
-            <div class="error" id="err-top" style="display:none"></div>
+            <div class="error" id="errTop" style="display:none"></div>
         </section>
 
+        <!-- Margen más bajo -->
         <section class="card col-6">
             <h2>Margen bajo</h2>
-            <div id="list-low" class="rank">
+            <div id="listLow" class="rank">
                 <div class="loading">Cargando…</div>
             </div>
-            <div class="error" id="err-low" style="display:none"></div>
+            <div class="error" id="errLow" style="display:none"></div>
+        </section>
+
+        <!-- Glosario rápido -->
+        <section class="card col-12">
+            <h2>Glosario</h2>
+            <div class="row">
+                <span class="tag ok">Alto (≥40%)</span>
+                <span class="tag mid">Medio (20–39%)</span>
+                <span class="tag warn">Bajo (1–19%)</span>
+                <span class="tag bad">Negativo (≤0%)</span>
+            </div>
         </section>
     </div>
 </main>
 
 <script>
-    const API = '/api/dashboard';
+    const API = '/api/dashboard/kpi10';
     const $ = s => document.querySelector(s);
 
-    async function fetchJSON(u){
-      const r = await fetch(u, {headers:{'Accept':'application/json'}});
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return r.json();
+    const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+
+    function colorClass(p){
+      if (p <= 0) return 'bad';
+      if (p < 20) return 'warn';
+      if (p < 40) return 'mid';
+      return 'ok';
+    }
+    function colorVar(p){
+      const c = colorClass(p);
+      if (c==='bad') return 'var(--bad)';
+      if (c==='warn') return 'var(--warn)';
+      if (c==='mid') return 'var(--mid)';
+      return 'var(--ok)';
     }
 
-    function toRow(x, maxAbs){
-      const pct = Number(x.margenPct || 0);
-      const width = Math.max(0, Math.min(100, Math.round(Math.abs(pct) / (maxAbs || 1) * 100)));
-      const nombre = (x.nombre || '-').replace(/"/g,'&quot;');
+    function rowTemplate(x, maxAbs){
+      const pct = Number(x.margenPct||0);
+      const w = clamp(Math.round(Math.abs(pct)/(maxAbs||1)*100),0,100);
+      const cls = colorClass(pct);
+      const nombre = (x.nombre||'-').replace(/"/g,'&quot;');
+      const codigo = (x.codigoBarras||'—');
       return `
-        <div class="rank-row">
-          <div class="row" style="gap:10px;align-items:center;width:100%">
-            <div class="rank-name" title="${nombre}">${nombre}</div>
-            <div class="bar" style="flex:1"><i style="width:${width}%"></i></div>
+        <div class="rank-row" data-key="${codigo.toLowerCase()} ${nombre.toLowerCase()}">
+          <div class="rank-name">
+            <div class="rank-title" title="${nombre}">${nombre}</div>
+            <div class="rank-sub">Cod: <span>${codigo}</span></div>
           </div>
-          <div class="muted" style="text-align:right">${pct.toFixed(1)}%</div>
+          <div class="bar" title="${pct.toFixed(1)}%">
+            <i style="width:${w}%;"></i>
+          </div>
+          <div class="row" style="gap:8px">
+            <span class="badge ${cls} pct">${pct.toFixed(1)}%</span>
+            <a class="btn-sm" href="/detalles_productos?codigo=${encodeURIComponent(codigo)}">Ver</a>
+          </div>
         </div>
       `;
     }
 
+    function filterLists(q){
+      const needle = q.trim().toLowerCase();
+      for (const el of document.querySelectorAll('.rank-row')){
+        const k = el.getAttribute('data-key')||'';
+        el.style.display = needle && !k.includes(needle) ? 'none' : '';
+      }
+    }
+
     (async function load(){
       try{
-        const d = await fetchJSON(`${API}/kpi10`);
-        const prom = Number(d.margenPromedioPct || 0);
-        $('#margen-prom').textContent = prom.toFixed(1) + '%';
+        const r = await fetch(API, {headers:{'Accept':'application/json'}});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
 
-        const top = Array.isArray(d.top) ? d.top : [];
-        const low = Array.isArray(d.low) ? d.low : [];
+        const prom = Number(d.margenPromedioPct||0);
+        $('#prom').textContent = prom.toFixed(1)+'%';
+        $('#promText').textContent = prom.toFixed(1)+'%';
+        $('#promClass').textContent =
+          (prom<=0?'Negativo':prom<20?'Bajo':prom<40?'Medio':'Alto');
 
-        $('#cnt-top').textContent = `Top: ${top.length}`;
-        $('#cnt-low').textContent = `Bajo: ${low.length}`;
+        // Ring promedio
+        const p = clamp(prom, 0, 100);
+        const ring = $('#ring');
+        ring.style.setProperty('--p', p.toFixed(2));
+        ring.style.setProperty('--c', colorVar(prom));
 
-        const maxTop = Math.max(...top.map(i => Math.abs(i.margenPct||0)), 1);
-        const maxLow = Math.max(...low.map(i => Math.abs(i.margenPct||0)), 1);
+        const top = Array.isArray(d.top)?d.top:[];
+        const low = Array.isArray(d.low)?d.low:[];
+        $('#cntTop').textContent = 'Top: '+top.length;
+        $('#cntLow').textContent = 'Bajo: '+low.length;
 
-        $('#list-top').innerHTML = top.length ? top.map(i => toRow(i,maxTop)).join('') : '<div class="muted">—</div>';
-        $('#list-low').innerHTML = low.length ? low.map(i => toRow(i,maxLow)).join('') : '<div class="muted">—</div>';
+        const maxTop = Math.max(...top.map(i=>Math.abs(i.margenPct||0)), 1);
+        const maxLow = Math.max(...low.map(i=>Math.abs(i.margenPct||0)), 1);
+
+        $('#listTop').innerHTML = top.length ? top.map(i=>rowTemplate(i,maxTop)).join('') : '<div class="muted">—</div>';
+        $('#listLow').innerHTML = low.length ? low.map(i=>rowTemplate(i,maxLow)).join('') : '<div class="muted">—</div>';
+
+        // Búsqueda local
+        $('#q').addEventListener('input', (e)=>filterLists(e.target.value));
       }catch(e){
         console.error(e);
-        $('#err-sum').style.display='block'; $('#err-sum').textContent='No se pudo cargar.';
-        $('#err-top').style.display='block'; $('#err-top').textContent='No se pudo cargar.';
-        $('#err-low').style.display='block'; $('#err-low').textContent='No se pudo cargar.';
-        $('#list-top').innerHTML=''; $('#list-low').innerHTML='';
+        $('#errSum').style.display='block'; $('#errSum').textContent='No se pudo cargar.';
+        $('#errTop').style.display='block'; $('#errTop').textContent='No se pudo cargar.';
+        $('#errLow').style.display='block'; $('#errLow').textContent='No se pudo cargar.';
+        $('#listTop').innerHTML=''; $('#listLow').innerHTML='';
       }
     })();
 </script>

@@ -4,75 +4,338 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>Stock Obsoleto (>60 días sin venta)</title>
+    <title>Dashboard · Stock Obsoleto</title>
     <style>
-        :root{--bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--line:#1f2937}
-        *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+        :root{
+          --bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--line:#1f2937;
+          --btn:#e5e7eb;--btnText:#0b1020;--accent:#60a5fa;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;
+        }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
         header{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:rgba(15,23,42,.85);backdrop-filter:blur(8px)}
-        .wrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
-        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:#0b1020;background:#e5e7eb;font-weight:700}
+        .wrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);text-decoration:none;color:var(--btnText);background:var(--btn);font-weight:800}
         .container{max-width:1200px;margin:0 auto;padding:20px}
         .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
         .col-4{grid-column:span 4}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
         @media(max-width:1100px){.col-4,.col-8{grid-column:span 12}}
         .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:12px}
         .card h2{margin:0;font-size:1rem;color:var(--muted);font-weight:800}
-        .kpi{font-size:1.8rem;font-weight:900}
         .muted{color:var(--muted)}
         .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+        .inputs{display:flex;gap:10px;flex-wrap:wrap}
+        .input{display:flex;flex-direction:column;gap:6px}
+        .input label{font-size:.85rem;color:var(--muted)}
+        .input input{height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:var(--text);padding:0 10px;min-width:160px}
+        .btn-sm{height:38px}
+
+        /* KPI + Donut */
+        .kpi{font-size:1.75rem;font-weight:900}
+        .donut{--p:0;width:140px;height:140px;border-radius:50%;
+               background:conic-gradient(var(--bad) calc(var(--p)*1%), #273244 0);
+               position:relative;display:grid;place-items:center}
+        .donut::after{content:"";position:absolute;inset:14px;background:var(--card);border-radius:50%}
+        .donut .val{position:relative;font-weight:900;z-index:1}
+
+        /* Tabla */
+        table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,.07)}
+        thead th{font-size:.85rem;color:var(--muted);text-align:left;background:#0c1220;padding:10px;border-bottom:1px solid rgba(255,255,255,.07)}
+        tbody td{padding:12px;border-bottom:1px solid rgba(255,255,255,.06)}
+        tbody tr:hover{background:#0b1325}
+        .t-actions a{white-space:nowrap}
+        .empty{padding:18px;text-align:center;color:var(--muted)}
+
+        /* Paginación tipo “cuadros” con saltos de 10 */
+        .pager{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
+        .pnum,.pch{min-width:36px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;cursor:pointer;font-weight:800}
+        .pnum.active{background:var(--btn);color:var(--btnText)}
+        .pnum[disabled],.pch[disabled]{opacity:.5;cursor:not-allowed}
+
+        /* Barras categorías */
         .bar{height:10px;background:#1f2937;border-radius:6px;overflow:hidden}
         .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#34d399)}
-        .error{color:#fda4af;font-size:.9rem}
+
+        .error{color:#fda4af}
     </style>
 </head>
 <body>
-<header><div class="wrap"><h1>Dashboard · Stock Obsoleto (%)</h1><a class="btn" href="/index.html">Volver</a></div></header>
+<header>
+    <div class="wrap">
+        <h1 style="margin:0;font-size:1.1rem">Dashboard · Stock Obsoleto</h1>
+        <a class="btn" href="/index.html">Volver</a>
+    </div>
+</header>
 
 <main class="container">
+    <!-- Filtros -->
+    <section class="card">
+        <div class="inputs">
+            <div class="input">
+                <label for="f-umbral">Días sin venta (umbral)</label>
+                <input id="f-umbral" type="number" min="1" value="60"/>
+            </div>
+            <div class="input" style="flex:1;min-width:240px">
+                <label for="f-q">Buscar (código o nombre)</label>
+                <input id="f-q" type="search" placeholder="Ej: 7800000… o 'Cerveza'"/>
+            </div>
+            <div class="input" style="align-self:flex-end">
+                <button id="btn-aplicar" class="btn btn-sm">Aplicar</button>
+            </div>
+            <div class="input" style="align-self:flex-end">
+                <button id="btn-limpiar" class="btn btn-sm" style="background:#0b1220;color:var(--text)">Limpiar</button>
+            </div>
+            <div class="input" style="align-self:flex-end">
+                <span class="muted">Por página: <b>5</b></span>
+            </div>
+        </div>
+        <small class="muted">APIs: <code>/api/dashboard/kpi6?dias=60</code> y <code>/api/dashboard/kpi6/detalle?dias=60&q=...&page=1&size=5</code></small>
+    </section>
+
     <div class="grid">
+        <!-- Resumen + Donut -->
         <section class="card col-4">
             <h2>Resumen</h2>
-            <div class="kpi" id="pct">--%</div>
-            <div class="muted"><b id="obs">--</b> obsoletos / <b id="tot">--</b> productos</div>
-            <small class="muted">Criterio: sin venta &gt; 60 días</small>
-            <div class="error" id="err" style="display:none"></div>
+            <div class="row" style="gap:18px;align-items:center">
+                <div class="donut" id="donut" style="--p:0">
+                    <div class="val" id="donut-val">--%</div>
+                </div>
+                <div>
+                    <div class="kpi" id="kpi-pct">--%</div>
+                    <div class="muted"><b id="kpi-obs">--</b> obsoletos / <b id="kpi-tot">--</b> productos</div>
+                    <small class="muted">Fórmula: obsoletos / total × 100</small>
+                </div>
+            </div>
+            <div id="kpi-err" class="error" style="display:none"></div>
         </section>
 
+        <!-- Concentración por categoría -->
         <section class="card col-8">
             <h2>Concentración por categoría</h2>
             <div id="cats"><span class="muted">Cargando…</span></div>
         </section>
 
+        <!-- Listado + paginación “cuadros” -->
         <section class="card col-12">
-            <h2>Notas</h2>
-            <div class="muted">Usa <code>/api/dashboard/kpi6</code> → { obsoletos, total, porcentaje, categorias:[{nombre,pct}] }.</div>
+            <h2>Productos obsoletos</h2>
+            <div id="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th style="width:220px">Código de barras</th>
+                        <th>Nombre</th>
+                        <th style="width:160px">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tbody">
+                    <tr><td class="empty" colspan="3">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación en “cuadros” con saltos de 10 -->
+            <div id="pager" class="pager" style="margin-top:10px"></div>
+
+            <small class="muted">Tip: usa la búsqueda para filtrar por parte del nombre o el código.</small>
+            <div id="tbl-err" class="error" style="display:none"></div>
         </section>
     </div>
 </main>
 
 <script>
-    const $=s=>document.querySelector(s);
-    async function load(){
-      try{
-        const r=await fetch('/api/dashboard/kpi6',{headers:{'Accept':'application/json'}});
-        if(!r.ok) throw 0;
-        const d=await r.json();
-        const obs=d.obsoletos??0, tot=d.total??0, p=(typeof d.porcentaje==='number')?d.porcentaje:(tot>0?(obs/tot*100):0);
-        $('#pct').textContent=p.toFixed(1)+'%'; $('#obs').textContent=obs; $('#tot').textContent=tot;
+    const $ = s => document.querySelector(s);
 
-        const cats=Array.isArray(d.categorias)?d.categorias:[];
-        if(!cats.length){ $('#cats').innerHTML='<span class="muted">Sin concentración por categoría.</span>'; return; }
-        const max=Math.max(...cats.map(c=>c.pct||0),1);
-        $('#cats').innerHTML = cats.map(c=>`
-          <div class="row" style="justify-content:space-between"><span>${c.nombre||'-'}</span><span class="muted">${(c.pct||0).toFixed(0)}%</span></div>
-          <div class="bar"><i style="width:${(((c.pct||0)/max)*100).toFixed(0)}%"></i></div>
-        `).join('');
-      }catch(e){
-        const er=$('#err'); er.style.display='block'; er.textContent='No se pudo cargar.';
-        $('#cats').innerHTML='';
+    const state = {
+      dias: 60,
+      q: "",
+      page: 1,
+      size: 5,
+      totalPages: 1,
+      totalItems: 0,
+      chunkSize: 10   // << páginas por “bloque”
+    };
+
+    /* ========== Resumen (con donut) ========== */
+    async function loadResumen() {
+      try {
+        $('#kpi-err').style.display = 'none';
+        const r = await fetch(`/api/dashboard/kpi6?dias=${state.dias}`, {headers:{'Accept':'application/json'}});
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+
+        const obs = d.obsoletos ?? 0;
+        const tot = d.total ?? 0;
+        const pct = (typeof d.porcentaje === 'number') ? d.porcentaje : (tot > 0 ? (obs/tot*100) : 0);
+
+        $('#kpi-obs').textContent = obs;
+        $('#kpi-tot').textContent = tot;
+        const pctFmt = (Math.round(pct*10)/10).toFixed(1) + '%';
+        $('#kpi-pct').textContent = pctFmt;
+
+        // Donut
+        const p = Math.max(0, Math.min(100, pct));
+        $('#donut').style.setProperty('--p', p);
+        $('#donut-val').textContent = Math.round(p) + '%';
+
+        // Categorías
+        const cats = Array.isArray(d.categorias) ? d.categorias : [];
+        if (!cats.length) {
+          $('#cats').innerHTML = '<span class="muted">Sin concentración por categoría.</span>';
+        } else {
+          const max = Math.max(...cats.map(c=>c.pct||0), 1);
+          $('#cats').innerHTML = cats.map(c => `
+            <div class="row" style="justify-content:space-between">
+              <span>${c.nombre || '-'}</span>
+              <span class="muted">${(c.pct||0).toFixed(0)}%</span>
+            </div>
+            <div class="bar"><i style="width:${(((c.pct||0)/max)*100).toFixed(0)}%"></i></div>
+          `).join('');
+        }
+      } catch (e) {
+        console.error(e);
+        const er = $('#kpi-err');
+        er.style.display = 'block';
+        er.textContent = 'No se pudo cargar.';
       }
     }
-    load();
+
+    /* ========== Detalle + paginación AJAX ========== */
+    async function loadDetalle() {
+      try {
+        $('#tbl-err').style.display = 'none';
+        const tbody = $('#tbody');
+        tbody.innerHTML = `<tr><td class="empty" colspan="3">Cargando…</td></tr>`;
+
+        const url = new URL('/api/dashboard/kpi6/detalle', window.location.origin);
+        url.searchParams.set('dias', state.dias);
+        url.searchParams.set('q', state.q);
+        url.searchParams.set('page', state.page);
+        url.searchParams.set('size', state.size);
+
+        const r = await fetch(url, {headers:{'Accept':'application/json'}});
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+
+        const items = Array.isArray(d.items) ? d.items : [];
+        state.page = Number(d.page || 1);
+        state.totalPages = Number(d.totalPages || 1);
+        state.totalItems = Number(d.total || items.length);
+
+        if (!items.length) {
+          tbody.innerHTML = `<tr><td class="empty" colspan="3">Sin resultados.</td></tr>`;
+        } else {
+          tbody.innerHTML = items.map(it => {
+            const codigo = (it.codigoBarras ?? '').toString();
+            const nombre = (it.nombre ?? '').toString();
+            const href = `/detalles_productos/${encodeURIComponent(codigo)}`; // ruta solicitada
+            return `
+              <tr>
+                <td><code>${codigo || '—'}</code></td>
+                <td>${nombre || '—'}</td>
+                <td class="t-actions">
+                  <a class="btn btn-sm" href="${href}" title="Ver detalles">Ver producto</a>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+        renderPagerChunked();
+      } catch (e) {
+        console.error(e);
+        const er = $('#tbl-err');
+        er.style.display = 'block';
+        er.textContent = 'No se pudo cargar.';
+        $('#tbody').innerHTML = `<tr><td class="empty" colspan="3">—</td></tr>`;
+        state.totalPages = 1;
+        renderPagerChunked();
+      }
+    }
+
+    /* ========== Paginación “cuadros” con saltos de 10 ========== */
+    function renderPagerChunked() {
+      const wrap = $('#pager');
+      const total = Math.max(1, state.totalPages);
+      const page  = Math.min(Math.max(1, state.page), total);
+      const chunk = state.chunkSize;
+
+      const chunkStart = Math.floor((page-1) / chunk) * chunk + 1;
+      const chunkEnd   = Math.min(chunkStart + chunk - 1, total);
+
+      const parts = [];
+
+      // Botón “<” para ir al bloque anterior si existe
+      if (chunkStart > 1) {
+        parts.push(`<button class="pch" data-ch="prev">&lsaquo;</button>`);
+      }
+
+      // Números del bloque actual
+      for (let i = chunkStart; i <= chunkEnd; i++) {
+        parts.push(`<button class="pnum${i===page?' active':''}" data-page="${i}">${i}</button>`);
+      }
+
+      // Botón “>” para ir al siguiente bloque si hay más de 10 páginas
+      if (chunkEnd < total) {
+        parts.push(`<button class="pch" data-ch="next">&rsaquo;</button>`);
+      }
+
+      wrap.innerHTML = parts.join('');
+
+      // Delegación de eventos
+      wrap.querySelectorAll('.pnum').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const p = Number(b.getAttribute('data-page'));
+          if (p && p !== state.page) {
+            state.page = p;
+            loadDetalle();
+          }
+        });
+      });
+      wrap.querySelectorAll('.pch').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const dir = b.getAttribute('data-ch');
+          if (dir === 'prev') {
+            const newStart = Math.max(1, chunkStart - chunk);
+            state.page = newStart; // salta al primero del bloque anterior
+          } else if (dir === 'next') {
+            const newStart = chunkEnd + 1;
+            state.page = newStart; // salta al primero del siguiente bloque
+          }
+          loadDetalle();
+        });
+      });
+    }
+
+    /* ========== Eventos filtros ========== */
+    $('#btn-aplicar').addEventListener('click', () => {
+      state.dias = Math.max(1, parseInt($('#f-umbral').value || '60', 10));
+      state.q = ($('#f-q').value || '').trim();
+      state.page = 1;
+      loadResumen();
+      loadDetalle();
+    });
+
+    $('#btn-limpiar').addEventListener('click', () => {
+      $('#f-umbral').value = 60;
+      $('#f-q').value = '';
+      state.dias = 60;
+      state.q = '';
+      state.page = 1;
+      loadResumen();
+      loadDetalle();
+    });
+
+    $('#f-q').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        $('#btn-aplicar').click();
+      }
+    });
+
+    /* ========== Init ========== */
+    (function init(){
+      $('#f-umbral').value = state.dias;
+      loadResumen();
+      loadDetalle();
+    })();
 </script>
 </body>
 </html>
