@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,9 +83,9 @@ public class DashboardApiController {
         return service.obtenerConsumoSemanal(semanasHist);
     }
 
-    /* ============================================
+    /* =========================================
        BAJA ROTACIÓN — para baja-rotacion.html
-       ============================================ */
+       ========================================= */
     @GetMapping(value = "/baja-rotacion", produces = "application/json")
     public Map<String, Object> bajaRotacion(
             @RequestParam(name = "umbral", defaultValue = "5") Integer umbral,
@@ -151,9 +153,71 @@ public class DashboardApiController {
             @RequestParam(name = "top", defaultValue = "10") Integer top,
             @RequestParam(name = "low", defaultValue = "10") Integer low
     ) {
-        // ⬅⬅⬅ Arregla el error “Expected 2 arguments but found 0”
-        // pasando los 2 parámetros que espera DashboardService.kpiRentabilidad(top, low)
         return service.kpiRentabilidad(top, low);
+    }
+
+    /* =========================================
+       KPI 5 — Baja Rotación (tarjeta breve)
+       Esperado: { umbral, total, muestra: [{nombre, ventasMensuales}] }
+       ========================================= */
+    @GetMapping(value = "/kpi5", produces = "application/json")
+    public Map<String, Object> kpi5(
+            @RequestParam(name = "umbral", defaultValue = "5") Integer umbral,
+            @RequestParam(name = "categoria", required = false) String categoria
+    ) {
+        Map<String, Object> full = service.bajaRotacion(umbral, null, null, categoria, 1, 5);
+
+        long total = 0L;
+        Object totalObj = full.get("total");
+        if (totalObj instanceof Number n) total = n.longValue();
+
+        // productos es List<Map<String,Object>> en nuestro servicio;
+        // lo tratamos de forma segura para evitar problemas de generics.
+        List<Map<String, Object>> muestra = new ArrayList<>();
+        Object prods = full.get("productos");
+        if (prods instanceof List<?> list) {
+            for (Object it : list) {
+                if (it instanceof Map<?, ?> m) {
+                    Object nom = m.get("nombre");
+                    Object vm  = m.get("ventasMensuales");
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("nombre", nom != null ? nom : "-");
+                    row.put("ventasMensuales", vm != null ? vm : 0);
+                    muestra.add(row);
+                }
+            }
+        }
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("umbral", umbral);
+        out.put("total", total);
+        out.put("muestra", muestra);
+        return out;
+    }
+
+    /* =========================================
+       KPI 9 — Alertas de stock (tarjeta breve)
+       Esperado: { activas, ultimas: [{producto, nivel, estado}] }
+       ========================================= */
+    @GetMapping(value = "/kpi9", produces = "application/json")
+    public Map<String, Object> kpi9() {
+        List<ProductoSinStockDto> sinStock = service.obtenerProductosSinStock();
+        int activas = sinStock.size();
+
+        List<Map<String, Object>> ultimas = new ArrayList<>();
+        for (int i = 0; i < Math.min(5, sinStock.size()); i++) {
+            ProductoSinStockDto p = sinStock.get(i);
+            Map<String, Object> x = new LinkedHashMap<>();
+            x.put("producto", getNombreSafe(p)); // evita acceso a campo privado
+            x.put("nivel", "sin_stock");
+            x.put("estado", "critico");
+            ultimas.add(x);
+        }
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("activas", activas);
+        out.put("ultimas", ultimas);
+        return out;
     }
 
     /* =======================
@@ -168,5 +232,18 @@ public class DashboardApiController {
         try { return LocalDate.parse(s, DateTimeFormatter.ofPattern("dd-MM-yyyy")); }
         catch (DateTimeParseException ignored) {}
         return null;
+    }
+
+    /** Intenta POJO (getNombre) y record (nombre) para obtener el nombre sin romper la compilación. */
+    private static String getNombreSafe(ProductoSinStockDto p) {
+        try {
+            return (String) p.getClass().getMethod("getNombre").invoke(p);
+        } catch (Exception ignore) {
+            try {
+                return (String) p.getClass().getMethod("nombre").invoke(p);
+            } catch (Exception ignore2) {
+                return "-";
+            }
+        }
     }
 }

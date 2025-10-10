@@ -181,18 +181,25 @@ public interface DashboardRepository extends Repository<Producto, Long> {
     """, nativeQuery = true)
     List<Object[]> rentabilidadBasica();
 
-    /* Alias compatibilidad: lista solo con precio (sin costo) */
+    /* ===== Alias compat: SOLO PRECIO (para servicio.kpiRentabilidad cuando no hay costo) =====
+       Orden de columnas requerido por el servicio:
+         [0]=codigo_barras, [1]=nombre, [2]=categoria, [3]=precio_venta
+     */
     @Query(value = """
         SELECT
           p.codigo_barras,
           p.nombre,
+          COALESCE(NULLIF(TRIM(p.categoria), ''), 'GENERAL') AS categoria,
           COALESCE(p.precio, 0) AS precio_venta
         FROM productos p
         WHERE p.activo = 1
         """, nativeQuery = true)
     List<Object[]> productosSoloPrecio();
 
-    /* Alias compatibilidad: precio + costo (idéntico a rentabilidadBasica) */
+    /* ===== Alias compat: PRECIO + COSTO (mismo orden esperado por el servicio)
+       Orden de columnas:
+         [0]=codigo_barras, [1]=nombre, [2]=categoria, [3]=precio_venta, [4]=costo_unitario
+     */
     @Query(value = """
     WITH ult AS (
       SELECT
@@ -209,6 +216,7 @@ public interface DashboardRepository extends Repository<Producto, Long> {
     SELECT
       p.codigo_barras,
       p.nombre,
+      COALESCE(NULLIF(TRIM(p.categoria), ''), 'GENERAL') AS categoria,
       COALESCE(p.precio, 0)         AS precio_venta,
       COALESCE(u.costo_unitario, 0) AS costo_unitario
     FROM productos p

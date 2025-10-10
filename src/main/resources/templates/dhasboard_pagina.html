@@ -101,6 +101,7 @@
             <a class="btn btn-primary" href="/dashboard/top-vendidos">Revisar</a>
             <small class="muted">Ranking por unidades vendidas</small>
         </section>
+
         <!-- === KPI 1: Rotación de Inventario (mensual) === -->
         <section class="card col-3" id="card-kpi1">
             <h2>KPI 1 · Rotación de Inventario (mensual)</h2>
@@ -210,10 +211,128 @@
 </main>
 
 <script>
-    // =============================
-    // KPI 1 — Rotación de inventario (mensual)
-    // Esperado: { ventasNetas, inventarioPromedio, rotacion, mesActual, mesPrevio, rotacionPrev }
-    // =============================
+    /* ==== Utilidades (definir ANTES de usarlas) ==== */
+    const API = '/api/dashboard';
+    const $   = (sel) => document.querySelector(sel);
+    const fmtCLP = v => (v ?? 0).toLocaleString('es-CL', { style:'currency', currency:'CLP', maximumFractionDigits:0 });
+    async function fetchJSON(url){
+      const r = await fetch(url, { headers:{ 'Accept':'application/json' }});
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+
+    /* =============================
+       KPI 3 — Rupturas de stock
+       ============================= */
+    (async function loadKpi3() {
+      try {
+        const d = await fetchJSON(`${API}/kpi3`);
+        const activos    = d.activos ?? d.totalActivos ?? 0;
+        const sin        = d.sinStock ?? d.sin ?? 0;
+        const porcentaje = (typeof d.porcentaje === 'number')
+          ? d.porcentaje
+          : (activos > 0 ? (sin / activos * 100) : 0);
+
+        $('#kpi3-val').textContent = porcentaje.toFixed(1) + '%';
+        $('#kpi3-sin').textContent = sin;
+        $('#kpi3-act').textContent = activos;
+
+        const g = $('#gauge-kpi3');
+        g.style.setProperty('--p', porcentaje.toFixed(2));
+        g.classList.remove('ok','warn','bad');
+        const state = porcentaje >= 15 ? 'Crítico' : porcentaje >= 5 ? 'Atención' : 'Saludable';
+        $('#kpi3-state').textContent = state;
+        g.classList.add(porcentaje >= 15 ? 'bad' : porcentaje >= 5 ? 'warn' : 'ok');
+        $('#gauge-val').textContent = Math.round(porcentaje) + '%';
+      } catch (err) {
+        console.error('KPI3 error', err);
+        const e = $('#kpi3-err');
+        if (e) { e.style.display = 'block'; e.textContent = 'Error al cargar KPI 3.'; }
+        $('#kpi3-state').textContent = '—';
+      }
+    })();
+
+    /* =============================
+       KPI 4 — Valor Inventario (CLP)
+       ============================= */
+    (async function loadKpi4() {
+      try {
+        const d = await fetchJSON(`${API}/kpi4`);
+        const total = (typeof d.totalValor === 'number')
+          ? d.totalValor
+          : (typeof d.totalValorCLP === 'number' ? d.totalValorCLP : 0);
+
+        $('#kpi4-total').textContent = fmtCLP(total);
+
+        const catsRaw = Array.isArray(d.categorias) ? d.categorias : [];
+        const cats = catsRaw.map(c => ({
+          nombre: c.categoria || 'Sin categoría',
+          valor:  (typeof c.valor === 'number') ? c.valor : (typeof c.valorCLP === 'number' ? c.valorCLP : 0)
+        }));
+
+        const wrap = $('#kpi4-cats');
+        if (cats.length === 0 || total <= 0) {
+          wrap.innerHTML = '<div class="muted">Sin categorías con valor.</div>';
+          return;
+        }
+
+        const top = cats.slice().sort((a,b) => b.valor - a.valor).slice(0, 3);
+        const rows = top.map(c => ({ nombre: c.nombre, pct: Math.max(0, Math.round(c.valor * 100 / total)) }));
+        const maxPct = Math.max(...rows.map(x => x.pct), 1);
+
+        wrap.innerHTML = rows.map(({nombre, pct}) => `
+          <div style="width:100%">
+            <div class="row" style="justify-content:space-between">
+              <span>${nombre}</span>
+              <span class="muted">${pct}%</span>
+            </div>
+            <div class="bar"><i style="width:${(pct / maxPct * 100).toFixed(0)}%"></i></div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('KPI4 error', err);
+        const e = $('#kpi4-err');
+        if (e) { e.style.display = 'block'; e.textContent = 'Error al cargar KPI 4.'; }
+        $('#kpi4-cats').innerHTML = '';
+      }
+    })();
+
+    /* =============================
+       KPI 7 — Top 5 más vendidos
+       ============================= */
+    (async function loadKpi7() {
+      try {
+        const arr = await fetchJSON(`${API}/kpi7`);
+        const el  = $('#kpi7-rank');
+
+        if (!Array.isArray(arr) || arr.length === 0) {
+          el.innerHTML = '<div class="muted">Sin datos en el período.</div>';
+          return;
+        }
+        const max = Math.max(...arr.map(x => x.unidades || 0), 1);
+
+        el.innerHTML = arr.map(x => `
+          <div class="rank-row">
+            <div class="row" style="gap:10px;align-items:center;width:100%">
+              <div class="rank-name" title="${(x.nombre || '').replace(/"/g,'&quot;')}">${x.nombre || '-'}</div>
+              <div class="bar" style="flex:1">
+                <i style="width:${((x.unidades || 0) / max * 100).toFixed(0)}%"></i>
+              </div>
+            </div>
+            <div class="muted" style="text-align:right">${x.unidades || 0}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('KPI7 error', err);
+        const e = $('#kpi7-err');
+        if (e) { e.style.display = 'block'; e.textContent = 'Error al cargar KPI 7.'; }
+        $('#kpi7-rank').innerHTML = '';
+      }
+    })();
+
+    /* =============================
+       KPI 1 — Rotación mensual
+       ============================= */
     (async function loadKpi1(){
       try{
         const d = await fetchJSON(`${API}/kpi1`);
@@ -239,11 +358,9 @@
       }
     })();
 
-    // =============================
-    // KPI 2 — Stock de seguridad (%)
-    // Esperado: { stockActual, stockMinimo, porcentaje }
-    // Estado: Bueno si >=100%, Atención si 80-99%, Crítico <80%
-    // =============================
+    /* =============================
+       KPI 2 — Stock de seguridad (%)
+       ============================= */
     (async function loadKpi2(){
       try{
         const d = await fetchJSON(`${API}/kpi2`);
@@ -272,16 +389,16 @@
       }
     })();
 
-    // =============================
-    // KPI 5 — Baja rotación
-    // Esperado: { umbral, total, muestra: [{nombre, ventasMensuales}] }
-    // =============================
+    /* =============================
+       KPI 5 — Baja rotación (usa /baja-rotacion)
+       ============================= */
     (async function loadKpi5(){
       try{
-        const d = await fetchJSON(`${API}/kpi5`);
+        // Tomamos sólo una muestra chica para la tarjeta
+        const d = await fetchJSON(`${API}/baja-rotacion?size=5`);
         const umbral = d.umbral ?? 5;
         const total  = d.total ?? 0;
-        const arr    = Array.isArray(d.muestra)? d.muestra : [];
+        const arr    = Array.isArray(d.productos)? d.productos : [];
 
         $('#kpi5-x').textContent = umbral;
         $('#kpi5-cant').textContent = total;
@@ -290,7 +407,7 @@
         if (arr.length===0){ el.innerHTML = '<div class="muted">Sin ítems bajo el umbral.</div>'; return; }
 
         const max = Math.max(...arr.map(x => x.ventasMensuales||0), 1);
-        el.innerHTML = arr.slice(0,5).map(x => `
+        el.innerHTML = arr.map(x => `
           <div class="rank-row">
             <div class="row" style="gap:10px;align-items:center;width:100%">
               <div class="rank-name" title="${(x.nombre||'-').replace(/"/g,'&quot;')}">${x.nombre||'-'}</div>
@@ -306,10 +423,9 @@
       }
     })();
 
-    // =============================
-    // KPI 6 — % Stock obsoleto (>60d sin venta)
-    // Esperado: { obsoletos, total, porcentaje, categorias: [{nombre, pct}] }
-    // =============================
+    /* =============================
+       KPI 6 — % Stock obsoleto (>60d sin venta)
+       ============================= */
     (async function loadKpi6(){
       try{
         const d = await fetchJSON(`${API}/kpi6`);
@@ -344,31 +460,28 @@
       }
     })();
 
-    // =============================
-    // KPI 9 — Alertas de stock
-    // Esperado: { activas, ultimas: [{producto, nivel, estado}] }
-    // estado puede ser 'minimo','critico','recuperado'
-    // =============================
+    /* =============================
+       KPI 9 — Alertas de stock
+       (Derivado de /kpi3/detalle como demo)
+       ============================= */
     (async function loadKpi9(){
       try{
-        const d = await fetchJSON(`${API}/kpi9`);
-        const act = d.activas ?? 0;
-        const arr = Array.isArray(d.ultimas)? d.ultimas : [];
-
-        $('#kpi9-act').textContent = act;
+        // Reutilizamos productos sin stock como "alertas"
+        const arr = await fetchJSON(`${API}/kpi3/detalle`);
+        const items = Array.isArray(arr) ? arr : [];
+        $('#kpi9-act').textContent = items.length;
 
         const el = $('#kpi9-list');
-        if (arr.length===0){ el.innerHTML = '<div class="muted">Sin señales recientes.</div>'; return; }
+        if (items.length===0){ el.innerHTML = '<div class="muted">Sin señales recientes.</div>'; return; }
 
-        el.innerHTML = arr.slice(0,5).map(x=>{
-          const estado = (x.estado||'').toLowerCase();
-          const chip = estado==='recuperado' ? 'badge' : (estado==='critico' ? 'badge' : 'badge');
-          const estadoTxt = estado==='critico'?'Crítico':estado==='minimo'?'Mínimo':'Recuperado';
+        el.innerHTML = items.slice(0,5).map(x=>{
+          const nombre = (x.nombre || '-').replace(/"/g,'&quot;');
+          const estadoTxt = 'Mínimo';
           return `
             <div class="rank-row">
-              <div class="rank-name" title="${(x.producto||'-').replace(/"/g,'&quot;')}">${x.producto||'-'}</div>
+              <div class="rank-name" title="${nombre}">${nombre}</div>
               <div style="text-align:right">
-                <span class="${chip}">${estadoTxt}</span>
+                <span class="badge">${estadoTxt}</span>
               </div>
             </div>
           `;
@@ -380,10 +493,9 @@
       }
     })();
 
-    // =============================
-    // KPI 10 — Rentabilidad (margen)
-    // Esperado: { margenPromedioPct, top: [{nombre, margenPct}], low: [{nombre, margenPct}] }
-    // =============================
+    /* =============================
+       KPI 10 — Rentabilidad (margen)
+       ============================= */
     (async function loadKpi10(){
       try{
         const d = await fetchJSON(`${API}/kpi10`);
@@ -414,154 +526,10 @@
         $('#kpi10-top').innerHTML=''; $('#kpi10-low').innerHTML='';
       }
     })();
-</script>
 
-<script>
-    // =============================
-    // Utilidades
-    // =============================
-    const API   = '/api/dashboard';
-    const $     = (sel) => document.querySelector(sel);
-    const fmtCLP = v => (v ?? 0).toLocaleString('es-CL', {
-      style: 'currency', currency: 'CLP', maximumFractionDigits: 0
-    });
-
-    async function fetchJSON(url) {
-      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }
-
-    // =============================
-    // KPI 3 — Rupturas de stock
-    // =============================
-    (async function loadKpi3() {
-      try {
-        const d = await fetchJSON(`${API}/kpi3`);
-        const activos    = d.activos ?? d.totalActivos ?? 0;
-        const sin        = d.sinStock ?? d.sin ?? 0;
-        const porcentaje = (typeof d.porcentaje === 'number')
-          ? d.porcentaje
-          : (activos > 0 ? (sin / activos * 100) : 0);
-
-        $('#kpi3-val').textContent = porcentaje.toFixed(1) + '%';
-        $('#kpi3-sin').textContent = sin;
-        $('#kpi3-act').textContent = activos;
-
-        const g = $('#gauge-kpi3');
-        g.style.setProperty('--p', porcentaje.toFixed(2));
-        g.classList.remove('ok','warn','bad');
-        const state = porcentaje >= 15 ? 'Crítico' : porcentaje >= 5 ? 'Atención' : 'Saludable';
-        $('#kpi3-state').textContent = state;
-        g.classList.add(porcentaje >= 15 ? 'bad' : porcentaje >= 5 ? 'warn' : 'ok');
-        $('#gauge-val').textContent = Math.round(porcentaje) + '%';
-      } catch (err) {
-        console.error('KPI3 error', err);
-        const e = $('#kpi3-err');
-        if (e) {
-          e.style.display = 'block';
-          e.textContent = 'Error al cargar KPI 3.';
-        }
-        $('#kpi3-state').textContent = '—';
-      }
-    })();
-
-    // =============================
-    // KPI 4 — Valor Inventario (CLP)
-    // Acepta DTO con { totalValorCLP, categorias[].valorCLP }
-    // o la variante { totalValor, categorias[].valor }
-    // =============================
-    (async function loadKpi4() {
-      try {
-        const d = await fetchJSON(`${API}/kpi4`);
-
-        // Normalización de nombres
-        const total = (typeof d.totalValor === 'number')
-          ? d.totalValor
-          : (typeof d.totalValorCLP === 'number' ? d.totalValorCLP : 0);
-
-        $('#kpi4-total').textContent = fmtCLP(total);
-
-        const catsRaw = Array.isArray(d.categorias) ? d.categorias : [];
-        const cats = catsRaw.map(c => ({
-          nombre: c.categoria || 'Sin categoría',
-          valor:  (typeof c.valor === 'number')
-                    ? c.valor
-                    : (typeof c.valorCLP === 'number' ? c.valorCLP : 0)
-        }));
-
-        const wrap = $('#kpi4-cats');
-        if (cats.length === 0 || total <= 0) {
-          wrap.innerHTML = '<div class="muted">Sin categorías con valor.</div>';
-          return;
-        }
-
-        const top = cats.slice().sort((a,b) => b.valor - a.valor).slice(0, 3);
-        const rows = top.map(c => ({
-          nombre: c.nombre,
-          pct: Math.max(0, Math.round(c.valor * 100 / total))
-        }));
-        const maxPct = Math.max(...rows.map(x => x.pct), 1);
-
-        wrap.innerHTML = rows.map(({nombre, pct}) => `
-          <div style="width:100%">
-            <div class="row" style="justify-content:space-between">
-              <span>${nombre}</span>
-              <span class="muted">${pct}%</span>
-            </div>
-            <div class="bar"><i style="width:${(pct / maxPct * 100).toFixed(0)}%"></i></div>
-          </div>
-        `).join('');
-      } catch (err) {
-        console.error('KPI4 error', err);
-        const e = $('#kpi4-err');
-        if (e) {
-          e.style.display = 'block';
-          e.textContent = 'Error al cargar KPI 4.';
-        }
-        $('#kpi4-cats').innerHTML = '';
-      }
-    })();
-
-    // =============================
-    // KPI 7 — Top 5 más vendidos (últimos 30 días por defecto)
-    // =============================
-    (async function loadKpi7() {
-      try {
-        const arr = await fetchJSON(`${API}/kpi7`);
-        const el  = $('#kpi7-rank');
-
-        if (!Array.isArray(arr) || arr.length === 0) {
-          el.innerHTML = '<div class="muted">Sin datos en el período.</div>';
-          return;
-        }
-        const max = Math.max(...arr.map(x => x.unidades || 0), 1);
-
-        el.innerHTML = arr.map(x => `
-          <div class="rank-row">
-            <div class="row" style="gap:10px;align-items:center;width:100%">
-              <div class="rank-name" title="${(x.nombre || '').replace(/"/g,'&quot;')}">${x.nombre || '-'}</div>
-              <div class="bar" style="flex:1">
-                <i style="width:${((x.unidades || 0) / max * 100).toFixed(0)}%"></i>
-              </div>
-            </div>
-            <div class="muted" style="text-align:right">${x.unidades || 0}</div>
-          </div>
-        `).join('');
-      } catch (err) {
-        console.error('KPI7 error', err);
-        const e = $('#kpi7-err');
-        if (e) {
-          e.style.display = 'block';
-          e.textContent = 'Error al cargar KPI 7.';
-        }
-        $('#kpi7-rank').innerHTML = '';
-      }
-    })();
-
-    // =============================
-    // KPI 8 — Consumo semanal (hist + forecast)
-    // =============================
+    /* =============================
+       KPI 8 — Consumo semanal (hist + forecast)
+       ============================= */
     function drawSpark(hist, fcst) {
       const svg = $('#kpi8-spark');
       const w = 200, h = 64, p = 6;
@@ -607,7 +575,7 @@
 
         drawSpark(hist, fcst);
 
-        // Badges: última semana histórica y tendencia (forecast o fallback histórico)
+        // Badges: última semana histórica y tendencia
         const lastHist = hist.length ? (hist[hist.length - 1].unidades || 0) : 0;
         let tendencia;
 
@@ -626,18 +594,12 @@
       } catch (err) {
         console.error('KPI8 error', err);
         const e = $('#kpi8-err');
-        if (e) {
-          e.style.display = 'block';
-          e.textContent = 'Error al cargar KPI 8.';
-        }
+        if (e) { e.style.display = 'block'; e.textContent = 'Error al cargar KPI 8.'; }
         $('#kpi8-spark').innerHTML = '';
         $('#kpi8-ultimo').textContent = 'Últ. semana: —';
         $('#kpi8-tend').textContent   = 'Tendencia: —';
       }
     })();
 </script>
-
-
-
 </body>
 </html>
