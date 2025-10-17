@@ -1,3 +1,4 @@
+// path: src/main/java/com/inventario1/Inventario/repos/ProductoRepository.java
 package com.inventario1.Inventario.repos;
 
 import com.inventario1.Inventario.models.Producto;

@@ -19,4 +19,6 @@ public class ViewController {
     @GetMapping("/dashboard/stock-obsoleto")
     public String stockObsoleto() { return "dashboard/stock-obsoleto"; }
 
+
+
 }

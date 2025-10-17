@@ -4,53 +4,54 @@ import com.inventario1.Inventario.services.BulkMovimientoLoaderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@RequestMapping("/ui/bulk-movimientos")
+@RequestMapping("/bulk-movimientos") // <- ruta distinta a /bulk-productos
 @RequiredArgsConstructor
 @Slf4j
-public class BulkMovimientoController {
+class BulkMovimientoController {
 
-    private final BulkMovimientoLoaderService service;
+    final BulkMovimientoLoaderService service;
 
     @GetMapping
-    public String page() {
-        // Renderiza templates/carga_movimientos.html
+    String page() {
         return "carga_movimientos";
     }
 
-    @PostMapping("/upload")
-    public String upload(@RequestParam("file") MultipartFile file,
-                         // 🔴 Por defecto en false (persistirá si no marcas el checkbox)
-                         @RequestParam(value = "dryRun", defaultValue = "false") boolean dryRun,
-                         RedirectAttributes ra) {
+    @PostMapping("/upload") // <- quedará POST /bulk-movimientos/upload
+    String upload(@RequestParam("file") MultipartFile file,
+                  @RequestParam(value = "dryRun", defaultValue = "false") boolean dryRun,
+                  Model model) {
         try {
-            log.info("[BULK MOV] Inicio | dryRun={}", dryRun);
+            if (file == null || file.isEmpty()) {
+                model.addAttribute("ok", "false");
+                model.addAttribute("errorMsg", "Archivo vacío o no enviado.");
+                return "carga_movimientos";
+            }
             var res = service.importar(file, dryRun);
+            var ok = (res.getErrors()!=null && !res.getErrors().isEmpty())
+                    ? "partial"
+                    : (res.getPersistedRows()>0 ? "true" : "partial");
 
-            ra.addFlashAttribute("ok", res.getSkippedRows() == 0 ? "true" : "partial");
-            ra.addFlashAttribute("msg",
+            model.addAttribute("ok", ok);
+            model.addAttribute("msg",
                     "Total: " + res.getTotalRows() +
                             " | Insertados: " + res.getPersistedRows() +
                             " | Saltados: " + res.getSkippedRows() +
-                            (dryRun ? " (PRUEBA: no se guardó)" : "")
-            );
-            ra.addFlashAttribute("res", res);
-            if (res.getErrors() != null && !res.getErrors().isEmpty()) {
-                ra.addFlashAttribute("errores", res.getErrors());
-            }
-            ra.addFlashAttribute("fmt", "Movimientos");
+                            (dryRun ? " (PRUEBA: no se guardó)" : ""));
+            model.addAttribute("res", res);
+            if (res.getErrors()!=null && !res.getErrors().isEmpty())
+                model.addAttribute("errores", res.getErrors());
+            model.addAttribute("fmt","Movimientos");
+            return "carga_movimientos";
         } catch (Exception e) {
-            log.error("[BULK MOV] Error", e);
-            ra.addFlashAttribute("ok", "false");
-            ra.addFlashAttribute("errorMsg", "No se pudo procesar: " + e.getMessage());
+            log.error("[BULK-MOVIMIENTOS] Error", e);
+            model.addAttribute("ok","false");
+            model.addAttribute("errorMsg","No se pudo procesar: " + e.getMessage());
+            return "carga_movimientos";
         }
-        return "redirect:/ui/bulk-movimientos";
     }
 }
