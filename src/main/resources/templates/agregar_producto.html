@@ -69,6 +69,7 @@
                 <!-- Formulario -->
                 <form id="productoForm"
                       th:action="@{/productos/legacy/agregar}"
+                      th:attr="data-update-action=@{/productos/legacy/actualizar-stock}"
                       th:object="${form}"
                       method="post"
                       enctype="multipart/form-data"
@@ -117,7 +118,6 @@
 
                                     <div class="form-group mt-3">
                                         <div class="custom-file">
-                                            <!-- IMPORTANTE: enlazado al DTO: ProductoCrearForm.imagen -->
                                             <input type="file" class="custom-file-input" id="imagen" th:field="*{imagen}" accept="image/*">
                                             <label class="custom-file-label" for="imagen" id="imagenLabel">Elegir imagen…</label>
                                         </div>
@@ -141,12 +141,13 @@
 
                                 <div class="card-body">
 
-                                    <!-- Código de barras + Stock + Cantidad -->
+                                    <!-- Código de barras + Stock actual (solo texto) + Cantidad -->
                                     <div class="form-row">
-                                        <div class="form-group col-md-6">
+                                        <div class="form-group col-md-4">
                                             <label for="codigoBarras">Código de barras <span class="text-danger">*</span></label>
                                             <input id="codigoBarras" type="text" th:field="*{codigoBarras}"
                                                    class="form-control" placeholder="Ej: 7791234567898" required
+                                                   autocomplete="off" autofocus
                                                    th:classappend="${#fields.hasErrors('codigoBarras')} ? ' is-invalid'">
                                             <div class="invalid-feedback" th:errors="*{codigoBarras}">
                                                 Ingresa un código de barras válido.
@@ -154,18 +155,18 @@
                                             <small class="form-text text-muted">Presiona <b>Enter</b> para autocompletar.</small>
                                         </div>
 
-                                        <div class="form-group col-md-3">
-                                            <label>Stock actual</label>
-                                            <p id="stockActualText" class="form-control-plaintext font-weight-bold mb-0"
-                                               th:text="${form.stockActual} ?: 0">0</p>
-                                            <input type="hidden" id="stockActualHidden" th:field="*{stockActual}" />
+                                        <div class="form-group col-md-4">
+                                            <label for="stockActual">Stock actual</label>
+                                            <!-- Campo informativo, no se envía -->
+                                            <input id="stockActual" type="text" class="form-control readonly-field" value="0" readonly>
                                         </div>
 
-                                        <div class="form-group col-md-3">
-                                            <label for="cantidad">Cantidad</label>
+                                        <div class="form-group col-md-4">
+                                            <label for="cantidad">Cantidad a agregar <span class="text-danger">*</span></label>
                                             <input id="cantidad" name="cantidad" type="number" min="0" step="1"
-                                                   class="form-control" placeholder="Ej: 12" required>
+                                                   class="form-control" placeholder="Ej: 5" required>
                                             <div class="invalid-feedback">Ingresa la cantidad a agregar.</div>
+                                            <small class="text-muted">Se sumará al stock actual.</small>
                                         </div>
                                     </div>
 
@@ -183,7 +184,7 @@
 
                                         <div class="form-group col-md-4">
                                             <label for="marca">Marca <small class="text-muted">(opcional)</small></label>
-                                            <input id="marca" type="text" th:field="*{marca}" class="form-control readonly-field"
+                                            <input id="marca" type="text" th:field="*{marca}" class="form-control"
                                                    placeholder="Ej: Marca X"
                                                    th:classappend="${#fields.hasErrors('marca')} ? ' is-invalid'">
                                             <div class="invalid-feedback" th:errors="*{marca}">Revisa la marca.</div>
@@ -196,8 +197,8 @@
                                             <label for="precio">Precio (CLP) <span class="text-danger">*</span></label>
                                             <div class="input-group">
                                                 <div class="input-group-prepend"><span class="input-group-text">$</span></div>
-                                                <input id="precio" name="precio" type="number" inputmode="numeric" min="0" step="1"
-                                                       class="form-control" placeholder="Ej: 1200" required>
+                                                <input id="precio" type="number" inputmode="numeric" min="0" step="1"
+                                                       th:field="*{precio}" class="form-control" placeholder="Ej: 1200" required>
                                                 <div class="invalid-feedback">Ingresa un precio válido.</div>
                                             </div>
                                             <small class="text-muted">Solo números, en pesos chilenos.</small>
@@ -247,7 +248,7 @@
                                         <div class="form-group col-md-4">
                                             <label for="volumenNominalMl">Volumen nominal (ml) <small class="text-muted">(opcional)</small></label>
                                             <input id="volumenNominalMl" type="number" min="0" step="1"
-                                                   th:field="*{volumenNominalMl}" class="form-control readonly-field"
+                                                   th:field="*{volumenNominalMl}" class="form-control"
                                                    placeholder="Ej: 330"
                                                    th:classappend="${#fields.hasErrors('volumenNominalMl')} ? ' is-invalid'">
                                             <div class="invalid-feedback" th:errors="*{volumenNominalMl}">Revisa el volumen.</div>
@@ -256,7 +257,7 @@
                                         <div class="form-group col-md-4">
                                             <label for="graduacionAlcoholica">Grad. alcohólica (%) <small class="text-muted">(opcional)</small></label>
                                             <input id="graduacionAlcoholica" type="number" min="0" step="0.1"
-                                                   th:field="*{graduacionAlcoholica}" class="form-control readonly-field"
+                                                   th:field="*{graduacionAlcoholica}" class="form-control"
                                                    placeholder="Ej: 5.0"
                                                    th:classappend="${#fields.hasErrors('graduacionAlcoholica')} ? ' is-invalid'">
                                             <div class="invalid-feedback" th:errors="*{graduacionAlcoholica}">Revisa la graduación.</div>
@@ -268,7 +269,7 @@
                                         <div class="form-group col-md-4">
                                             <label for="fechaVencimiento">Fecha de vencimiento <small class="text-muted">(opcional)</small></label>
                                             <input id="fechaVencimiento" type="date" th:field="*{fechaVencimiento}"
-                                                   class="form-control readonly-field"
+                                                   class="form-control"
                                                    th:classappend="${#fields.hasErrors('fechaVencimiento')} ? ' is-invalid'">
                                             <div class="invalid-feedback" th:errors="*{fechaVencimiento}">Revisa la fecha.</div>
                                         </div>
@@ -375,7 +376,7 @@
         });
     })();
 
-    // Helpers de imagen (no-op si no existen)
+    // Helpers de imagen
     window.__imgHelpers = window.__imgHelpers || {
         showPlaceholder() {
             const placeholder = document.getElementById('fotoPlaceholder');
@@ -404,7 +405,7 @@
         }
     };
 
-    // Preview de archivo seleccionado (campo *{imagen})
+    // Preview de archivo seleccionado
     (function () {
         const input = document.getElementById('imagen');
         const label = document.getElementById('imagenLabel');
@@ -438,20 +439,128 @@
         });
     })();
 
-    // Lógica mínima de modo creación (dejamos el action FIJO al legacy)
+    // Autocompletar por código + switch de modo
     (function () {
         const form = document.getElementById('productoForm');
-        const btnSubmit = document.getElementById('btnSubmit');
+        const cb = document.getElementById('codigoBarras');
         const modeBadge = document.getElementById('modeBadge');
+        const modo = document.getElementById('modo');
 
-        // Asegura acción correcta (no sobreescribir con otras rutas)
-        form && form.setAttribute('action', '/productos/legacy/agregar');
+        const nombre = document.getElementById('nombre');
+        const marca = document.getElementById('marca');
+        const precio = document.getElementById('precio');
+        const categoria = document.getElementById('categoria');
+        const unidad = document.getElementById('unidadBase');
+        const vol = document.getElementById('volumenNominalMl');
+        const grad = document.getElementById('graduacionAlcoholica');
+        const fv = document.getElementById('fechaVencimiento');
+        const perecible = document.getElementById('perecible');
+        const retornable = document.getElementById('retornable');
 
-        if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar';
-        if (modeBadge) {
-            modeBadge.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-1"></i> Modo creación';
-            modeBadge.className = 'badge badge-info badge-creating ml-2';
+        const stockView = document.getElementById('stockActual'); // solo lectura
+        const cantidad = document.getElementById('cantidad');
+        const btnSubmit = document.getElementById('btnSubmit');
+
+        const crearAction = form ? form.getAttribute('action') : null;
+        const actualizarAction = form ? form.getAttribute('data-update-action') : null;
+
+        function req(el, on){ if(!el) return; on ? el.setAttribute('required','') : el.removeAttribute('required'); }
+
+        function modoCrear(){
+            modo.value = 'CREAR';
+            if (form && crearAction) form.setAttribute('action', crearAction);
+            if (modeBadge){ modeBadge.className='badge badge-info badge-creating ml-2'; modeBadge.innerHTML='<i class="fas fa-wand-magic-sparkles mr-1"></i> Modo creación'; }
+            if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar';
+
+            // Requeridos para crear
+            req(nombre,true); req(categoria,true); req(unidad,true); req(precio,true); req(cantidad,true);
+
+            // Stock visible solo lectura
+            stockView && (stockView.value = '0');
+
+            window.__imgHelpers && window.__imgHelpers.showPlaceholder();
         }
+
+        function modoActualizar(){
+            modo.value = 'ACTUALIZAR_STOCK';
+            if (form && actualizarAction) form.setAttribute('action', actualizarAction);
+            if (modeBadge){ modeBadge.className='badge badge-success ml-2'; modeBadge.innerHTML='<i class="fas fa-boxes mr-1"></i> Modo actualizar stock'; }
+            if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-plus-circle mr-1"></i> Actualizar stock';
+
+            // En este modo NO bloqueamos los campos: todos quedan editables
+            // Para que no frene la validación al actualizar, solo "cantidad" es requerida:
+            req(nombre,false); req(categoria,false); req(unidad,false); req(precio,false);
+            req(cantidad,true);
+        }
+
+        async function buscar(cod){
+            try{
+                const r = await fetch(`/productos/api/by-barcode/${encodeURIComponent(cod)}`);
+                if (r.status === 404) return null;
+                if (!r.ok) throw new Error('HTTP '+r.status);
+                return await r.json();
+            }catch(e){ console.error(e); return null; }
+        }
+
+        async function autocompletar(){
+            const cod = (cb?.value || '').trim();
+            if (cod.length < 6) return;
+
+            const p = await buscar(cod);
+            if (!p){
+                // Reset para crear
+                nombre && (nombre.value=''); marca && (marca.value=''); precio && (precio.value='');
+                categoria && (categoria.value=''); unidad && (unidad.value='');
+                vol && (vol.value=''); grad && (grad.value=''); fv && (fv.value='');
+                perecible && (perecible.checked = false); retornable && (retornable.checked = false);
+                stockView && (stockView.value='0');
+                cantidad && (cantidad.value='');
+                modoCrear();
+                return;
+            }
+
+            // Completar con datos existentes
+            nombre && (nombre.value = p.nombre ?? '');
+            marca && (marca.value = p.marca ?? '');
+            if (typeof p.precio !== 'undefined' && p.precio !== null && precio) precio.value = String(p.precio);
+            categoria && p.categoria && (categoria.value = p.categoria);
+            unidad && p.unidadBase && (unidad.value = p.unidadBase);
+            vol && (vol.value = p.volumenNominalMl ?? '');
+            grad && (grad.value = p.graduacionAlcoholica ?? '');
+            fv && (fv.value = p.fechaVencimiento ?? '');
+            perecible && (perecible.checked = !!p.perecible);
+            retornable && (retornable.checked = !!p.retornable);
+
+            const st = Number(p.stockActual ?? 0);
+            stockView && (stockView.value = isNaN(st) ? '0' : String(st));
+
+            // reset cantidad al entrar a actualizar
+            cantidad && (cantidad.value='');
+
+            if (p.fotoUrl && window.__imgHelpers) window.__imgHelpers.setActual(p.fotoUrl);
+
+            modoActualizar();
+            cantidad?.focus();
+            cantidad?.select?.();
+        }
+
+        // Enter en el código: evita submit y autocompleta
+        cb && cb.addEventListener('keydown', e => {
+            if (e.key === 'Enter'){
+                e.preventDefault();
+                autocompletar();
+            }
+        });
+        // También al salir del campo
+        cb && cb.addEventListener('blur', autocompletar);
+
+        // Precio: normaliza a dígitos
+        if (precio){
+            precio.addEventListener('input', ()=>{ precio.value = (precio.value||'').replace(/[^\d]/g,''); });
+        }
+
+        // Estado inicial
+        modoCrear();
     })();
 </script>
 

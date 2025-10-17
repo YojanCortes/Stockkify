@@ -31,18 +31,16 @@ public class ProductoEditarForm {
     private UnidadBase unidadBase;
 
     @Min(0)
-    private Integer volumenNominalMl; // opcional, pero si viene debe ser >= 0
+    private Integer volumenNominalMl;
 
     @DecimalMin(value = "0.0")
     @DecimalMax(value = "100.0")
-    private Double graduacionAlcoholica; // 0–100%
+    private Double graduacionAlcoholica;
 
-    /** Precio entero (por ejemplo, en pesos) */
     @NotNull
     @Min(0)
     private Integer precio = 0;
 
-    // Inventario
     @NotNull
     @Min(0)
     private Integer stockActual = 0;
@@ -58,10 +56,10 @@ public class ProductoEditarForm {
 
     private Boolean activo = true;
 
-    // Imagen (opcional)
+    // Campo de imagen
     private MultipartFile imagen;
 
-    // Permite borrar la imagen actual del producto
+    // Si se desea borrar imagen existente
     private Boolean eliminarImagen = false;
 
     // Conveniencia

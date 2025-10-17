@@ -6,6 +6,7 @@ import com.inventario1.Inventario.models.Producto;
 import com.inventario1.Inventario.models.TipoMovimiento;
 import com.inventario1.Inventario.repos.MovimientoInventarioRepository;
 import com.inventario1.Inventario.repos.MovimientoLineaRepository;
+import com.inventario1.Inventario.repos.ProductoRepository;
 import com.inventario1.Inventario.services.MovimientosService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,18 +16,18 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class MovimientosServiceImpl implements MovimientosService {
+class MovimientosServiceImpl implements MovimientosService {
 
-    private final MovimientoInventarioRepository movimientoInventarioRepository;
-    private final MovimientoLineaRepository movimientoLineaRepository;
+    final MovimientoInventarioRepository movimientoInventarioRepository;
+    final MovimientoLineaRepository movimientoLineaRepository;
+    final ProductoRepository productoRepository;
 
-    /** Genera una referencia única y, si ya existe, agrega sufijo incremental. */
     private String ensureUniqueRef(String base) {
         String ref = base;
         int i = 1;
         while (movimientoInventarioRepository.existsByReferencia(ref)) {
             ref = base + "-" + i++;
-            if (i > 50) { // red de seguridad
+            if (i > 50) {
                 ref = base + "-" + System.currentTimeMillis();
                 break;
             }
@@ -43,7 +44,15 @@ public class MovimientosServiceImpl implements MovimientosService {
                                     String referencia) {
         if (producto == null || cantidad <= 0) return;
 
-        // base única por defecto si no te pasan referencia
+        int actual = producto.getStockActual() == null ? 0 : producto.getStockActual();
+        int nuevo = switch (tipo) {
+            case ENTRADA -> actual + cantidad;
+            case SALIDA  -> Math.max(0, actual - cantidad);
+            default      -> actual;
+        };
+        producto.setStockActual(nuevo);
+        productoRepository.save(producto);
+
         String base = (referencia == null || referencia.isBlank())
                 ? "UI:" + tipo + ":" + producto.getCodigoBarras() + ":" + System.currentTimeMillis()
                 : referencia;
@@ -51,8 +60,8 @@ public class MovimientosServiceImpl implements MovimientosService {
 
         MovimientoInventario cab = new MovimientoInventario();
         cab.setTipo(tipo);
-        cab.setFecha(LocalDateTime.now());   // si tu campo es LocalDate, usa LocalDate.now()
-        cab.setComentario(comentario);
+        cab.setFecha(LocalDateTime.now());
+        cab.setComentario((comentario == null || comentario.isBlank()) ? "Ajuste de stock" : comentario.trim());
         cab.setReferencia(refUnica);
         movimientoInventarioRepository.save(cab);
 

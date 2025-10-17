@@ -13,40 +13,47 @@ public class ProductoCrearForm {
 
     @NotBlank
     @Size(max = 200)
-    private String nombre;
+    String nombre;
 
     @Size(max = 120)
-    private String marca;
+    String marca;
 
     @NotNull
-    private Categoria categoria;
+    Categoria categoria;
 
     @NotNull
-    private UnidadBase unidadBase;
+    UnidadBase unidadBase;
 
     @Min(0)
-    private Integer volumenNominalMl;
+    Integer volumenNominalMl;
 
     @DecimalMin(value = "0.0", inclusive = true)
-    private Double graduacionAlcoholica;
+    Double graduacionAlcoholica;
 
-    private LocalDate fechaVencimiento;
-
-    @Min(0)
-    private Integer stockActual;
+    LocalDate fechaVencimiento;
 
     @Min(0)
-    private Integer stockMinimo;
+    Integer stockActual;
+
+    @Min(0)
+    Integer stockMinimo;
 
     @NotBlank
     @Size(max = 32)
     @Pattern(regexp = "\\d{8,32}", message = "Debe contener solo dígitos (8 a 32).")
-    private String codigoBarras;
+    String codigoBarras;
 
-    private Boolean perecible = false;
-    private Boolean retornable = false;
-    private Boolean activo = true;
+    @NotNull
+    @Min(0)
+    Integer precio;      // ← NUEVO (binding de th:field="*{precio}")
 
-    // campo de carga de imagen
-    private MultipartFile imagen;
+    @NotNull
+    @Min(0)
+    Integer cantidad;    // ← NUEVO (binding de th:field="*{cantidad}")
+
+    Boolean perecible = false;
+    Boolean retornable = false;
+    Boolean activo = true;
+
+    MultipartFile imagen;
 }

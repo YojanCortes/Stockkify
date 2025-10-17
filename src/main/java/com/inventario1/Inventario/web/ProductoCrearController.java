@@ -1,12 +1,15 @@
 package com.inventario1.Inventario.web;
 
 import com.inventario1.Inventario.models.Producto;
+import com.inventario1.Inventario.models.TipoMovimiento;
 import com.inventario1.Inventario.repos.ProductoRepository;
+import com.inventario1.Inventario.services.MovimientosService;
 import com.inventario1.Inventario.web.dto.ProductoCrearForm;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +27,7 @@ import java.io.IOException;
 class ProductoCrearController {
 
     final ProductoRepository productoRepository;
+    final MovimientosService movimientosService;
 
     @GetMapping("/agregar")
     String agregarForm(Model model) {
@@ -31,7 +35,8 @@ class ProductoCrearController {
         return "agregar_producto";
     }
 
-    @PostMapping(path = "/agregar")
+    @PostMapping("/agregar")
+    @Transactional
     String crear(@Valid @ModelAttribute("form") ProductoCrearForm form,
                  BindingResult br,
                  RedirectAttributes ra,
@@ -43,6 +48,7 @@ class ProductoCrearController {
         if (br.hasErrors()) return "agregar_producto";
 
         Producto p = new Producto();
+        p.setCodigoBarras(form.getCodigoBarras());
         p.setNombre(form.getNombre() != null ? form.getNombre().trim() : null);
         p.setMarca(form.getMarca());
         p.setCategoria(form.getCategoria());
@@ -50,9 +56,11 @@ class ProductoCrearController {
         p.setVolumenNominalMl(form.getVolumenNominalMl());
         p.setGraduacionAlcoholica(form.getGraduacionAlcoholica());
         p.setFechaVencimiento(form.getFechaVencimiento());
-        p.setStockActual(form.getStockActual() != null ? form.getStockActual() : 0);
         p.setStockMinimo(form.getStockMinimo() != null ? form.getStockMinimo() : 0);
-        p.setCodigoBarras(form.getCodigoBarras());
+        Integer stockInicial = form.getStockActual() != null ? form.getStockActual()
+                : (form.getCantidad() != null ? form.getCantidad() : 0);
+        p.setStockActual(stockInicial);
+        p.setPrecio(form.getPrecio());
         p.setPerecible(Boolean.TRUE.equals(form.getPerecible()));
         p.setRetornable(Boolean.TRUE.equals(form.getRetornable()));
         p.setActivo(form.getActivo() == null || form.getActivo());
@@ -72,7 +80,46 @@ class ProductoCrearController {
             }
         }
 
-        ra.addFlashAttribute("ok", "Producto creado correctamente (legacy).");
+        int entradaInicial = form.getCantidad() != null ? Math.max(0, form.getCantidad()) : 0;
+        if (entradaInicial > 0) {
+            movimientosService.registrarMovimiento(
+                    p, TipoMovimiento.ENTRADA, entradaInicial,
+                    "UI: creación de producto", null
+            );
+        }
+
+        ra.addFlashAttribute("ok", "Producto creado y movimiento registrado.");
+        return "redirect:/productos/" + p.getCodigoBarras();
+    }
+
+    @PostMapping("/actualizar-stock")
+    @Transactional
+    String actualizarStock(@Valid @ModelAttribute("form") ProductoCrearForm form,
+                           BindingResult br,
+                           RedirectAttributes ra,
+                           Model model) {
+
+        if (br.hasErrors()) return "agregar_producto";
+
+        Producto p = productoRepository.findByCodigoBarras(form.getCodigoBarras())
+                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
+
+        int delta = form.getCantidad() != null ? Math.max(0, form.getCantidad()) : 0;
+        int actual = p.getStockActual() != null ? p.getStockActual() : 0;
+        p.setStockActual(actual + delta);
+
+        if (form.getPrecio() != null) p.setPrecio(form.getPrecio());
+
+        productoRepository.save(p);
+
+        if (delta > 0) {
+            movimientosService.registrarMovimiento(
+                    p, TipoMovimiento.ENTRADA, delta,
+                    "UI: actualizar stock (legacy)", null
+            );
+        }
+
+        ra.addFlashAttribute("ok", "Stock actualizado (+ " + delta + ") y movimiento registrado.");
         return "redirect:/productos/" + p.getCodigoBarras();
     }
 }
