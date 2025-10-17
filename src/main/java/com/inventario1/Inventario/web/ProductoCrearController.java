@@ -20,40 +20,28 @@ import java.io.IOException;
 @Controller
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("/productos/legacy") // <- prefijo para evitar conflicto con ProductoController
-public class ProductoCrearController {
+@RequestMapping("/productos/legacy")
+class ProductoCrearController {
 
-    private final ProductoRepository productoRepository;
+    final ProductoRepository productoRepository;
 
-    /* =========================================================
-       GET: Formulario de creación (legacy)
-       ========================================================= */
     @GetMapping("/agregar")
-    public String agregarForm(Model model) {
-        if (!model.containsAttribute("form")) {
-            model.addAttribute("form", new ProductoCrearForm());
-        }
-        return "agregar_producto"; // usa tu mismo HTML
+    String agregarForm(Model model) {
+        if (!model.containsAttribute("form")) model.addAttribute("form", new ProductoCrearForm());
+        return "agregar_producto";
     }
 
-    /* =========================================================
-       POST: Crear producto (legacy)
-       ========================================================= */
-    @PostMapping("/agregar")
-    public String crear(@Valid @ModelAttribute("form") ProductoCrearForm form,
-                        BindingResult br,
-                        RedirectAttributes ra,
-                        Model model) {
+    @PostMapping(path = "/agregar")
+    String crear(@Valid @ModelAttribute("form") ProductoCrearForm form,
+                 BindingResult br,
+                 RedirectAttributes ra,
+                 Model model) {
 
-        // Unicidad de código de barras
         if (!br.hasErrors() && productoRepository.existsByCodigoBarras(form.getCodigoBarras())) {
             br.rejectValue("codigoBarras", "exists", "Ya existe un producto con ese código de barras.");
         }
-        if (br.hasErrors()) {
-            return "agregar_producto";
-        }
+        if (br.hasErrors()) return "agregar_producto";
 
-        // Mapear DTO -> Entidad
         Producto p = new Producto();
         p.setNombre(form.getNombre() != null ? form.getNombre().trim() : null);
         p.setMarca(form.getMarca());
@@ -69,10 +57,8 @@ public class ProductoCrearController {
         p.setRetornable(Boolean.TRUE.equals(form.getRetornable()));
         p.setActivo(form.getActivo() == null || form.getActivo());
 
-        // Guardar primero
         p = productoRepository.save(p);
 
-        // Guardar imagen en la entidad (bytes), sin escribir a disco
         if (form.getImagen() != null && !form.getImagen().isEmpty()) {
             try {
                 p.setImagen(form.getImagen().getBytes());

@@ -18,13 +18,14 @@
         .badge-creating { font-size: .85rem; }
         .topbar{ border-bottom:0 !important; box-shadow:none !important; }
 
-        /* Apariencia de campos bloqueados en modo "Actualizar stock" */
         .readonly-field[readonly],
-        .readonly-field:disabled {
-            background: #f8f9fc !important;
-            cursor: not-allowed;
-        }
+        .readonly-field:disabled { background: #f8f9fc !important; cursor: not-allowed; }
+
         .section-hint { font-size:.9rem; color:#6b7280; }
+
+        /* Estado “sin imagen” */
+        .no-img-text { font-size:.8rem; color:#6b7280; margin-top:.5rem; display:none; }
+        .no-img .no-img-text { display:block; }
     </style>
 </head>
 
@@ -67,7 +68,7 @@
 
                 <!-- Formulario -->
                 <form id="productoForm"
-                      th:action="@{/productos/agregar}"
+                      th:action="@{/productos/legacy/agregar}"
                       th:object="${form}"
                       method="post"
                       enctype="multipart/form-data"
@@ -79,9 +80,6 @@
                     <input type="hidden" id="modo" name="modo" value="CREAR"/>
 
                     <!-- Resumen de errores -->
-                    <div class="alert alert-danger" th:if="${#fields.hasErrors()}">...</div>
-
-                    <!-- Resumen de errores del backend -->
                     <div class="alert alert-danger" th:if="${#fields.hasErrors()}">
                         <div class="d-flex align-items-start">
                             <i class="fas fa-exclamation-triangle fa-lg mr-2 mt-1"></i>
@@ -106,13 +104,20 @@
                                 </div>
 
                                 <div class="card-body">
-                                    <div class="card-img-wrapper text-center">
+                                    <div id="imgBox" class="card-img-wrapper text-center no-img">
+                                        <!-- Placeholder por defecto -->
                                         <img id="fotoPlaceholder" class="img-preview" th:src="@{/img/no-image.png}" alt="Sin imagen">
+                                        <!-- Imagen actual (cuando se detecta producto existente) -->
+                                        <img id="fotoActual" class="img-preview d-none" alt="Imagen actual"
+                                             onerror="this.classList.add('d-none');document.getElementById('imgBox').classList.add('no-img');document.getElementById('fotoPlaceholder').classList.remove('d-none');">
+                                        <!-- Vista previa de archivo nuevo -->
                                         <img id="fotoPreview" class="img-preview d-none" alt="Vista previa">
+                                        <div class="no-img-text">Sin imagen</div>
                                     </div>
 
                                     <div class="form-group mt-3">
                                         <div class="custom-file">
+                                            <!-- IMPORTANTE: enlazado al DTO: ProductoCrearForm.imagen -->
                                             <input type="file" class="custom-file-input" id="imagen" th:field="*{imagen}" accept="image/*">
                                             <label class="custom-file-label" for="imagen" id="imagenLabel">Elegir imagen…</label>
                                         </div>
@@ -120,35 +125,9 @@
                                             formatos: JPG/PNG/WEBP · máx. ~5MB (según configuración)
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
-
-                            <script>
-                                (function () {
-                                    const input   = document.getElementById('imagen');
-                                    const label   = document.getElementById('imagenLabel');
-                                    const placeholder = document.getElementById('fotoPlaceholder');
-                                    const preview = document.getElementById('fotoPreview');
-                                    if (!input) return;
-                                    input.addEventListener('change', () => {
-                                        const file = input.files && input.files[0];
-                                        if (file) {
-                                            label.textContent = file.name;
-                                            const reader = new FileReader();
-                                            reader.onload = (e) => {
-                                                preview.src = e.target.result;
-                                                preview.classList.remove('d-none');
-                                                if (placeholder) placeholder.classList.add('d-none');
-                                            };
-                                            reader.readAsDataURL(file);
-                                        } else {
-                                            label.textContent = 'Elegir imagen…';
-                                            if (preview) preview.classList.add('d-none');
-                                            if (placeholder) placeholder.classList.remove('d-none');
-                                        }
-                                    });
-                                })();
-                            </script>
                         </div>
 
                         <!-- Columna derecha: datos -->
@@ -175,7 +154,6 @@
                                             <small class="form-text text-muted">Presiona <b>Enter</b> para autocompletar.</small>
                                         </div>
 
-                                        <!-- Stock actual (solo texto) + hidden -->
                                         <div class="form-group col-md-3">
                                             <label>Stock actual</label>
                                             <p id="stockActualText" class="form-control-plaintext font-weight-bold mb-0"
@@ -183,7 +161,6 @@
                                             <input type="hidden" id="stockActualHidden" th:field="*{stockActual}" />
                                         </div>
 
-                                        <!-- Cantidad a agregar -->
                                         <div class="form-group col-md-3">
                                             <label for="cantidad">Cantidad</label>
                                             <input id="cantidad" name="cantidad" type="number" min="0" step="1"
@@ -213,26 +190,15 @@
                                         </div>
                                     </div>
 
-                                    <!-- Precio (CLP) - SEGURO (sin th:field para no romper si el bean no tiene 'precio') -->
+                                    <!-- Precio -->
                                     <div class="form-row">
                                         <div class="form-group col-md-4">
                                             <label for="precio">Precio (CLP) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">$</span>
-                                                </div>
-                                                <input id="precio"
-                                                       name="precio"
-                                                       type="number"
-                                                       inputmode="numeric"
-                                                       min="0"
-                                                       step="1"
-                                                       class="form-control"
-                                                       placeholder="Ej: 1200"
-                                                       required>
-                                                <div class="invalid-feedback">
-                                                    Ingresa un precio válido.
-                                                </div>
+                                                <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                                <input id="precio" name="precio" type="number" inputmode="numeric" min="0" step="1"
+                                                       class="form-control" placeholder="Ej: 1200" required>
+                                                <div class="invalid-feedback">Ingresa un precio válido.</div>
                                             </div>
                                             <small class="text-muted">Solo números, en pesos chilenos.</small>
                                         </div>
@@ -242,8 +208,7 @@
                                     <div class="form-row">
                                         <div class="form-group col-md-6">
                                             <label for="categoria">Categoría <span class="text-danger">*</span></label>
-                                            <select id="categoria" th:field="*{categoria}" class="form-control"
-                                                    required
+                                            <select id="categoria" th:field="*{categoria}" class="form-control" required
                                                     th:classappend="${#fields.hasErrors('categoria')} ? ' is-invalid'">
                                                 <option value="" disabled selected>— Selecciona —</option>
                                                 <option th:each="c : ${T(com.inventario1.Inventario.models.Categoria).values()}"
@@ -251,15 +216,12 @@
                                                         th:text="${#strings.capitalize(c.name().toLowerCase())}">
                                                 </option>
                                             </select>
-                                            <div class="invalid-feedback" th:errors="*{categoria}">
-                                                Selecciona una categoría.
-                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{categoria}">Selecciona una categoría.</div>
                                         </div>
 
                                         <div class="form-group col-md-6">
                                             <label for="unidadBase">Unidad base <span class="text-danger">*</span></label>
-                                            <select id="unidadBase" th:field="*{unidadBase}" class="form-control"
-                                                    required
+                                            <select id="unidadBase" th:field="*{unidadBase}" class="form-control" required
                                                     th:classappend="${#fields.hasErrors('unidadBase')} ? ' is-invalid'">
                                                 <option value="" disabled selected>— Selecciona —</option>
                                                 <option th:each="u : ${T(com.inventario1.Inventario.models.UnidadBase).values()}"
@@ -267,23 +229,18 @@
                                                         th:text="${#strings.capitalize(u.name().toLowerCase())}">
                                                 </option>
                                             </select>
-                                            <div class="invalid-feedback" th:errors="*{unidadBase}">
-                                                Selecciona una unidad.
-                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{unidadBase}">Selecciona una unidad.</div>
                                         </div>
                                     </div>
 
-                                    <!-- Stock mínimo -->
+                                    <!-- Stock mínimo + atributos opcionales -->
                                     <div class="form-row">
                                         <div class="form-group col-md-4">
                                             <label for="stockMinimo">Stock mínimo <span class="text-danger">*</span></label>
                                             <input id="stockMinimo" type="number" min="0" step="1"
-                                                   th:field="*{stockMinimo}" class="form-control"
-                                                   required
+                                                   th:field="*{stockMinimo}" class="form-control" required
                                                    th:classappend="${#fields.hasErrors('stockMinimo')} ? ' is-invalid'">
-                                            <div class="invalid-feedback" th:errors="*{stockMinimo}">
-                                                Revisa el stock mínimo.
-                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{stockMinimo}">Revisa el stock mínimo.</div>
                                             <small class="section-hint">Define el umbral de alerta.</small>
                                         </div>
 
@@ -293,9 +250,7 @@
                                                    th:field="*{volumenNominalMl}" class="form-control readonly-field"
                                                    placeholder="Ej: 330"
                                                    th:classappend="${#fields.hasErrors('volumenNominalMl')} ? ' is-invalid'">
-                                            <div class="invalid-feedback" th:errors="*{volumenNominalMl}">
-                                                Revisa el volumen.
-                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{volumenNominalMl}">Revisa el volumen.</div>
                                         </div>
 
                                         <div class="form-group col-md-4">
@@ -304,9 +259,7 @@
                                                    th:field="*{graduacionAlcoholica}" class="form-control readonly-field"
                                                    placeholder="Ej: 5.0"
                                                    th:classappend="${#fields.hasErrors('graduacionAlcoholica')} ? ' is-invalid'">
-                                            <div class="invalid-feedback" th:errors="*{graduacionAlcoholica}">
-                                                Revisa la graduación.
-                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{graduacionAlcoholica}">Revisa la graduación.</div>
                                         </div>
                                     </div>
 
@@ -317,9 +270,7 @@
                                             <input id="fechaVencimiento" type="date" th:field="*{fechaVencimiento}"
                                                    class="form-control readonly-field"
                                                    th:classappend="${#fields.hasErrors('fechaVencimiento')} ? ' is-invalid'">
-                                            <div class="invalid-feedback" th:errors="*{fechaVencimiento}">
-                                                Revisa la fecha.
-                                            </div>
+                                            <div class="invalid-feedback" th:errors="*{fechaVencimiento}">Revisa la fecha.</div>
                                         </div>
 
                                         <div class="form-group col-md-4">
@@ -340,6 +291,7 @@
                                             </div>
                                         </div>
 
+                                        <!-- “Activo” oculto: siempre true al crear -->
                                         <div class="form-group col-md-4 d-none">
                                             <div class="custom-control custom-switch mt-4">
                                                 <input type="checkbox" class="custom-control-input" id="activo" th:field="*{activo}" th:checked="${form == null or form.activo}">
@@ -399,7 +351,7 @@
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
 <script>
-    // Validación Bootstrap (arreglado el IIFE)
+    // Validación Bootstrap
     (function () {
         'use strict';
         const forms = document.getElementsByClassName('needs-validation');
@@ -423,180 +375,82 @@
         });
     })();
 
-    // Lógica CREAR/ACTUALIZAR + fetch por código + Precio seguro
+    // Helpers de imagen (no-op si no existen)
+    window.__imgHelpers = window.__imgHelpers || {
+        showPlaceholder() {
+            const placeholder = document.getElementById('fotoPlaceholder');
+            const actual = document.getElementById('fotoActual');
+            const preview = document.getElementById('fotoPreview');
+            const box = document.getElementById('imgBox');
+            preview && preview.classList.add('d-none');
+            actual && actual.classList.add('d-none');
+            placeholder && placeholder.classList.remove('d-none');
+            box && box.classList.add('no-img');
+        },
+        setActual(src) {
+            const actual = document.getElementById('fotoActual');
+            const placeholder = document.getElementById('fotoPlaceholder');
+            const preview = document.getElementById('fotoPreview');
+            const box = document.getElementById('imgBox');
+            const v = String(Date.now());
+            const url = src.includes('?') ? (src + '&_=' + v) : (src + '?_=' + v);
+            if (actual) {
+                actual.src = url;
+                actual.classList.remove('d-none');
+            }
+            preview && preview.classList.add('d-none');
+            placeholder && placeholder.classList.add('d-none');
+            box && box.classList.remove('no-img');
+        }
+    };
+
+    // Preview de archivo seleccionado (campo *{imagen})
+    (function () {
+        const input = document.getElementById('imagen');
+        const label = document.getElementById('imagenLabel');
+        if (!input) return;
+
+        function showPreview(src) {
+            const placeholder = document.getElementById('fotoPlaceholder');
+            const actual = document.getElementById('fotoActual');
+            const preview = document.getElementById('fotoPreview');
+            const box = document.getElementById('imgBox');
+            if (preview) {
+                preview.src = src;
+                preview.classList.remove('d-none');
+            }
+            actual && actual.classList.add('d-none');
+            placeholder && placeholder.classList.add('d-none');
+            box && box.classList.remove('no-img');
+        }
+
+        input.addEventListener('change', () => {
+            const file = input.files && input.files[0];
+            if (file) {
+                label && (label.textContent = file.name);
+                const reader = new FileReader();
+                reader.onload = (e) => showPreview(e.target.result);
+                reader.readAsDataURL(file);
+            } else {
+                label && (label.textContent = 'Elegir imagen…');
+                window.__imgHelpers.showPlaceholder();
+            }
+        });
+    })();
+
+    // Lógica mínima de modo creación (dejamos el action FIJO al legacy)
     (function () {
         const form = document.getElementById('productoForm');
-        const cb = document.getElementById('codigoBarras');
-
-        const nombre = document.getElementById('nombre');
-        const marca  = document.getElementById('marca');
-        const categoria = document.getElementById('categoria');
-        const unidad   = document.getElementById('unidadBase');
-        const vol     = document.getElementById('volumenNominalMl');
-        const grad    = document.getElementById('graduacionAlcoholica');
-        const fec     = document.getElementById('fechaVencimiento');
-        const stockTxt = document.getElementById('stockActualText');
-        const stockHid = document.getElementById('stockActualHidden');
-        const stockMin = document.getElementById('stockMinimo');
-        const cantidad = document.getElementById('cantidad');
-
-        const precio  = document.getElementById('precio'); // <— NUEVO
-
-        const modo = document.getElementById('modo');
         const btnSubmit = document.getElementById('btnSubmit');
         const modeBadge = document.getElementById('modeBadge');
 
-        function setRequired(el, yes) {
-            if (!el) return;
-            if (yes) el.setAttribute('required', 'required');
-            else el.removeAttribute('required');
-        }
-        function setDisabled(el, yes) {
-            if (!el) return;
-            el.disabled = !!yes;
-            if (yes) el.classList.add('readonly-field');
-            else el.classList.remove('readonly-field');
-        }
-        function setReadonly(el, yes) {
-            if (!el) return;
-            el.readOnly = !!yes;
-            if (yes) el.classList.add('readonly-field');
-            else el.classList.remove('readonly-field');
-        }
+        // Asegura acción correcta (no sobreescribir con otras rutas)
+        form && form.setAttribute('action', '/productos/legacy/agregar');
 
-        function setCrearUI() {
-            modo.value = 'CREAR';
-            form.setAttribute('action', '/productos/agregar');
-            if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar';
-            if (modeBadge) {
-                modeBadge.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-1"></i> Modo creación';
-                modeBadge.className = 'badge badge-info badge-creating ml-2';
-            }
-
-            setRequired(nombre, true);
-            setRequired(categoria, true);
-            setRequired(unidad, true);
-            setRequired(stockMin, true);
-            setRequired(precio, true); // <— precio requerido al CREAR
-
-            setReadonly(nombre, false);
-            setReadonly(marca, false);
-            setDisabled(categoria, false);
-            setDisabled(unidad, false);
-            setReadonly(vol, false);
-            setReadonly(grad, false);
-            setReadonly(fec, false);
-            setDisabled(stockMin, false);
-            setReadonly(precio, false); // <— precio editable al CREAR
-        }
-
-        function setActualizarStockUI() {
-            modo.value = 'ACTUALIZAR_STOCK';
-            form.setAttribute('action', '/productos/actualizar-stock');
-            if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-plus-circle mr-1"></i> Actualizar stock';
-            if (modeBadge) {
-                modeBadge.innerHTML = '<i class="fas fa-boxes mr-1"></i> Modo actualizar stock';
-                modeBadge.className = 'badge badge-success ml-2';
-            }
-
-            setRequired(nombre, false);
-            setRequired(categoria, false);
-            setRequired(unidad, false);
-            setRequired(stockMin, false);
-            setRequired(precio, false); // <— precio no obligatorio al actualizar stock
-
-            setReadonly(nombre, true);
-            setReadonly(marca, true);
-            setDisabled(categoria, true);
-            setDisabled(unidad, true);
-            setReadonly(vol, true);
-            setReadonly(grad, true);
-            setReadonly(fec, true);
-            setDisabled(stockMin, true);
-            setReadonly(precio, true); // <— precio solo lectura al actualizar
-        }
-
-        async function fetchProducto(cod) {
-            try {
-                const r = await fetch(`/productos/api/detalle/${encodeURIComponent(cod)}`);
-                if (!r.ok) return null;
-                return await r.json();
-            } catch { return null; }
-        }
-
-        async function onCodigoChange() {
-            const cod = (cb.value || '').trim();
-            if (!cod) return;
-
-            const data = await fetchProducto(cod);
-            if (!data) {
-                // NO existe → limpiar y modo CREAR
-                nombre && (nombre.value = '');
-                marca  && (marca.value  = '');
-                categoria && (categoria.value = '');
-                unidad   && (unidad.value   = '');
-                vol && (vol.value = '');
-                grad && (grad.value = '');
-                fec && (fec.value = '');
-                stockTxt && (stockTxt.textContent = '0');
-                stockHid && (stockHid.value = 0);
-                stockMin && (stockMin.value = '');
-                precio && (precio.value = ''); // <— limpiar precio
-                setCrearUI();
-                return;
-            }
-
-            // EXISTE → autocompletar y modo ACTUALIZAR
-            nombre && (nombre.value = data.nombre || '');
-            marca  && (marca.value  = data.marca || '');
-            categoria && data.categoria && (categoria.value = data.categoria);
-            unidad    && data.unidadBase && (unidad.value = data.unidadBase);
-            vol && (vol.value = data.volumenNominalMl ?? '');
-            grad && (grad.value = data.graduacionAlcoholica ?? '');
-            fec && (fec.value = data.fechaVencimiento ?? '');
-            stockMin && (stockMin.value = data.stockMinimo ?? '');
-
-            const st = Number(data.stockActual || 0);
-            stockTxt && (stockTxt.textContent = String(st));
-            stockHid && (stockHid.value = st);
-
-            // si tu API devuelve precio, lo mostramos; si no, dejamos tal cual
-            if (precio && typeof data.precio !== 'undefined' && data.precio !== null) {
-                precio.value = String(data.precio);
-            }
-
-            setActualizarStockUI();
-            if (cantidad) { cantidad.focus(); cantidad.select?.(); }
-        }
-
-        // Enter dispara autocompletar y previene submit
-        if (cb) {
-            cb.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    onCodigoChange();
-                }
-            });
-            cb.addEventListener('blur', onCodigoChange);
-        }
-
-        // En modo CREAR, si cambias "cantidad", úsala como stockActual inicial
-        if (cantidad) {
-            cantidad.addEventListener('input', () => {
-                if (modo.value === 'CREAR' && stockHid) {
-                    const v = parseInt(cantidad.value || '0', 10);
-                    stockHid.value = isNaN(v) ? 0 : v;
-                    stockTxt && (stockTxt.textContent = stockHid.value);
-                }
-            });
-        }
-
-        // Precio: solo enteros positivos
-        if (precio) {
-            precio.addEventListener('input', () => {
-                const v = (precio.value || '').replace(/[^\d]/g, '');
-                precio.value = v;
-            });
+        if (btnSubmit) btnSubmit.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar';
+        if (modeBadge) {
+            modeBadge.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-1"></i> Modo creación';
+            modeBadge.className = 'badge badge-info badge-creating ml-2';
         }
     })();
 </script>

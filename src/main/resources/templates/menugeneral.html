@@ -108,93 +108,18 @@
     </li>
     <!-- Historial de movimientos (nuevo) -->
     <li class="nav-item">
-        <a class="nav-link" th:href="@{/movimientos}">
-            <i class="fas fa-exchange-alt"></i>
-            <span>Movimientos</span>
-        </a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link" th:href="@{/dhasboard-pagina}">
             <i class="fas fa-chart-line"></i>
             <span>Dashboard</span>
         </a>
     </li>
 
-    <li class="nav-item">
-        <a class="nav-link" th:href="@{/ui/bulk-productos}">
-            <i class="fas fa-file-upload"></i>
-            <span>Carga de datos</span>
-        </a>
-    </li>
 
     <hr class="sidebar-divider">
 
     <!-- Personas -->
-    <div class="sidebar-heading">Personas</div>
-    <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuPersonas"
-           aria-expanded="false" aria-controls="menuPersonas">
-            <i class="fas fa-fw fa-users"></i>
-            <span>Personas</span>
-        </a>
-        <div id="menuPersonas" class="collapse" aria-labelledby="headingPersonas" data-parent="#accordionSidebar">
-            <div class="bg-white py-2 collapse-inner rounded">
-                <h6 class="collapse-header">Gestión:</h6>
-                <a class="collapse-item" th:href="@{/empleados}">
-                    <i class="fas fa-id-badge mr-2"></i>Empleados
-                </a>
-                <a class="collapse-item" th:href="@{/usuarios}">
-                    <i class="fas fa-user-cog mr-2"></i>Usuarios
-                </a>
-                <a class="collapse-item" th:href="@{/roles}">
-                    <i class="fas fa-user-shield mr-2"></i>Roles
-                </a>
-            </div>
-        </div>
-    </li>
 
-    <hr class="sidebar-divider">
 
-    <!-- Reportes -->
-    <div class="sidebar-heading">Reportes</div>
-    <li class="nav-item">
-        <a class="nav-link" th:href="@{/reportes}">
-            <i class="fas fa-fw fa-chart-bar"></i>
-            <span>Reportes</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" th:href="@{/reportes/kardex}">
-            <i class="fas fa-fw fa-file-alt"></i>
-            <span>Kardex</span>
-        </a>
-    </li>
-
-    <hr class="sidebar-divider">
-
-    <!-- Configuración -->
-    <div class="sidebar-heading">Configuración</div>
-    <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#menuConfig"
-           aria-expanded="false" aria-controls="menuConfig">
-            <i class="fas fa-fw fa-cogs"></i>
-            <span>Configuración</span>
-        </a>
-        <div id="menuConfig" class="collapse" aria-labelledby="headingConfig" data-parent="#accordionSidebar">
-            <div class="bg-white py-2 collapse-inner rounded">
-                <h6 class="collapse-header">Parámetros:</h6>
-                <a class="collapse-item" th:href="@{/categorias}">
-                    <i class="fas fa-tags mr-2"></i>Categorías
-                </a>
-                <a class="collapse-item" th:href="@{/marcas}">
-                    <i class="fas fa-trademark mr-2"></i>Marcas
-                </a>
-                <a class="collapse-item" th:href="@{/areas}">
-                    <i class="fas fa-project-diagram mr-2"></i>Áreas
-                </a>
-            </div>
-        </div>
-    </li>
 
     <hr class="sidebar-divider sidebar-logout-sep">
 

@@ -97,6 +97,7 @@
         .table td, .table th { vertical-align: middle; }
         .subtle { color:#6b7280; font-size:.85rem; }
         .badge-pill { border-radius: 999px; padding:.35rem .6rem; }
+        .text-monospace { font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
     </style>
 </head>
 <body id="page-top">
@@ -176,9 +177,10 @@
                                 <tr th:each="prod : ${page.content}">
                                     <td>
                                         <div class="thumb-box">
-                                            <img th:src="@{'/productos/' + ${prod.codigoBarras} + '/imagen'}"
-                                                 alt=""
-                                                 onerror="this.closest('.thumb-box').classList.add('is-empty')">
+                                            <!-- Imagen: usar endpoint canónico /img/productos/{cb} -->
+                                            <img th:src="@{/img/productos/{cb}(cb=${prod.codigoBarras})}"
+                                                 th:alt="${'Img ' + prod.nombre}"
+                                                 onerror="this.closest('.thumb-box').classList.add('is-empty'); this.src='/img/no-image.png'">
                                             <div class="no-img">Sin imagen</div>
                                         </div>
                                     </td>
@@ -191,10 +193,10 @@
 
                                     <!-- STOCK REAL -->
                                     <td class="text-right">
-                    <span th:with="ok=${prod.stockActual != null ? prod.stockActual : 0},
-                                   min=${prod.stockMinimo != null ? prod.stockMinimo : 0}"
-                          th:classappend="${ok <= min} ? 'badge badge-pill badge-danger' : 'badge badge-pill badge-success'"
-                          th:text="${prod.stockActual != null ? prod.stockActual : 0}">0</span>
+                                        <span th:with="ok=${prod.stockActual != null ? prod.stockActual : 0},
+                                                       min=${prod.stockMinimo != null ? prod.stockMinimo : 0}"
+                                              th:classappend="${ok <= min} ? 'badge badge-pill badge-danger' : 'badge badge-pill badge-success'"
+                                              th:text="${prod.stockActual != null ? prod.stockActual : 0}">0</span>
                                     </td>
 
                                     <td class="text-right" th:text="${prod.stockMinimo != null ? prod.stockMinimo : 0}">0</td>
@@ -226,7 +228,7 @@
                         <!-- Paginación -->
                         <nav th:if="${page != null and page.totalPages > 1}" aria-label="Paginación">
                             <ul class="pagination justify-content-center">
-                                <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                                <li class="page-item" th:classappend="${page.first} ? ' disabled'">
                                     <a class="page-link"
                                        th:href="@{/buscar(page=${page.number - 1}, size=${page.size}, q=${q})}"
                                        tabindex="-1">Anterior</a>
@@ -234,13 +236,13 @@
 
                                 <li class="page-item"
                                     th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
-                                    th:classappend="${i} == ${page.number} ? 'active'">
+                                    th:classappend="${i} == ${page.number} ? ' active'">
                                     <a class="page-link"
                                        th:text="${i + 1}"
                                        th:href="@{/buscar(page=${i}, size=${page.size}, q=${q})}">1</a>
                                 </li>
 
-                                <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                                <li class="page-item" th:classappend="${page.last} ? ' disabled'">
                                     <a class="page-link"
                                        th:href="@{/buscar(page=${page.number + 1}, size=${page.size}, q=${q})}">Siguiente</a>
                                 </li>

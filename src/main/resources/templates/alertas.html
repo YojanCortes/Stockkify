@@ -10,64 +10,85 @@
     <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet"/>
     <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet"/>
 
+    <!-- Tema oscuro base -->
     <style>
-        /* ====== GRID: máx 3 por fila; 2 filas por página ====== */
+        :root{ --bg-1:#0b1220; --bg-2:#0f172a; --text:#e5e7eb; --muted:#9ca3af; }
+        html, body { height:100%; }
+        body{ margin:0; background:linear-gradient(180deg,var(--bg-1),var(--bg-2)); color:var(--text); }
+
+        /* Topbar oscura */
+        .topbar-dark{ background:rgba(15,23,42,.92)!important; border-bottom:1px solid rgba(255,255,255,.06); }
+        .topbar-dark .navbar-brand, .topbar-dark .navbar-nav .nav-link, .topbar-dark .navbar-text,
+        .topbar-dark .fa-bars{ color:var(--text)!important; }
+
+        /* Card sobre fondo oscuro */
+        .container-fluid .card{
+            border-radius:14px; border:1px solid rgba(255,255,255,.08);
+            background:#111827; color:var(--text);
+            box-shadow:0 12px 30px rgba(0,0,0,.25);
+        }
+        .card .card-header{
+            background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+            border-bottom:1px solid rgba(255,255,255,.06);
+        }
+
+        /* GRID */
         .grid-alerts{ display:grid; gap:14px; grid-template-columns:repeat(1,1fr); }
         @media (min-width: 768px){ .grid-alerts{ grid-template-columns:repeat(2,1fr); } }
-        @media (min-width: 1200px){ .grid-alerts{ grid-template-columns:repeat(3,1fr); } } /* 👈 nunca más de 3 */
+        @media (min-width: 1200px){ .grid-alerts{ grid-template-columns:repeat(3,1fr); } } /* máx 3 */
 
-        /* ====== TILE / CARD ====== */
+        /* TILE / CARD */
         .alert-tile{ position:relative; aspect-ratio:1 / 1.45; min-height:clamp(360px, 42vw, 520px); }
         .alert-card{
-          position:absolute; inset:0; display:flex; flex-direction:column;
-          border-radius:14px; overflow:hidden; border-width:2px!important; background:#fff;
-          transition:transform .18s ease, box-shadow .18s ease; padding:10px;
+            position:absolute; inset:0; display:flex; flex-direction:column;
+            border-radius:14px; overflow:hidden; border-width:2px!important; background:#ffffff;
+            transition:transform .18s ease, box-shadow .18s ease; padding:10px;
         }
-        .alert-card:hover{ transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.12); }
+        .alert-card:hover{ transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.22); }
 
-        /* ====== IMAGEN ====== */
+        /* IMAGEN */
         .image-box{
-          position:relative; flex:0 0 54%; min-height:0; background:#11151a;
-          display:flex; align-items:center; justify-content:center; border-radius:10px; overflow:hidden; padding:6px;
+            position:relative; flex:0 0 54%; min-height:0; background:#0f141a;
+            display:flex; align-items:center; justify-content:center; border-radius:10px; overflow:hidden; padding:6px;
         }
-        .image-box img{ width:100%; height:100%; object-fit:contain; border-radius:8px; }
+        .image-box img{ width:100%; height:100%; object-fit:contain; border-radius:8px; background:#0f141a; }
         .image-placeholder{
-          color:#9aa0a6; font-weight:600; font-size:.95rem;
-          display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; gap:6px;
+            color:#9aa0a6; font-weight:600; font-size:.95rem;
+            display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; gap:6px;
         }
         .image-placeholder i{ font-size:2.4rem; }
 
-        /* ====== CINTA DE ESTADO ====== */
+        /* CINTA */
         .status-ribbon{
-          position:absolute; top:8px; left:8px; z-index:5;
-          display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
-          font-size:.8rem; font-weight:800; letter-spacing:.2px; box-shadow:0 6px 16px rgba(0,0,0,.18); pointer-events:none;
+            position:absolute; top:8px; left:8px; z-index:5;
+            display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+            font-size:.8rem; font-weight:800; letter-spacing:.2px; box-shadow:0 6px 16px rgba(0,0,0,.18); pointer-events:none;
         }
         .status-critico{ background:#f8d7da; color:#842029; }
         .status-bajo{ background:#fff3cd; color:#664d03; }
 
-        /* ====== CÓDIGO DE BARRAS ====== */
+        /* CÓDIGO */
         .barcode-box{
-          display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 2px 0; padding:6px 10px;
-          background:#f8f9fa; border:1px dashed #dee2e6; border-radius:8px;
+            display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 2px 0; padding:6px 10px;
+            background:#f8f9fa; border:1px dashed #dee2e6; border-radius:8px; color:#111827;
         }
         .barcode-left{ display:flex; align-items:center; gap:8px; overflow:hidden; }
         .barcode-label{ font-weight:700; font-size:.85rem; color:#495057; white-space:nowrap; }
-        .barcode-value{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; font-weight:700; }
+        .barcode-value{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; font-weight:700; color:#111827; }
         .btn-copy{ border:1px solid #ced4da; background:#fff; font-size:.75rem; padding:3px 8px; border-radius:6px; cursor:pointer; }
         .btn-copy:active{ transform:scale(.98); }
 
-        /* ====== CONTENIDO ====== */
-        .card-body-compact{ flex:1 1 auto; padding:10px 8px 12px; display:flex; flex-direction:column; gap:8px; min-height:0; }
-        .prod-name{ font-size:1rem; font-weight:700; line-height:1.2; height:2.4em; overflow:hidden; text-align:center; }
+        /* CONTENIDO */
+        .card-body-compact{ flex:1 1 auto; padding:10px 8px 12px; display:flex; flex-direction:column; gap:8px; min-height:0; color:#111; }
+        .prod-name{ font-size:1rem; font-weight:700; line-height:1.2; height:2.4em; overflow:hidden; text-align:center; color:#111; }
 
-        /* ====== STOCK ====== */
+        /* STOCK */
         .stock-box{ font-size:1.3rem; font-weight:800; padding:10px 12px; border-radius:10px; text-align:center; letter-spacing:.3px; }
         .stock-box.bg-danger{ background:#f8d7da; color:#842029; }
         .stock-box.bg-warning{ background:#fff3cd; color:#664d03; }
-        .stock-box.bg-success{ background:#d1e7dd; color:#0f5132; } /* soporte estado OK */
+        .stock-box.bg-success{ background:#d1e7dd; color:#0f5132; }
 
-        /* ====== ESTADO ====== */
+        /* ESTADO */
         .estado{ display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; margin-top:2px; text-align:center; }
         .estado.text-danger{ color:#dc3545!important; }
         .estado.text-warning{ color:#ffc107!important; }
@@ -75,10 +96,13 @@
 
         .btn-action{ font-weight:600; margin-top:auto; }
 
-        /* ====== PAGINACIÓN ====== */
+        /* PAGINACIÓN */
         .pagination-wrap{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
-        .count-label{ font-size:.9rem; color:#6c757d; }
+        .count-label{ font-size:.9rem; color:var(--muted); }
         .pagination{ margin:0; }
+
+        /* Footer oscuro/transparente */
+        .sticky-footer.bg-white{ background:transparent !important; border-top:1px solid rgba(255,255,255,.06); color:var(--muted); }
     </style>
 </head>
 
@@ -89,13 +113,12 @@
 
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
-
-            <!-- Topbar -->
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+            <!-- Topbar oscuro -->
+            <nav class="navbar navbar-expand topbar topbar-dark mb-4 static-top shadow">
+                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3" aria-label="Abrir menú">
                     <i class="fa fa-bars"></i>
                 </button>
-                <h5 class="font-weight-bold text-primary m-0">
+                <h5 class="font-weight-bold m-0">
                     <i class="fas fa-bell"></i> Alertas de Inventario
                 </h5>
             </nav>
@@ -116,7 +139,7 @@
 
                             <!-- Imagen / Placeholder -->
                             <div class="image-box">
-                                <!-- Cinta (solo críticos o bajo) -->
+                                <!-- Cinta -->
                                 <div class="status-ribbon"
                                      th:if="${alerta.color == 'bg-danger' or alerta.color == 'bg-warning'}"
                                      th:classappend="${alerta.color == 'bg-danger'} ? ' status-critico' : ' status-bajo'">
@@ -125,15 +148,18 @@
                                     <span th:text="${alerta.color == 'bg-danger'} ? 'Crítico' : 'Bajo stock'">Crítico</span>
                                 </div>
 
-                                <!-- Imagen por código de barras -->
+                                <!-- Imagen por código de barras (sin usar 'version') -->
                                 <img th:if="${alerta.codigoBarras != null}"
-                                     th:src="@{/productos/{cb}/imagen(cb=${alerta.codigoBarras})}"
-                                     alt="Producto" loading="lazy" decoding="async"
+                                     th:src="@{/img/productos/{cb}(cb=${alerta.codigoBarras})}"
+                                     th:alt="${'Imagen de ' + (alerta.nombreProducto != null ? alerta.nombreProducto : 'producto')}"
+                                     loading="lazy" decoding="async"
                                      onerror="this.onerror=null; this.src='/img/no-image.png';"/>
 
-                                <!-- Fallback URL -->
+                                <!-- Fallback URL directa -->
                                 <img th:if="${alerta.codigoBarras == null and alerta.imagenUrl != null}"
-                                     th:src="${alerta.imagenUrl}" alt="Producto" loading="lazy" decoding="async"
+                                     th:src="${alerta.imagenUrl}"
+                                     th:alt="${'Imagen de ' + (alerta.nombreProducto != null ? alerta.nombreProducto : 'producto')}"
+                                     loading="lazy" decoding="async"
                                      onerror="this.onerror=null; this.src='/img/no-image.png';"/>
 
                                 <!-- Placeholder -->
@@ -172,8 +198,8 @@
 
                                 <a class="btn btn-primary btn-sm btn-block btn-action"
                                    th:href="${alerta.codigoBarras} != null
-                             ? @{/productos/{cb}(cb=${alerta.codigoBarras})}
-                             : (${alerta.id} != null
+                            ? @{/productos/{cb}(cb=${alerta.codigoBarras})}
+                            : (${alerta.id} != null
                                 ? @{/productos/detalles/{id}(id=${alerta.id})}
                                 : @{/productos/buscar(nombre=${alerta.nombreProducto})})">
                                     <i class="fas fa-search"></i> Ver producto
@@ -198,7 +224,7 @@
         <footer class="sticky-footer bg-white">
             <div class="container my-auto">
                 <div class="copyright text-center my-auto">
-                    <span>&copy; Inventario 2025</span>
+                    <span>© Inventario 2025</span>
                 </div>
             </div>
         </footer>
@@ -216,84 +242,82 @@
 <script>
     /* Copiar código de barras */
     document.addEventListener('click', function (e) {
-      if (e.target && e.target.classList.contains('btn-copy')) {
-        const bc = e.target.getAttribute('data-bc');
-        if (bc) {
-          navigator.clipboard.writeText(bc).then(() => {
-            const old = e.target.textContent;
-            e.target.textContent = '¡Copiado!';
-            setTimeout(() => e.target.textContent = old, 1200);
-          });
+        if (e.target && e.target.classList.contains('btn-copy')) {
+            const bc = e.target.getAttribute('data-bc');
+            if (bc) {
+                navigator.clipboard.writeText(bc).then(() => {
+                    const old = e.target.textContent;
+                    e.target.textContent = '¡Copiado!';
+                    setTimeout(() => e.target.textContent = old, 1200);
+                });
+            }
         }
-      }
     });
 
     /* Ordenar min->max y paginar con 3x2 (cols dinámicas => perPage = cols * 2) */
     document.addEventListener('DOMContentLoaded', function () {
-      const grid = document.getElementById('alertsGrid');
-      if (!grid) return;
+        const grid = document.getElementById('alertsGrid');
+        if (!grid) return;
 
-      const items = Array.from(grid.querySelectorAll('.alert-item'));
+        const items = Array.from(grid.querySelectorAll('.alert-item'));
 
-      // Orden min->max
-      items.sort((a, b) => Number(a.dataset.stock || 0) - Number(b.dataset.stock || 0));
-      items.forEach(el => grid.appendChild(el));
+        // Orden min->max
+        items.sort((a, b) => Number(a.dataset.stock || 0) - Number(b.dataset.stock || 0));
+        items.forEach(el => grid.appendChild(el));
 
-      const paginationWrap = document.getElementById('paginationWrap');
-      const rangeLabel = document.getElementById('rangeLabel');
-      const pagination = document.getElementById('pagination');
+        const paginationWrap = document.getElementById('paginationWrap');
+        const rangeLabel = document.getElementById('rangeLabel');
+        const pagination = document.getElementById('pagination');
 
-      let current = 1;
+        let current = 1;
 
-      function getCols() {
-        const cs = window.getComputedStyle(grid).gridTemplateColumns;
-        return Math.min(3, cs.split(' ').filter(Boolean).length || 1);
-      }
-      function getPerPage() {
-        return getCols() * 2; // 👈 2 filas máximo
-      }
+        function getCols() {
+            const cs = window.getComputedStyle(grid).gridTemplateColumns;
+            return Math.min(3, cs.split(' ').filter(Boolean).length || 1);
+        }
+        function getPerPage() { return getCols() * 2; } // 2 filas máx
 
-      function renderPage(page) {
-        const perPage = getPerPage();
-        const total = items.length;
-        const pages = Math.max(1, Math.ceil(total / perPage));
-        current = Math.min(Math.max(1, page), pages);
+        function renderPage(page) {
+            const perPage = getPerPage();
+            const total = items.length;
+            const pages = Math.max(1, Math.ceil(total / perPage));
+            current = Math.min(Math.max(1, page), pages);
 
-        const startIdx = (current - 1) * perPage;
-        const endIdx = Math.min(startIdx + perPage, total);
+            const startIdx = (current - 1) * perPage;
+            const endIdx = Math.min(startIdx + perPage, total);
 
-        items.forEach((el, i) => el.style.display = (i >= startIdx && i < endIdx) ? '' : 'none');
+            items.forEach((el, i) => el.style.display = (i >= startIdx && i < endIdx) ? '' : 'none');
 
-        rangeLabel.textContent = `Mostrando ${startIdx + 1}–${endIdx} de ${total}`;
-        paginationWrap.style.display = pages > 1 ? 'flex' : 'none';
+            rangeLabel.textContent = `Mostrando ${startIdx + 1}–${endIdx} de ${total}`;
+            paginationWrap.style.display = pages > 1 ? 'flex' : 'none';
 
-        pagination.innerHTML = '';
-        const addBtn = (label, target, disabled = false, active = false) => {
-          const li = document.createElement('li');
-          li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
-          const a = document.createElement('a');
-          a.className = 'page-link'; a.href = 'javascript:void(0)'; a.textContent = label;
-          if (!disabled && !active) a.addEventListener('click', () => renderPage(target));
-          li.appendChild(a); pagination.appendChild(li);
-        };
-        addBtn('«', 1, current === 1);
-        addBtn('‹', current - 1, current === 1);
+            pagination.innerHTML = '';
+            const addBtn = (label, target, disabled = false, active = false) => {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+                const a = document.createElement('a');
+                a.className = 'page-link'; a.href = 'javascript:void(0)'; a.textContent = label;
+                if (!disabled && !active) a.addEventListener('click', () => renderPage(target));
+                li.appendChild(a); pagination.appendChild(li);
+            };
+            addBtn('«', 1, current === 1);
+            addBtn('‹', current - 1, current === 1);
 
-        const windowSize = 5;
-        const pagesTotal = Math.max(1, Math.ceil(items.length / perPage));
-        let start = Math.max(1, current - Math.floor(windowSize / 2));
-        let end = Math.min(pagesTotal, start + windowSize - 1);
-        if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
+            const windowSize = 5;
+            const pagesTotal = Math.max(1, Math.ceil(items.length / perPage));
+            let start = Math.max(1, current - Math.floor(windowSize / 2));
+            let end = Math.min(pagesTotal, start + windowSize - 1);
+            if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
 
-        for (let p = start; p <= end; p++) addBtn(String(p), p, false, p === current);
+            for (let p = start; p <= end; p++) addBtn(String(p), p, false, p === current);
 
-        addBtn('›', current + 1, current === pagesTotal);
-        addBtn('»', pagesTotal, current === pagesTotal);
-      }
+            addBtn('›', current + 1, current === pagesTotal);
+            addBtn('»', pagesTotal, current === pagesTotal);
+        }
 
-      // Primera renderización y re-render en resize (por cambio de columnas)
-      renderPage(1);
-      window.addEventListener('resize', () => renderPage(current));
+        // Primera renderización y re-render en resize
+        renderPage(1);
+        window.addEventListener('resize', () => renderPage(current));
     });
 </script>
 </body>

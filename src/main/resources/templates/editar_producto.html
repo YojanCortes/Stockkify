@@ -5,14 +5,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <title th:text="${'Editar: ' + ((producto != null) ? producto.nombre : form.nombre)}">Editar producto</title>
+    <title th:text="${(producto != null and producto.nombre != null) ? 'Editar: ' + producto.nombre : 'Editar: ' + form.nombre}">Editar producto</title>
 
     <!-- Estáticos -->
     <link th:href="@{/vendor/fontawesome-free/css/all.min.css}" rel="stylesheet"/>
     <link th:href="@{/css/sb-admin-2.min.css}" rel="stylesheet"/>
 
     <style>
-        /* Detalles visuales para modo edición */
         .edit-ribbon { background: #fff3cd; border: 1px solid #ffeeba; color:#856404; }
         .card-img-wrapper { border: 1px dashed #cbd5e0; border-radius: .5rem; padding: 1rem; background:#f8fafc; }
         .img-preview { max-width: 100%; height: auto; border-radius:.5rem; }
@@ -37,7 +36,6 @@
                 <ul class="navbar-nav ml-auto"></ul>
             </nav>
 
-            <!-- Begin Page Content -->
             <div class="container-fluid">
 
                 <!-- Encabezado -->
@@ -96,20 +94,20 @@
 
                                 <div class="card-body">
                                     <div class="card-img-wrapper text-center">
-                                        <!-- Intenta cargar la imagen actual del producto; si no hay, cae al placeholder -->
+                                        <!-- Imagen actual usando /img/productos + cache-busting sin form.version -->
                                         <img id="fotoActual"
                                              class="img-preview"
-                                             th:src="@{|/productos/${form.codigoBarras}/imagen|}"
-                                             onerror="this.onerror=null; this.src='/img/no-image.png';"
+                                             th:src="@{/img/productos/{cb}(cb=${form.codigoBarras})}"
+                                             th:attrappend="src=|?v=${#dates.createNow().time}|"
+                                             onerror="this.onerror=null; this.src='/img/no-image.png?v=1';"
                                              alt="Imagen actual">
 
-                                        <!-- Preview del archivo recién seleccionado (oculta al inicio) -->
+                                        <!-- Preview del archivo recién seleccionado -->
                                         <img id="fotoPreview" class="img-preview d-none" alt="Vista previa">
                                     </div>
 
                                     <div class="form-group mt-3">
                                         <div class="custom-file">
-                                            <!-- NOMBRE DEL CAMPO DEBE SER 'imagen' (o usar th:field) -->
                                             <input type="file"
                                                    class="custom-file-input"
                                                    id="imagen"
@@ -121,6 +119,7 @@
                                 </div>
                             </div>
 
+                            <!-- Preview de imagen -->
                             <script>
                                 (function () {
                                     const input   = document.getElementById('imagen');
@@ -128,26 +127,29 @@
                                     const current = document.getElementById('fotoActual');
                                     const preview = document.getElementById('fotoPreview');
 
+                                    if (!input) return;
+
                                     input.addEventListener('change', () => {
                                         const file = input.files && input.files[0];
                                         if (file) {
-                                            label.textContent = file.name;
+                                            if (label) label.textContent = file.name;
                                             const reader = new FileReader();
                                             reader.onload = (e) => {
-                                                preview.src = e.target.result;
-                                                preview.classList.remove('d-none');
-                                                current.classList.add('d-none');
+                                                if (preview) {
+                                                    preview.src = e.target.result;
+                                                    preview.classList.remove('d-none');
+                                                }
+                                                if (current) current.classList.add('d-none');
                                             };
                                             reader.readAsDataURL(file);
                                         } else {
-                                            label.textContent = 'Elegir imagen…';
-                                            preview.classList.add('d-none');
-                                            current.classList.remove('d-none');
+                                            if (label) label.textContent = 'Elegir imagen…';
+                                            if (preview) preview.classList.add('d-none');
+                                            if (current) current.classList.remove('d-none');
                                         }
                                     });
                                 })();
                             </script>
-
                         </div>
 
                         <!-- Columna derecha: datos -->
@@ -254,7 +256,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- === FILA ACTUALIZADA: incluye PRECIO (entero) === -->
                                     <div class="form-row">
                                         <div class="form-group col-md-3">
                                             <label for="precio">Precio (entero)</label>
@@ -332,14 +333,13 @@
                                     </div>
                                 </div>
 
-                                <!-- Botones -->
                                 <div class="card-footer d-flex justify-content-between">
                                     <a class="btn btn-outline-secondary"
                                        th:href="@{/productos/{cb}(cb=${form.codigoBarras})}">
                                         <i class="fas fa-times mr-1"></i> Cancelar
                                     </a>
 
-                                    <div class="d-flex gap-2">
+                                    <div>
                                         <button type="button" class="btn btn-danger mr-2"
                                                 data-toggle="modal" data-target="#confirmDeleteModal">
                                             <i class="fas fa-trash-alt mr-1"></i> Eliminar
@@ -356,14 +356,11 @@
                     </div>
                 </form>
 
-                <!-- Form oculto para eliminar (fuera del form de edición) -->
+                <!-- Form oculto para eliminar -->
                 <form id="deleteForm"
                       th:action="@{/productos/{cb}/eliminar(cb=${form.codigoBarras})}"
                       method="post" class="d-none">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <!-- Si prefieres DELETE con HiddenHttpMethodFilter:
-                    <input type="hidden" name="_method" value="delete"/>
-                    -->
                 </form>
 
             </div>
@@ -398,7 +395,6 @@
                                 Esta acción no se puede deshacer.
                             </div>
 
-                            <!-- Caja de error/aviso (se muestra sólo si hay problema) -->
                             <div id="deleteError" class="alert alert-danger d-none mb-0" role="alert">
                                 <i class="fas fa-circle-exclamation mr-1"></i>
                                 <span id="deleteErrorMsg">Ocurrió un error.</span>
@@ -413,7 +409,6 @@
                                 <i class="fas fa-check mr-1"></i> Sí, eliminar
                             </button>
 
-                            <!-- CSRF para uso directo desde el modal -->
                             <input type="hidden" id="csrfParam" th:value="${_csrf.parameterName}"/>
                             <input type="hidden" id="csrfToken" th:value="${_csrf.token}"/>
                         </div>
@@ -421,7 +416,6 @@
                 </div>
             </div>
 
-            <!-- /.container-fluid -->
         </div>
 
         <!-- Footer -->
@@ -455,7 +449,6 @@
         if (!btn || !form) return;
 
         function showError(msg, type) {
-            // type: 'danger' | 'warning' (por si devuelves 409)
             const cls = type === 'warning' ? 'alert-warning' : 'alert-danger';
             if (errorBox) {
                 errorBox.classList.remove('d-none', 'alert-danger', 'alert-warning');
@@ -465,25 +458,20 @@
         }
 
         btn.addEventListener('click', async function () {
-            // Limpiar errores previos
             if (errorBox) errorBox.classList.add('d-none');
 
             const action = form.getAttribute('action');
 
-            // Armar payload con CSRF
             const fd = new FormData();
-            // 1) Desde inputs del modal (más explícito)
             const csrfParam = document.getElementById('csrfParam')?.value;
             const csrfToken = document.getElementById('csrfToken')?.value;
             if (csrfParam && csrfToken) {
                 fd.append(csrfParam, csrfToken);
             } else {
-                // 2) Fallback: tomar del input oculto del form
                 const csrfInput = form.querySelector('input[type="hidden"]');
                 if (csrfInput) fd.append(csrfInput.getAttribute('name'), csrfInput.value);
             }
 
-            // Deshabilitar botón mientras procesa
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
@@ -496,10 +484,9 @@
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    redirect: 'manual' // evita seguir redirecciones del servidor
+                    redirect: 'manual'
                 });
 
-                // Intentar parsear JSON (si el servidor respondió JSON)
                 let data = {};
                 const ct = resp.headers.get('content-type') || '';
                 if (ct.includes('application/json')) {
@@ -507,13 +494,11 @@
                 }
 
                 if (resp.ok && (data.status === 200 || data.ok === true)) {
-                    // Eliminado OK -> redirigir (o cerrar modal si prefieres)
                     window.location.assign(data.redirect || '/buscar');
                     return;
                 }
 
                 if (resp.status === 409) {
-                    // Marcado inactivo u otro conflicto controlado
                     showError(
                         data.message || 'No se puede eliminar. El producto fue marcado como inactivo.',
                         'warning'
@@ -524,7 +509,6 @@
                         'danger'
                     );
                 } else {
-                    // Respuesta no-JSON o redirección bloqueada
                     showError('No se pudo procesar la respuesta del servidor.', 'danger');
                 }
 
@@ -538,44 +522,7 @@
     })();
 </script>
 
-
-
 <script>
-    // Preview de imagen (placeholder + preview)
-    const fileInput = document.getElementById('fileInput');
-    const fotoPlaceholder = document.getElementById('fotoPlaceholder');
-    const fotoPreview = document.getElementById('fotoPreview');
-
-    if (fileInput) {
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            if (!file) {
-                // Sin archivo: mostrar placeholder
-                if (fotoPreview) fotoPreview.classList.add('d-none');
-                if (fotoPlaceholder) fotoPlaceholder.classList.remove('d-none');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                if (fotoPreview) {
-                    fotoPreview.src = ev.target.result;
-                    fotoPreview.classList.remove('d-none');
-                }
-                if (fotoPlaceholder) {
-                    fotoPlaceholder.classList.add('d-none');
-                }
-            };
-            reader.readAsDataURL(file);
-
-            // Actualizar etiqueta de archivo (Bootstrap custom-file)
-            const label = fileInput.nextElementSibling;
-            if (label && label.classList.contains('custom-file-label')) {
-                label.textContent = file.name;
-            }
-        });
-    }
-
-    // Bootstrap client-side validation (opcional)
     (function () {
         'use strict';
         const forms = document.getElementsByClassName('needs-validation');
@@ -588,6 +535,15 @@
                 form.classList.add('was-validated');
             }, false);
         });
+
+        // Precio solo enteros positivos (igual que en crear)
+        const precio = document.getElementById('precio');
+        if (precio) {
+            precio.addEventListener('input', () => {
+                const v = (precio.value || '').replace(/[^\d]/g, '');
+                precio.value = v;
+            });
+        }
     })();
 </script>
 </body>
