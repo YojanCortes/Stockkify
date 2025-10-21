@@ -62,6 +62,31 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     List<Producto> findTop200ByActivoTrueOrderByCodigoBarrasAsc();
 
+    // ==== CRÍTICOS ====
+    @Query("""
+        SELECT p FROM Producto p
+        WHERE p.activo = true
+          AND p.stockActual <= COALESCE(p.stockMinimo, 0)
+        ORDER BY p.stockActual ASC
+        """)
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    List<Producto> findCriticos();
+
+    @Query("""
+        SELECT p FROM Producto p
+        WHERE p.activo = true
+          AND p.stockActual <= COALESCE(p.stockMinimo, 0)
+        """)
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Page<Producto> findCriticos(Pageable pageable);
+
+    @Query("""
+        SELECT COUNT(p) FROM Producto p
+        WHERE p.activo = true
+          AND p.stockActual <= COALESCE(p.stockMinimo, 0)
+        """)
+    long countCriticos();
+
     // ==== UTILIDADES ====
     Optional<Producto> findByCodigoBarrasAndActivoTrue(String codigoBarras);
     boolean existsByCodigoBarrasAndActivoTrue(String codigoBarras);

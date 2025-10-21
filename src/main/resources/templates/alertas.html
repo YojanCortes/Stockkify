@@ -121,6 +121,10 @@
                 <h5 class="font-weight-bold m-0">
                     <i class="fas fa-bell"></i> Alertas de Inventario
                 </h5>
+                <!-- Botón para enviar correo con productos críticos -->
+                <button id="btnSendCriticos" class="btn btn-sm btn-primary ml-3" type="button" title="Enviar correo con productos críticos">
+                    <i class="fas fa-paper-plane"></i> enviare ocidog
+                </button>
             </nav>
 
             <!-- Contenido -->
@@ -196,12 +200,22 @@
                                     <span th:text="${alerta.estado}">OK</span>
                                 </div>
 
+                                <!-- Enlace Ver producto (sin ternario con @{}, evita error Thymeleaf) -->
                                 <a class="btn btn-primary btn-sm btn-block btn-action"
-                                   th:href="${alerta.codigoBarras} != null
-                            ? @{/productos/{cb}(cb=${alerta.codigoBarras})}
-                            : (${alerta.id} != null
-                                ? @{/productos/detalles/{id}(id=${alerta.id})}
-                                : @{/productos/buscar(nombre=${alerta.nombreProducto})})">
+                                   th:if="${alerta.codigoBarras != null}"
+                                   th:href="@{/productos/{cb}(cb=${alerta.codigoBarras})}">
+                                    <i class="fas fa-search"></i> Ver producto
+                                </a>
+
+                                <a class="btn btn-primary btn-sm btn-block btn-action"
+                                   th:if="${alerta.codigoBarras == null and alerta.id != null}"
+                                   th:href="@{/productos/detalles/{id}(id=${alerta.id})}">
+                                    <i class="fas fa-search"></i> Ver producto
+                                </a>
+
+                                <a class="btn btn-primary btn-sm btn-block btn-action"
+                                   th:if="${alerta.codigoBarras == null and alerta.id == null}"
+                                   th:href="@{/productos/buscar(nombre=${alerta.nombreProducto})}">
                                     <i class="fas fa-search"></i> Ver producto
                                 </a>
                             </div>
@@ -319,6 +333,35 @@
         renderPage(1);
         window.addEventListener('resize', () => renderPage(current));
     });
+
+    /* Enviar correo de productos críticos */
+    (function(){
+        const btn = document.getElementById('btnSendCriticos');
+        if(!btn) return;
+        btn.addEventListener('click', async function(){
+            try{
+                const email = prompt('¿A qué correo envío el listado de productos críticos?','yojan3002@gmail.com');
+                if(!email) return;
+
+                btn.disabled = true;
+                const old = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+                const res = await fetch(`/alertas/criticos/email?to=${encodeURIComponent(email)}`, { method:'GET' });
+                if(res.ok){
+                    alert('Correo enviado con el listado de productos críticos.');
+                }else{
+                    const txt = await res.text();
+                    alert('No se pudo enviar el correo.\n' + txt);
+                }
+            }catch(err){
+                alert('Error: ' + err);
+            }finally{
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> enviare ocidog';
+            }
+        });
+    })();
 </script>
 </body>
 </html>
