@@ -5,11 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Productos inactivos · Inventario</title>
 
-    <!-- SB Admin 2 -->
     <link href="/vendor/fontawesome-free/css/all.min.css" rel="stylesheet"/>
     <link href="/css/sb-admin-2.min.css" rel="stylesheet"/>
 
     <style>
+        :root{
+            --rojo-100:#fee2e2; --rojo-200:#fecaca; --rojo-300:#fca5a5; --rojo-400:#f87171;
+            --rojo-500:#ef4444; --rojo-600:#dc2626; --rojo-700:#b91c1c; --rojo-800:#991b1b; --rojo-900:#7f1d1d;
+            --slate-500:#6b7280; --slate-600:#4b5563; --soft:#f8f9fc;
+            --radius:12px;
+        }
+
         /* Hero (tema rojo para inactivos) */
         .hero {
             padding: 2rem 1rem 1.25rem;
@@ -18,78 +24,102 @@
                     radial-gradient(60% 80% at 15% -10%, #fff1f2 0%, transparent 60%),
                     radial-gradient(60% 80% at 95% 10%, #fee2e2 0%, transparent 62%),
                     linear-gradient(180deg, #ffffff 0%, #fff5f5 100%);
-            border-bottom: 1px solid #fecaca;
+            border-bottom: 1px solid var(--rojo-200);
         }
         .hero h1 {
-            font-weight: 800;
-            letter-spacing: .3px;
-            color: #991b1b; /* rojo oscuro */
-            margin: 0;
+            font-weight: 800; letter-spacing: .3px; color: var(--rojo-800); margin: 0;
         }
-        .hero .sub {
-            margin: .35rem 0 0;
-            color: #7f1d1d;
-        }
+        .hero .sub { margin: .35rem 0 0; color: var(--rojo-900); }
 
         /* Buscador */
-        .search-wrap { margin: 1rem auto 0; max-width: 720px; }
+        .search-wrap { margin: 1rem auto 0; max-width: 780px; }
         .search-card {
-            border: 1px solid #fecaca;
-            border-radius: 12px;
-            box-shadow: 0 4px 14px rgba(185, 28, 28, .06);
-            overflow: hidden;
-            background: #fff;
+            border: 1px solid var(--rojo-200);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 30px rgba(185, 28, 28, .08);
+            overflow: hidden; background: #fff;
         }
-        .search-inner { display: flex; align-items: stretch; gap: .5rem; padding: .75rem; }
+        .search-inner { display: flex; align-items: center; gap: .5rem; padding: .75rem; }
         .search-input-wrap { position: relative; flex: 1 1 auto; }
         .search-input-wrap i {
-            position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); opacity: .7; color:#b91c1c;
+            position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); opacity: .7; color:var(--rojo-700);
         }
         .search-input {
             padding: .6rem .9rem .6rem 2.25rem; width: 100%;
-            border: 1px solid #fecaca; border-radius: 10px; outline: none; transition: border-color .2s ease;
+            border: 1px solid var(--rojo-200); border-radius: 10px; outline: none; transition: border-color .2s ease, box-shadow .2s ease;
+            background: #fff;
         }
-        .search-input:focus { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, .15); }
+        .search-input:focus { border-color: var(--rojo-500); box-shadow: 0 0 0 3px rgba(239, 68, 68, .15); }
         .search-btn { white-space: nowrap; border-radius: 10px !important; }
 
-        /* Tabla */
+        /* Tabla / celdas */
         :root { --thumb-size: 70px; }
         .thumb-box {
             width: var(--thumb-size); height: var(--thumb-size);
-            border: 1px solid #e5e7eb; border-radius: 10px; background: #f8f9fc;
+            border: 1px solid #e5e7eb; border-radius: 10px; background: var(--soft);
             position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
         .thumb-box img { max-width: 100%; max-height: 100%; object-fit: cover; }
         .thumb-box .no-img {
             position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
-            color: #6b7280; font-size: .7rem; font-weight: 700; text-transform: uppercase;
+            color: var(--slate-500); font-size: .7rem; font-weight: 700; text-transform: uppercase;
         }
         .thumb-box.is-empty img { display: none; }
         .thumb-box.is-empty .no-img { display: flex; }
 
         .table td, .table th { vertical-align: middle; }
-        .subtle { color:#6b7280; font-size:.85rem; }
+        .table-hover tbody tr:hover { background: #fffafa; }
+        .thead-light th { background:#fff7f7; border-bottom: 1px solid var(--rojo-200); }
+        .subtle { color:var(--slate-500); font-size:.85rem; }
         .badge-pill { border-radius: 999px; padding:.35rem .6rem; }
         .text-monospace { font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
 
-        /* Header de la tarjeta en rojo */
-        .card-header.text-danger-strong { color:#991b1b!important; }
-        .thead-light th { background:#fff7f7; }
+        /* Encabezado de tarjeta */
+        .card { border: none; border-radius: var(--radius); overflow: hidden; }
+        .card-header {
+            background: linear-gradient(180deg,#fff 0%,#fff5f5 100%);
+            border-bottom: 1px solid var(--rojo-200);
+        }
+        .card-header .title { color: var(--rojo-800); font-weight: 700; display:flex; align-items:center; gap:.5rem; }
+
+        /* Badges de estado */
+        .badge-inactivo {
+            background: #fff; color: var(--rojo-800); border:1px solid var(--rojo-300);
+            font-weight: 700; letter-spacing:.3px;
+        }
+        .badge-si { background: #fde68a; color:#92400e; font-weight:600; }
+        .badge-no { background: #e5e7eb; color:#374151; font-weight:600; }
+
+        /* Botones de acciones */
+        .btn-outline-primary{border-color:#93c5fd;color:#2563eb;}
+        .btn-outline-primary:hover{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8;}
+        .btn-outline-success{border-color:#86efac;color:#047857;}
+        .btn-outline-success:hover{background:#dcfce7;border-color:#86efac;color:#065f46;}
+
+        /* Empty state */
+        .empty {
+            border: 1px dashed var(--rojo-300); background: #fff; border-radius: var(--radius);
+            padding: 1.25rem; text-align: center; color: var(--slate-600);
+        }
+        .empty i{ color: var(--rojo-500); }
+
+        /* Paginación */
+        .pagination .page-link{ border-radius:10px; }
+        .pagination .page-item.active .page-link{ background: var(--rojo-600); border-color: var(--rojo-600); }
+
+        /* Topbar compacto */
+        .topbar { min-height: 56px; }
     </style>
 </head>
 <body id="page-top">
 <div id="wrapper">
 
-    <!-- Sidebar -->
     <div th:replace="~{menugeneral :: sidebar}"></div>
 
     <div id="content-wrapper" class="d-flex flex-column">
         <div id="content">
 
-            <!-- Topbar (sin buscador) -->
-            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-0 static-top shadow-sm">
-                <div class="ml-auto"></div>
-            </nav>
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-0 static-top shadow-sm"></nav>
 
             <!-- Hero + Buscador -->
             <section class="hero">
@@ -103,7 +133,7 @@
                             <div class="search-input-wrap">
                                 <i class="fas fa-search"></i>
                                 <input class="search-input" type="text" name="q"
-                                       placeholder="Nombre o código de barras…"
+                                       placeholder="Buscar por nombre o código de barras…"
                                        th:value="${q}">
                             </div>
                             <button class="btn btn-danger search-btn" type="submit">
@@ -116,11 +146,12 @@
 
             <div class="container-fluid py-3">
 
-                <div class="card shadow mb-4">
+                <div class="card shadow-sm mb-4">
                     <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                        <h6 class="m-0 font-weight-bold text-danger-strong">
-                            <i class="fas fa-box-archive mr-2"></i> Resultados (inactivos)
-                        </h6>
+                        <div class="title">
+                            <i class="fas fa-box-archive"></i>
+                            <span>Resultados (inactivos)</span>
+                        </div>
                         <div class="small text-muted" th:if="${page != null}">
                             Página <span th:text="${page.number + 1}">1</span> de
                             <span th:text="${page.totalPages}">1</span>
@@ -130,8 +161,9 @@
                     <div class="card-body">
 
                         <!-- Sin resultados -->
-                        <div th:if="${page == null or page.totalElements == 0}" class="alert alert-warning mb-0">
-                            <i class="fas fa-circle-exclamation mr-1"></i> No hay productos inactivos para mostrar.
+                        <div th:if="${page == null or page.totalElements == 0}" class="empty mb-0">
+                            <p class="mb-2"><i class="fas fa-circle-exclamation mr-2"></i>No hay productos inactivos para mostrar.</p>
+                            <small class="d-block">Ajusta tu búsqueda o revisa los filtros.</small>
                         </div>
 
                         <!-- Tabla -->
@@ -141,7 +173,7 @@
                                 <tr>
                                     <th>Imagen</th>
                                     <th style="min-width:140px">Código</th>
-                                    <th>Nombre</th>
+                                    <th>Producto</th>
                                     <th class="text-nowrap">Unidad</th>
                                     <th class="text-right text-nowrap">Stock</th>
                                     <th class="text-right text-nowrap">Mín.</th>
@@ -154,9 +186,8 @@
                                 <tr th:each="prod : ${page.content}">
                                     <td>
                                         <div class="thumb-box">
-                                            <!-- Imagen: usar endpoint canónico /img/productos/{cb} -->
                                             <img th:src="@{/img/productos/{cb}(cb=${prod.codigoBarras})}"
-                                                 th:alt="${'Img ' + prod.nombre}"
+                                                 th:alt="${'Imagen de ' + prod.nombre}"
                                                  onerror="this.closest('.thumb-box').classList.add('is-empty'); this.src='/img/no-image.png'">
                                             <div class="no-img">Sin imagen</div>
                                         </div>
@@ -165,11 +196,13 @@
                                     <td class="text-monospace" th:text="${prod.codigoBarras}">00000000</td>
 
                                     <td>
-                                        <div class="font-weight-semibold d-flex align-items-center">
-                                            <span th:text="${prod.nombre}">Nombre</span>
-                                            <span class="badge badge-danger ml-2">INACTIVO</span>
+                                        <div class="d-flex align-items-center flex-wrap">
+                                            <span class="font-weight-bold" th:text="${prod.nombre}">Nombre</span>
+                                            <span class="badge badge-inactivo badge-pill ml-2">
+                                                <i class="fas fa-ban mr-1"></i> INACTIVO
+                                            </span>
                                         </div>
-                                        <div class="subtle" th:text="${prod.marca}">Marca</div>
+                                        <div class="subtle mt-1" th:text="${prod.marca}">Marca</div>
                                     </td>
 
                                     <td class="text-nowrap" th:text="${prod.unidadBase}">UNIDAD</td>
@@ -185,23 +218,27 @@
                                     <td class="text-right" th:text="${prod.stockMinimo != null ? prod.stockMinimo : 0}">0</td>
 
                                     <td class="text-center">
-                                        <span th:if="${prod.perecible}" class="badge badge-warning">Sí</span>
-                                        <span th:if="${!prod.perecible}" class="badge badge-secondary">No</span>
+                                        <span th:if="${prod.perecible}" class="badge badge-si">Sí</span>
+                                        <span th:if="${!prod.perecible}" class="badge badge-no">No</span>
                                     </td>
                                     <td class="text-center">
-                                        <span th:if="${prod.retornable}" class="badge badge-info">Sí</span>
-                                        <span th:if="${!prod.retornable}" class="badge badge-secondary">No</span>
+                                        <span th:if="${prod.retornable}" class="badge badge-si">Sí</span>
+                                        <span th:if="${!prod.retornable}" class="badge badge-no">No</span>
                                     </td>
 
                                     <td class="text-center">
-                                        <a class="btn btn-sm btn-outline-primary"
-                                           th:href="@{/productos/{cb}(cb=${prod.codigoBarras})}">
-                                            <i class="fas fa-eye mr-1"></i> Ver
-                                        </a>
-                                        <a class="btn btn-sm btn-outline-success"
-                                           th:href="@{/productos/editar/{cb}(cb=${prod.codigoBarras})}">
-                                            <i class="fas fa-undo mr-1"></i> Editar / Reactivar
-                                        </a>
+                                        <div class="btn-group" role="group" aria-label="Acciones">
+                                            <a class="btn btn-sm btn-outline-primary"
+                                               th:href="@{/productos/{cb}(cb=${prod.codigoBarras})}"
+                                               title="Ver producto">
+                                                <i class="fas fa-eye mr-1"></i> Ver
+                                            </a>
+                                            <a class="btn btn-sm btn-outline-success"
+                                               th:href="@{/productos/editar/{cb}(cb=${prod.codigoBarras})}"
+                                               title="Editar o reactivar">
+                                                <i class="fas fa-rotate-left mr-1"></i> Reactivar
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -248,7 +285,6 @@
     </div>
 </div>
 
-<!-- JS -->
 <script src="/vendor/jquery/jquery.min.js"></script>
 <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/vendor/jquery-easing/jquery.easing.min.js"></script>

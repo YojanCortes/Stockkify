@@ -59,7 +59,8 @@
                 </div>
 
                 <!-- Formulario -->
-                <form th:action="@{/productos/editar/{cb}(cb=${form.codigoBarras})}"
+                <form id="editForm"
+                      th:action="@{/productos/editar/{cb}(cb=${form.codigoBarras})}"
                       th:object="${form}"
                       method="post"
                       enctype="multipart/form-data"
@@ -94,7 +95,7 @@
 
                                 <div class="card-body">
                                     <div class="card-img-wrapper text-center">
-                                        <!-- Imagen actual usando /img/productos + cache-busting sin form.version -->
+                                        <!-- Imagen actual usando /img/productos + cache-busting -->
                                         <img id="fotoActual"
                                              class="img-preview"
                                              th:src="@{/img/productos/{cb}(cb=${form.codigoBarras})}"
@@ -340,9 +341,10 @@
                                     </a>
 
                                     <div>
-                                        <button type="button" class="btn btn-danger mr-2"
-                                                data-toggle="modal" data-target="#confirmDeleteModal">
-                                            <i class="fas fa-trash-alt mr-1"></i> Eliminar
+                                        <!-- Botón: Deshabilitar (marca 'activo' en false y envía) -->
+                                        <button type="button" class="btn btn-warning mr-2"
+                                                data-toggle="modal" data-target="#confirmDisableModal">
+                                            <i class="fas fa-ban mr-1"></i> Deshabilitar
                                         </button>
 
                                         <button type="submit" class="btn btn-primary">
@@ -356,24 +358,17 @@
                     </div>
                 </form>
 
-                <!-- Form oculto para eliminar -->
-                <form id="deleteForm"
-                      th:action="@{/productos/{cb}/eliminar(cb=${form.codigoBarras})}"
-                      method="post" class="d-none">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                </form>
-
             </div>
 
-            <!-- Modal: Confirmar eliminación -->
-            <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog"
-                 aria-labelledby="confirmDeleteTitle" aria-hidden="true">
+            <!-- Modal: Confirmar deshabilitar -->
+            <div class="modal fade" id="confirmDisableModal" tabindex="-1" role="dialog"
+                 aria-labelledby="confirmDisableTitle" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content border-0 shadow-lg">
-                        <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title d-flex align-items-center" id="confirmDeleteTitle">
-                                <i class="fas fa-triangle-exclamation mr-2"></i>
-                                Confirmar eliminación
+                        <div class="modal-header bg-warning text-white">
+                            <h5 class="modal-title d-flex align-items-center" id="confirmDisableTitle">
+                                <i class="fas fa-ban mr-2"></i>
+                                Confirmar deshabilitar
                             </h5>
                             <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                                 <span aria-hidden="true">&times;</span>
@@ -381,23 +376,13 @@
                         </div>
 
                         <div class="modal-body text-center p-4">
-                            <div class="display-4 mb-3 text-danger">
-                                <i class="fas fa-trash-alt"></i>
+                            <div class="display-4 mb-3 text-warning">
+                                <i class="fas fa-toggle-off"></i>
                             </div>
-                            <p class="mb-2">¿Estás segur@ de que deseas eliminar este producto?</p>
+                            <p class="mb-2">¿Deshabilitar este producto? No se eliminarán sus movimientos.</p>
                             <h6 class="mb-1" th:text="${form.nombre}">Nombre del producto</h6>
                             <div class="text-muted small">
                                 Cód. barras: <span th:text="${form.codigoBarras}">000000</span>
-                            </div>
-
-                            <div class="alert alert-warning mt-3 mb-3">
-                                <i class="fas fa-exclamation-circle mr-1"></i>
-                                Esta acción no se puede deshacer.
-                            </div>
-
-                            <div id="deleteError" class="alert alert-danger d-none mb-0" role="alert">
-                                <i class="fas fa-circle-exclamation mr-1"></i>
-                                <span id="deleteErrorMsg">Ocurrió un error.</span>
                             </div>
                         </div>
 
@@ -405,12 +390,9 @@
                             <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
                                 <i class="fas fa-times mr-1"></i> No, cancelar
                             </button>
-                            <button id="confirmDeleteBtn" type="button" class="btn btn-danger">
-                                <i class="fas fa-check mr-1"></i> Sí, eliminar
+                            <button id="confirmDisableBtn" type="button" class="btn btn-warning">
+                                <i class="fas fa-check mr-1"></i> Sí, deshabilitar
                             </button>
-
-                            <input type="hidden" id="csrfParam" th:value="${_csrf.parameterName}"/>
-                            <input type="hidden" id="csrfToken" th:value="${_csrf.token}"/>
                         </div>
                     </div>
                 </div>
@@ -439,85 +421,31 @@
 <script th:src="@{/vendor/jquery-easing/jquery.easing.min.js}"></script>
 <script th:src="@{/js/sb-admin-2.min.js}"></script>
 
+<!-- JS: Deshabilitar sin endpoint extra (marca activo=false y envía el form de editar) -->
 <script>
     (function () {
-        const btn = document.getElementById('confirmDeleteBtn');
-        const errorBox = document.getElementById('deleteError');
-        const errorMsg = document.getElementById('deleteErrorMsg');
-        const form = document.getElementById('deleteForm');
+        const btn = document.getElementById('confirmDisableBtn');
+        const form = document.getElementById('editForm');
+        const chkActivo = document.getElementById('activo');
 
-        if (!btn || !form) return;
+        if (!btn || !form || !chkActivo) return;
 
-        function showError(msg, type) {
-            const cls = type === 'warning' ? 'alert-warning' : 'alert-danger';
-            if (errorBox) {
-                errorBox.classList.remove('d-none', 'alert-danger', 'alert-warning');
-                errorBox.classList.add(cls);
-            }
-            if (errorMsg) errorMsg.textContent = msg || 'Ocurrió un error.';
-        }
-
-        btn.addEventListener('click', async function () {
-            if (errorBox) errorBox.classList.add('d-none');
-
-            const action = form.getAttribute('action');
-
-            const fd = new FormData();
-            const csrfParam = document.getElementById('csrfParam')?.value;
-            const csrfToken = document.getElementById('csrfToken')?.value;
-            if (csrfParam && csrfToken) {
-                fd.append(csrfParam, csrfToken);
-            } else {
-                const csrfInput = form.querySelector('input[type="hidden"]');
-                if (csrfInput) fd.append(csrfInput.getAttribute('name'), csrfInput.value);
-            }
-
-            const originalHtml = btn.innerHTML;
+        btn.addEventListener('click', function () {
+            const original = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deshabilitando...';
 
-            try {
-                const resp = await fetch(action, {
-                    method: 'POST',
-                    body: fd,
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    redirect: 'manual'
-                });
+            // marcar inactivo y enviar
+            chkActivo.checked = false;
 
-                let data = {};
-                const ct = resp.headers.get('content-type') || '';
-                if (ct.includes('application/json')) {
-                    data = await resp.json().catch(() => ({}));
-                }
-
-                if (resp.ok && (data.status === 200 || data.ok === true)) {
-                    window.location.assign(data.redirect || '/buscar');
-                    return;
-                }
-
-                if (resp.status === 409) {
-                    showError(
-                        data.message || 'No se puede eliminar. El producto fue marcado como inactivo.',
-                        'warning'
-                    );
-                } else if (resp.status >= 400) {
-                    showError(
-                        data.message || 'No se pudo eliminar el producto.',
-                        'danger'
-                    );
-                } else {
-                    showError('No se pudo procesar la respuesta del servidor.', 'danger');
-                }
-
-            } catch (e) {
-                showError('Error de red. Intenta nuevamente.', 'danger');
-            } finally {
+            // Validación nativa si existe
+            if (form.reportValidity && !form.reportValidity()) {
                 btn.disabled = false;
-                btn.innerHTML = originalHtml;
+                btn.innerHTML = original;
+                return;
             }
+
+            form.submit();
         });
     })();
 </script>
@@ -536,7 +464,7 @@
             }, false);
         });
 
-        // Precio solo enteros positivos (igual que en crear)
+        // Precio solo enteros positivos
         const precio = document.getElementById('precio');
         if (precio) {
             precio.addEventListener('input', () => {
