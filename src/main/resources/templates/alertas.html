@@ -123,7 +123,7 @@
                 </h5>
                 <!-- Botón para enviar correo con productos críticos -->
                 <button id="btnSendCriticos" class="btn btn-sm btn-primary ml-3" type="button" title="Enviar correo con productos críticos">
-                    <i class="fas fa-paper-plane"></i> enviare ocidog
+                    <i class="fas fa-paper-plane"></i> Enviar críticos por correo
                 </button>
             </nav>
 
@@ -152,7 +152,7 @@
                                     <span th:text="${alerta.color == 'bg-danger'} ? 'Crítico' : 'Bajo stock'">Crítico</span>
                                 </div>
 
-                                <!-- Imagen por código de barras (sin usar 'version') -->
+                                <!-- Imagen por código de barras -->
                                 <img th:if="${alerta.codigoBarras != null}"
                                      th:src="@{/img/productos/{cb}(cb=${alerta.codigoBarras})}"
                                      th:alt="${'Imagen de ' + (alerta.nombreProducto != null ? alerta.nombreProducto : 'producto')}"
@@ -200,7 +200,7 @@
                                     <span th:text="${alerta.estado}">OK</span>
                                 </div>
 
-                                <!-- Enlace Ver producto (sin ternario con @{}, evita error Thymeleaf) -->
+                                <!-- Enlace Ver producto -->
                                 <a class="btn btn-primary btn-sm btn-block btn-action"
                                    th:if="${alerta.codigoBarras != null}"
                                    th:href="@{/productos/{cb}(cb=${alerta.codigoBarras})}">
@@ -358,7 +358,7 @@
                 alert('Error: ' + err);
             }finally{
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-paper-plane"></i> enviare ocidog';
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar críticos por correo';
             }
         });
     })();
